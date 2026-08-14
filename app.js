@@ -323,9 +323,9 @@ async function handleAuth(event) {
     if (state.authMode === "signup") {
       const payload = await authRequest("/signup", { method: "POST", body: { email, password, data: { full_name: $("#auth-name").value.trim() || email.split("@")[0] } } });
       if (!payload.access_token) {
-        message.textContent = "Conta criada. Confirme o e-mail recebido e depois entre no CRM.";
         state.authMode = "login";
         renderAuthMode();
+        message.textContent = "Conta criada. Abra o e-mail de confirmação (verifique também a pasta Spam) e depois entre no CRM.";
         return;
       }
       saveSession(payload);
@@ -338,12 +338,14 @@ async function handleAuth(event) {
     message.textContent = translateAuthError(error.message);
   } finally {
     submit.disabled = false;
-    renderAuthMode();
+    submit.textContent = state.authMode === "signup" ? "Criar minha conta" : "Entrar no CRM";
   }
 }
 
 function translateAuthError(message) {
   if (/invalid login credentials/i.test(message)) return "E-mail ou senha incorretos.";
+  if (/email not confirmed/i.test(message)) return "Confirme seu e-mail antes de entrar. Verifique também a pasta Spam.";
+  if (/email rate limit exceeded|over_email_send_rate_limit/i.test(message)) return "Muitas tentativas de envio. Aguarde alguns minutos e use o e-mail de confirmação já recebido.";
   if (/user already registered/i.test(message)) return "Este e-mail já possui uma conta.";
   if (/password/i.test(message)) return "A senha precisa ter pelo menos 6 caracteres.";
   return message;
