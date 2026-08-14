@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#071012" />
+    <meta name="description" content="CRM Livonno — prospecção, funil e métricas em uma só órbita." />
+    <title>Livonno CRM</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2215%22 fill=%22%2327e2b1%22/><ellipse cx=%2250%22 cy=%2250%22 rx=%2240%22 ry=%2220%22 fill=%22none%22 stroke=%22%23f6a821%22 stroke-width=%228%22 transform=%22rotate(-25 50 50)%22/></svg>" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="toast-region" class="toast-region" aria-live="polite"></div>
+
+    <section id="auth-screen" class="auth-screen">
+      <div class="auth-art" aria-hidden="true">
+        <div class="auth-grid"></div>
+        <div class="orbit orbit-one"></div>
+        <div class="orbit orbit-two"></div>
+        <div class="planet"></div>
+        <div class="auth-copy">
+          <span class="eyebrow">LIVONNO · PAINEL DE ÓRBITA</span>
+          <h1>Sua prospecção<br /><em>em movimento.</em></h1>
+          <p>Metas, leads, follow-ups e conversões reunidos em uma visão clara para você vender com consistência.</p>
+        </div>
+      </div>
+      <div class="auth-panel">
+        <div class="brand auth-brand">
+          <span class="brand-mark"><i></i></span>
+          <span><b>LIVONNO</b><small>CRM</small></span>
+        </div>
+        <div class="auth-form-wrap">
+          <span class="eyebrow">ACESSO SEGURO</span>
+          <h2 id="auth-title">Entre no seu painel</h2>
+          <p id="auth-subtitle">Use seu e-mail e senha para continuar.</p>
+          <form id="auth-form" class="form-stack">
+            <label id="name-field" class="field hidden">
+              <span>Seu nome</span>
+              <input id="auth-name" type="text" autocomplete="name" placeholder="Damião" />
+            </label>
+            <label class="field">
+              <span>E-mail</span>
+              <input id="auth-email" type="email" autocomplete="email" required placeholder="voce@empresa.com" />
+            </label>
+            <label class="field">
+              <span>Senha</span>
+              <input id="auth-password" type="password" autocomplete="current-password" minlength="6" required placeholder="Mínimo de 6 caracteres" />
+            </label>
+            <button id="auth-submit" class="button primary wide" type="submit">Entrar no CRM</button>
+          </form>
+          <button id="auth-toggle" class="text-button" type="button">Primeiro acesso? Criar conta</button>
+          <p id="auth-message" class="form-message" role="status"></p>
+        </div>
+        <p class="auth-footer">Dados protegidos por autenticação e isolamento por usuário.</p>
+      </div>
+    </section>
+
+    <div id="app-shell" class="app-shell hidden">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark"><i></i></span>
+          <span><b>LIVONNO</b><small>CRM</small></span>
+        </div>
+        <nav id="main-nav" class="main-nav" aria-label="Navegação principal">
+          <button class="nav-item active" data-view="dashboard"><span class="nav-icon">⌁</span> Visão geral</button>
+          <button class="nav-item" data-view="leads"><span class="nav-icon">◎</span> Pipeline</button>
+          <button class="nav-item" data-view="metrics"><span class="nav-icon">▥</span> Registro diário</button>
+          <button class="nav-item" data-view="agenda"><span class="nav-icon">◷</span> Agenda</button>
+          <button class="nav-item" data-view="goals"><span class="nav-icon">◇</span> Metas</button>
+        </nav>
+        <div class="sidebar-foot">
+          <div class="user-chip">
+            <span id="user-avatar" class="avatar">DM</span>
+            <span><b id="user-name">Usuário</b><small id="user-email">—</small></span>
+          </div>
+          <button id="logout-button" class="icon-button" type="button" aria-label="Sair">↗</button>
+        </div>
+      </aside>
+
+      <header class="mobile-header">
+        <div class="brand"><span class="brand-mark"><i></i></span><span><b>LIVONNO</b><small>CRM</small></span></div>
+        <button id="mobile-menu-button" class="icon-button" aria-label="Abrir menu">☰</button>
+      </header>
+
+      <main class="main-content">
+        <section id="view-dashboard" class="view active-view"></section>
+        <section id="view-leads" class="view"></section>
+        <section id="view-metrics" class="view"></section>
+        <section id="view-agenda" class="view"></section>
+        <section id="view-goals" class="view"></section>
+      </main>
+    </div>
+
+    <dialog id="lead-dialog" class="modal">
+      <form id="lead-form" method="dialog" class="modal-card">
+        <div class="modal-head">
+          <div><span class="eyebrow">OPORTUNIDADE</span><h2 id="lead-dialog-title">Novo lead</h2></div>
+          <button class="icon-button modal-close" type="button" aria-label="Fechar">×</button>
+        </div>
+        <input id="lead-id" type="hidden" />
+        <div class="form-grid">
+          <label class="field span-2"><span>Nome *</span><input id="lead-name" required placeholder="Nome do médico ou responsável" /></label>
+          <label class="field"><span>Clínica</span><input id="lead-clinic" placeholder="Nome da clínica" /></label>
+          <label class="field"><span>Especialidade</span><input id="lead-specialty" placeholder="Ex.: Dermatologia" /></label>
+          <label class="field"><span>WhatsApp</span><input id="lead-whatsapp" inputmode="tel" placeholder="(11) 99999-9999" /></label>
+          <label class="field"><span>E-mail</span><input id="lead-email" type="email" placeholder="contato@clinica.com" /></label>
+          <label class="field"><span>Origem</span><select id="lead-source"><option>Prospecção ativa</option><option>Meta Ads</option><option>Indicação</option><option>Instagram</option><option>Google</option><option>Outro</option></select></label>
+          <label class="field"><span>Etapa</span><select id="lead-stage"></select></label>
+          <label class="field"><span>Valor potencial</span><input id="lead-value" type="number" min="0" step="100" placeholder="3000" /></label>
+          <label class="field"><span>Próximo follow-up</span><input id="lead-follow-up" type="date" /></label>
+          <label class="field span-2"><span>Observações</span><textarea id="lead-notes" rows="4" placeholder="Contexto, objeções e próximos passos"></textarea></label>
+        </div>
+        <div class="modal-actions">
+          <button id="delete-lead" class="button danger hidden" type="button">Excluir lead</button>
+          <span class="spacer"></span>
+          <button class="button ghost modal-close" type="button">Cancelar</button>
+          <button class="button primary" type="submit">Salvar lead</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="activity-dialog" class="modal">
+      <form id="activity-form" method="dialog" class="modal-card compact">
+        <div class="modal-head">
+          <div><span class="eyebrow">PRÓXIMO PASSO</span><h2>Nova atividade</h2></div>
+          <button class="icon-button activity-close" type="button" aria-label="Fechar">×</button>
+        </div>
+        <div class="form-stack">
+          <label class="field"><span>Título *</span><input id="activity-title" required placeholder="Ligar para confirmar horário" /></label>
+          <label class="field"><span>Lead</span><select id="activity-lead"></select></label>
+          <div class="form-grid">
+            <label class="field"><span>Tipo</span><select id="activity-kind"><option value="follow_up">Follow-up</option><option value="whatsapp">WhatsApp</option><option value="call">Ligação</option><option value="email">E-mail</option><option value="meeting">Reunião</option><option value="note">Nota</option></select></label>
+            <label class="field"><span>Quando</span><input id="activity-due" type="datetime-local" /></label>
+          </div>
+        </div>
+        <div class="modal-actions"><span class="spacer"></span><button class="button ghost activity-close" type="button">Cancelar</button><button class="button primary" type="submit">Criar atividade</button></div>
+      </form>
+    </dialog>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

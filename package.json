@@ -1,0 +1,11 @@
+{
+  "name": "livonno-crm",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/calculations.test.mjs",
+    "check": "node --check app.js && node --check calculations.js",
+    "dev": "python3 -m http.server 4173"
+  }
+}
