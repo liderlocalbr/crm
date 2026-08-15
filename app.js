@@ -519,6 +519,7 @@ function setupStaticEvents() {
   });
   $("#delete-lead").addEventListener("click", deleteCurrentLead);
   $("#activity-form").addEventListener("submit", saveActivityFromDialog);
+  $("#activity-kind").addEventListener("change", updateActivityKindControls);
   $("#stage-add-form").addEventListener("submit", addPipelineStage);
   $("#stage-dialog").addEventListener("click", handleStageDialogClick);
   $("#stage-list").addEventListener("dragstart", handleStageReorderStart);
@@ -2028,6 +2029,14 @@ async function deleteCurrentLead() {
   } catch (error) { toast(error.message, "error"); }
 }
 
+function updateActivityKindControls() {
+  const isMeeting = $("#activity-kind").value === "meeting";
+  const meetField = $("#activity-meet-field");
+  if (!meetField) return;
+  meetField.classList.toggle("hidden", !isMeeting);
+  if (!isMeeting) $("#activity-meet").checked = false;
+}
+
 function openActivityDialog(presetDate = null, leadId = null) {
   state.editingActivityId = null;
   $("#activity-dialog-title").textContent = "Nova atividade";
@@ -2038,9 +2047,13 @@ function openActivityDialog(presetDate = null, leadId = null) {
   $("#activity-lead-field").classList.toggle("hidden", Boolean(leadId));
   $("#activity-lead").disabled = Boolean(leadId);
   $("#activity-due").value = `${presetDate || todayIso()}T09:00`;
-  $("#activity-google").checked = state.calendarConnected;
-  $("#activity-google").disabled = !state.calendarConnected;
-  $("#activity-google").closest("label").title = state.calendarConnected ? "Criar também no Google Agenda" : "Conecte o Google Agenda primeiro";
+  const googleReady = state.calendarConnected || hasValidGoogleToken();
+  $("#activity-google").checked = false;
+  $("#activity-google").disabled = !googleReady;
+  $("#activity-google-field").title = googleReady ? "Criar também no Google Agenda" : "Conecte o Google Agenda primeiro";
+  $("#activity-meet").checked = false;
+  $("#activity-meet").disabled = !googleReady;
+  updateActivityKindControls();
   $("#activity-dialog").showModal();
 }
 
@@ -2056,6 +2069,9 @@ function openEditActivityDialog(activityId) {
   $("#activity-due").value = activity.due_at ? new Date(activity.due_at).toISOString().slice(0, 16) : "";
   $("#activity-google").checked = false;
   $("#activity-google").disabled = true;
+  $("#activity-meet").checked = false;
+  $("#activity-meet").disabled = true;
+  updateActivityKindControls();
 }
 
 async function connectGoogleCalendar() {
@@ -2088,15 +2104,25 @@ async function connectGoogleCalendar() {
 
 function activityGoogleEvent(activity) {
   const lead = state.leads.find((item) => item.id === activity.lead_id);
-  return googleCalendarEvent({
+  const event = googleCalendarEvent({
     title: activity.title,
     dueAt: activity.due_at,
     details: `CRM Agência Líder Local\nLead: ${lead?.name || "Atividade geral"}\nTipo: ${activityKindLabel(activity.kind)}`,
   });
+  if (event && activity.add_google_meet) {
+    event.conferenceDataVersion = 1;
+    event.conferenceData = {
+      createRequest: {
+        requestId: `crm-${crypto.randomUUID()}`,
+        conferenceSolutionKey: { type: "hangoutsMeet" },
+      },
+    };
+  }
+  return event;
 }
 
 async function createGoogleEvent(activity) {
-  if (!state.calendarConnected || !hasValidGoogleToken()) throw new Error("Conecte novamente o Google Agenda para autorizar este envio.");
+  if (!hasValidGoogleToken()) throw new Error("Conecte novamente o Google Agenda para autorizar este envio.");
   const event = activityGoogleEvent(activity);
   if (!event) throw new Error("Informe data e horário antes de enviar ao Google Agenda.");
   const response = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
@@ -2127,10 +2153,11 @@ async function syncActivityToGoogle(id) {
 
 async function saveActivityFromDialog(event) {
   event.preventDefault();
-  const openInGoogle = $("#activity-google").checked;
+  const openInGoogle = $("#activity-google").checked || $("#activity-meet").checked;
   const payload = {
     title: $("#activity-title").value.trim(), lead_id: $("#activity-lead").value || null,
     kind: $("#activity-kind").value, due_at: $("#activity-due").value ? new Date($("#activity-due").value).toISOString() : null,
+    add_google_meet: $("#activity-kind").value === "meeting" && $("#activity-meet").checked,
   };
   try {
     const savedActivity = state.editingActivityId

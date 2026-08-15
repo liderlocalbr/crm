@@ -139,7 +139,8 @@
             <label class="field"><span>Tipo</span><select id="activity-kind"><option value="follow_up">Follow-up</option><option value="whatsapp">WhatsApp</option><option value="call">Ligação</option><option value="email">E-mail</option><option value="meeting">Reunião</option><option value="note">Nota</option></select></label>
             <label class="field"><span>Quando</span><input id="activity-due" type="datetime-local" /></label>
           </div>
-          <label class="check-field"><input id="activity-google" type="checkbox" /><span>Depois de criar, abrir o evento no Google Agenda</span></label>
+          <label id="activity-google-field" class="check-field"><input id="activity-google" type="checkbox" /><span>Depois de criar, abrir o evento no Google Agenda</span></label>
+          <label id="activity-meet-field" class="check-field hidden"><input id="activity-meet" type="checkbox" /><span>Gerar link do Google Meet para esta reunião</span></label>
         </div>
         <div class="modal-actions"><span class="spacer"></span><button class="button ghost activity-close" type="button">Cancelar</button><button id="activity-submit" class="button primary" type="submit">Criar atividade</button></div>
       </form>
