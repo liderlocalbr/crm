@@ -79,3 +79,28 @@ export function moveLeadToStage(leads = [], leadId, nextStage) {
     changed: true,
   };
 }
+
+export function reassignStage(leads = [], fromStage, nextStage) {
+  let changed = 0;
+  const updated = leads.map((lead) => {
+    if (lead.stage !== fromStage) return lead;
+    changed += 1;
+    return { ...lead, stage: nextStage };
+  });
+  return { leads: updated, changed };
+}
+
+export function googleCalendarUrl({ title, dueAt, details = "", durationMinutes = 45 } = {}) {
+  if (!title || !dueAt) return "";
+  const start = new Date(dueAt);
+  if (Number.isNaN(start.getTime())) return "";
+  const end = new Date(start.getTime() + Math.max(1, Number(durationMinutes) || 45) * 60_000);
+  const googleDate = (date) => date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${googleDate(start)}/${googleDate(end)}`,
+    details,
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}

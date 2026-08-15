@@ -132,9 +132,26 @@
             <label class="field"><span>Tipo</span><select id="activity-kind"><option value="follow_up">Follow-up</option><option value="whatsapp">WhatsApp</option><option value="call">Ligação</option><option value="email">E-mail</option><option value="meeting">Reunião</option><option value="note">Nota</option></select></label>
             <label class="field"><span>Quando</span><input id="activity-due" type="datetime-local" /></label>
           </div>
+          <label class="check-field"><input id="activity-google" type="checkbox" /><span>Depois de criar, abrir o evento no Google Agenda</span></label>
         </div>
         <div class="modal-actions"><span class="spacer"></span><button class="button ghost activity-close" type="button">Cancelar</button><button class="button primary" type="submit">Criar atividade</button></div>
       </form>
+    </dialog>
+
+    <dialog id="stage-dialog" class="modal">
+      <div class="modal-card compact">
+        <div class="modal-head">
+          <div><span class="eyebrow">PIPELINE PERSONALIZADO</span><h2>Gerenciar etapas</h2></div>
+          <button class="icon-button stage-close" type="button" aria-label="Fechar">×</button>
+        </div>
+        <p class="modal-intro">Renomeie etapas, escolha uma cor ou crie novas fases para adaptar o funil ao seu processo comercial.</p>
+        <div id="stage-list" class="stage-list"></div>
+        <form id="stage-add-form" class="stage-add-form">
+          <label class="field"><span>Nova etapa</span><input id="new-stage-name" required maxlength="48" placeholder="Ex.: Proposta enviada" /></label>
+          <label class="color-field" aria-label="Cor da nova etapa"><input id="new-stage-color" type="color" value="#2bdcaf" /></label>
+          <button class="button primary" type="submit">+ Adicionar</button>
+        </form>
+      </div>
     </dialog>
 
     <script type="module" src="./app.js"></script>

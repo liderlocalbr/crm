@@ -6,12 +6,12 @@ CRM de prospecção da **Agência Líder Local**, baseado na planilha de métric
 
 - Autenticação por e-mail e senha com Supabase Auth
 - Isolamento dos dados por usuário com Row Level Security (RLS)
-- Pipeline com sete etapas e movimentação de cards por arrastar e soltar
+- Pipeline configurável: adicionar, renomear e excluir etapas, além de movimentar cards por arrastar e soltar
 - Cadastro e edição de leads, valor potencial e próximo follow-up
-- Agenda de ligações, WhatsApp, reuniões, e-mails e tarefas
+- Agenda de ligações, WhatsApp, reuniões, e-mails e tarefas com envio para o Google Agenda
 - Registro diário por mês e resumo de receita
-- Metas recalculadas automaticamente a partir das taxas de conversão
-- Dashboard com metas versus realizado e taxas reais do período
+- Metas mensais recalculadas automaticamente a partir das taxas de conversão
+- Dashboard ampliado com metas versus realizado, taxas reais, relógio e clima de Mogi das Cruzes
 - Interface responsiva para desktop e celular
 
 ## Projeção inicial

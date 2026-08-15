@@ -1,5 +1,5 @@
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./config.js";
-import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, monthBounds, moveLeadToStage, progress, weekOfMonth } from "./calculations.js";
+import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarUrl, monthBounds, moveLeadToStage, progress, reassignStage, weekOfMonth } from "./calculations.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -7,10 +7,14 @@ const todayIso = () => new Date().toISOString().slice(0, 10);
 const currentMonth = () => todayIso().slice(0, 7);
 const isLocalDemo = ["localhost", "127.0.0.1"].includes(location.hostname) && new URLSearchParams(location.search).get("demo") === "1";
 const SESSION_KEY = "agencia-lider-local.crm.session.v1";
+const CALENDAR_KEY = "agencia-lider-local.crm.google-calendar.v1";
+const WEATHER_URL = "https://api.open-meteo.com/v1/forecast?latitude=-23.5229&longitude=-46.1883&current=temperature_2m,apparent_temperature,weather_code,is_day&timezone=America%2FSao_Paulo";
 let draggedLeadId = null;
 let suppressLeadClick = false;
+let dashboardClockTimer = null;
+let weatherRefreshTimer = null;
 
-const STAGES = [
+const DEFAULT_STAGES = [
   { value: "new", label: "Novo lead", color: "#63a9ff" },
   { value: "contacted", label: "Mensagem enviada", color: "#7b8fa3" },
   { value: "scheduled", label: "Reunião agendada", color: "#bd88ff" },
@@ -28,6 +32,10 @@ const state = {
   metrics: [],
   leads: [],
   activities: [],
+  stages: DEFAULT_STAGES.map((stage, position) => ({ ...stage, position })),
+  weather: null,
+  weatherLoading: true,
+  calendarEnabled: localStorage.getItem(CALENDAR_KEY) === "1",
   month: currentMonth(),
   week: "all",
   view: "dashboard",
@@ -68,7 +76,13 @@ function createMockData() {
     { id: crypto.randomUUID(), lead_id: leads[5].id, kind: "call", title: "Alinhar proposta comercial", due_at: `${addDays(1)}T16:00:00`, completed_at: null },
     { id: crypto.randomUUID(), lead_id: leads[4].id, kind: "email", title: "Enviar estudo de caso", due_at: `${todayIso()}T09:00:00`, completed_at: new Date().toISOString() },
   ];
-  return { settings: { ...DEFAULT_SETTINGS }, metrics, leads, activities };
+  return {
+    settingsByMonth: new Map([[month, { ...DEFAULT_SETTINGS }]]),
+    stages: DEFAULT_STAGES.map((stage, position) => ({ ...stage, id: crypto.randomUUID(), stage_key: stage.value, name: stage.label, position })),
+    metrics,
+    leads,
+    activities,
+  };
 }
 
 function addDays(days) {
@@ -99,7 +113,7 @@ function formatDate(value, options = { day: "2-digit", month: "short" }) {
 }
 
 function stageMeta(value) {
-  return STAGES.find((stage) => stage.value === value) || STAGES[0];
+  return state.stages.find((stage) => stage.value === value) || state.stages[0] || DEFAULT_STAGES[0];
 }
 
 function initials(value = "") {
@@ -167,18 +181,64 @@ function clearSession() {
 }
 
 const store = {
-  async getSettings() {
-    if (isLocalDemo) return { ...mock.settings };
-    const rows = await rest("funnel_settings", { query: `owner_id=eq.${state.user.id}&select=*` });
+  async getSettings(month) {
+    if (isLocalDemo) return { ...(mock.settingsByMonth.get(month) || DEFAULT_SETTINGS) };
+    const goalMonth = `${month}-01`;
+    const rows = await rest("funnel_settings", { query: `owner_id=eq.${state.user.id}&goal_month=eq.${goalMonth}&select=*` });
     if (rows[0]) return rows[0];
-    const payload = { owner_id: state.user.id, ...DEFAULT_SETTINGS };
-    const created = await rest("funnel_settings", { method: "POST", query: "on_conflict=owner_id", body: payload, prefer: "resolution=merge-duplicates,return=representation" });
+    const payload = { owner_id: state.user.id, goal_month: goalMonth, ...DEFAULT_SETTINGS };
+    const created = await rest("funnel_settings", { method: "POST", query: "on_conflict=owner_id,goal_month", body: payload, prefer: "resolution=merge-duplicates,return=representation" });
     return created[0];
   },
-  async saveSettings(settings) {
-    if (isLocalDemo) return Object.assign(mock.settings, settings);
-    const rows = await rest("funnel_settings", { method: "POST", query: "on_conflict=owner_id", body: { owner_id: state.user.id, ...settings }, prefer: "resolution=merge-duplicates,return=representation" });
+  async saveSettings(month, settings) {
+    if (isLocalDemo) {
+      const value = { ...(mock.settingsByMonth.get(month) || DEFAULT_SETTINGS), ...settings };
+      mock.settingsByMonth.set(month, value);
+      return value;
+    }
+    const rows = await rest("funnel_settings", { method: "POST", query: "on_conflict=owner_id,goal_month", body: { owner_id: state.user.id, goal_month: `${month}-01`, ...settings }, prefer: "resolution=merge-duplicates,return=representation" });
     return rows[0];
+  },
+  async getStages() {
+    if (isLocalDemo) return mock.stages.map((stage) => ({ ...stage }));
+    let rows = await rest("pipeline_stages", { query: `owner_id=eq.${state.user.id}&select=*&order=position.asc` });
+    if (rows.length) return rows;
+    const defaults = DEFAULT_STAGES.map((stage, position) => ({ owner_id: state.user.id, stage_key: stage.value, name: stage.label, color: stage.color, position }));
+    rows = await rest("pipeline_stages", { method: "POST", body: defaults });
+    return rows;
+  },
+  async saveStage(stage) {
+    if (isLocalDemo) {
+      const index = mock.stages.findIndex((item) => item.id === stage.id);
+      if (index >= 0) {
+        mock.stages[index] = { ...mock.stages[index], ...stage };
+        return mock.stages[index];
+      }
+      const created = { ...stage, id: crypto.randomUUID(), owner_id: "demo-user" };
+      mock.stages.push(created);
+      return created;
+    }
+    if (stage.id) {
+      const { id, ...payload } = stage;
+      const rows = await rest("pipeline_stages", { method: "PATCH", query: `id=eq.${id}&owner_id=eq.${state.user.id}`, body: payload });
+      return rows[0];
+    }
+    const rows = await rest("pipeline_stages", { method: "POST", body: { owner_id: state.user.id, ...stage } });
+    return rows[0];
+  },
+  async deleteStage(id) {
+    if (isLocalDemo) {
+      mock.stages = mock.stages.filter((stage) => stage.id !== id);
+      return;
+    }
+    await rest("pipeline_stages", { method: "DELETE", query: `id=eq.${id}&owner_id=eq.${state.user.id}`, prefer: "return=minimal" });
+  },
+  async reassignStage(fromStage, nextStage) {
+    if (isLocalDemo) {
+      mock.leads = reassignStage(mock.leads, fromStage, nextStage).leads;
+      return;
+    }
+    await rest("leads", { method: "PATCH", query: `owner_id=eq.${state.user.id}&stage=eq.${encodeURIComponent(fromStage)}`, body: { stage: nextStage }, prefer: "return=minimal" });
   },
   async getMetrics(month) {
     const { start, end } = monthBounds(month);
@@ -289,9 +349,12 @@ function setupStaticEvents() {
   $("#mobile-menu-button").addEventListener("click", () => $(".sidebar").classList.toggle("open"));
   $$(".modal-close").forEach((button) => button.addEventListener("click", () => $("#lead-dialog").close()));
   $$(".activity-close").forEach((button) => button.addEventListener("click", () => $("#activity-dialog").close()));
+  $$(".stage-close").forEach((button) => button.addEventListener("click", () => $("#stage-dialog").close()));
   $("#lead-form").addEventListener("submit", saveLeadFromDialog);
   $("#delete-lead").addEventListener("click", deleteCurrentLead);
   $("#activity-form").addEventListener("submit", saveActivityFromDialog);
+  $("#stage-add-form").addEventListener("submit", addPipelineStage);
+  $("#stage-dialog").addEventListener("click", handleStageDialogClick);
   $(".main-content").addEventListener("click", handleMainClick);
   $(".main-content").addEventListener("change", handleMainChange);
   $(".main-content").addEventListener("input", handleMainInput);
@@ -303,7 +366,7 @@ function setupStaticEvents() {
 }
 
 function populateStageOptions() {
-  $("#lead-stage").innerHTML = STAGES.map((stage) => `<option value="${stage.value}">${stage.label}</option>`).join("");
+  $("#lead-stage").innerHTML = state.stages.map((stage) => `<option value="${stage.value}">${escapeHtml(stage.label)}</option>`).join("");
 }
 
 function renderAuthMode() {
@@ -379,23 +442,30 @@ async function enterApp() {
   } finally {
     state.loading = false;
     renderAll();
+    populateStageOptions();
+    startDashboardWidgets();
   }
 }
 
 async function loadData() {
-  const [settings, metrics, leads, activities] = await Promise.all([
-    store.getSettings(), store.getMetrics(state.month), store.getLeads(), store.getActivities(),
+  const [settings, metrics, leads, activities, stages] = await Promise.all([
+    store.getSettings(state.month), store.getMetrics(state.month), store.getLeads(), store.getActivities(), store.getStages(),
   ]);
   state.settings = { ...DEFAULT_SETTINGS, ...settings };
   state.metrics = metrics;
   state.leads = leads;
   state.activities = activities;
+  state.stages = stages.map((stage) => ({ ...stage, value: stage.stage_key, label: stage.name }));
 }
 
-async function reloadMetrics() {
-  state.metrics = await store.getMetrics(state.month);
+async function reloadPeriod() {
+  const [settings, metrics] = await Promise.all([store.getSettings(state.month), store.getMetrics(state.month)]);
+  state.settings = { ...DEFAULT_SETTINGS, ...settings };
+  state.metrics = metrics;
   renderDashboard();
   renderMetrics();
+  renderGoals();
+  updateDashboardWidgets();
 }
 
 async function logout() {
@@ -436,6 +506,56 @@ function metricRowsForFilter() {
   return state.metrics.filter((row) => weekOfMonth(row.metric_date) === Number(state.week));
 }
 
+function startDashboardWidgets() {
+  clearInterval(dashboardClockTimer);
+  clearInterval(weatherRefreshTimer);
+  updateDashboardWidgets();
+  dashboardClockTimer = setInterval(updateDashboardWidgets, 1000);
+  loadWeather();
+  weatherRefreshTimer = setInterval(loadWeather, 15 * 60 * 1000);
+}
+
+function updateDashboardWidgets() {
+  const time = $("#dashboard-clock-time");
+  const date = $("#dashboard-clock-date");
+  if (time) time.textContent = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date());
+  if (date) date.textContent = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long", day: "2-digit", month: "long" }).format(new Date());
+  const weatherTemp = $("#weather-temperature");
+  const weatherSummary = $("#weather-summary");
+  const weatherFeels = $("#weather-feels");
+  if (weatherTemp) weatherTemp.textContent = state.weather ? `${Math.round(state.weather.temperature_2m)}°C` : "--°C";
+  if (weatherSummary) weatherSummary.textContent = state.weather ? weatherCodeLabel(state.weather.weather_code) : state.weatherLoading ? "Atualizando clima…" : "Clima indisponível";
+  if (weatherFeels) weatherFeels.textContent = state.weather ? `Sensação de ${Math.round(state.weather.apparent_temperature)}°C` : "CEP 08771-264";
+}
+
+async function loadWeather() {
+  state.weatherLoading = true;
+  updateDashboardWidgets();
+  try {
+    const response = await fetch(WEATHER_URL);
+    if (!response.ok) throw new Error("Falha ao consultar o clima.");
+    const payload = await response.json();
+    state.weather = payload.current || null;
+  } catch {
+    state.weather = null;
+  } finally {
+    state.weatherLoading = false;
+    updateDashboardWidgets();
+  }
+}
+
+function weatherCodeLabel(code) {
+  if (code === 0) return "Céu limpo";
+  if ([1, 2].includes(code)) return "Poucas nuvens";
+  if (code === 3) return "Nublado";
+  if ([45, 48].includes(code)) return "Neblina";
+  if ([51, 53, 55, 56, 57].includes(code)) return "Garoa";
+  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "Chuva";
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return "Neve";
+  if ([95, 96, 99].includes(code)) return "Tempestade";
+  return "Tempo variável";
+}
+
 function renderDashboard() {
   const rows = metricRowsForFilter();
   const totals = aggregateMetrics(rows, state.settings.deal_value);
@@ -456,6 +576,10 @@ function renderDashboard() {
     ${pageHead("PAINEL DE ÓRBITA", `${greeting}, ${escapeHtml(name)}.`, `Acompanhe o ritmo comercial de ${monthLabel}.`, `
       <div class="filters">${monthInput("dashboard-month")}<select id="dashboard-week" class="compact-select"><option value="all">Todas as semanas</option>${[1,2,3,4,5,6].map((w) => `<option value="${w}" ${state.week === String(w) ? "selected" : ""}>Semana ${w}</option>`).join("")}</select></div>
       <button class="button primary" data-action="open-lead">+ Novo lead</button>`)}
+    <div class="dashboard-status">
+      <article class="status-card clock-card"><span class="status-icon">◷</span><div><strong id="dashboard-clock-time">--:--:--</strong><span id="dashboard-clock-date">Horário de Brasília</span></div></article>
+      <article class="status-card weather-card"><span class="status-icon">☼</span><div><strong id="weather-temperature">--°C</strong><span><b id="weather-summary">Atualizando clima…</b> · <span id="weather-feels">CEP 08771-264</span></span></div><small>Mogi das Cruzes · SP</small></article>
+    </div>
     <div class="kpi-grid">
       ${kpi("Leads no período", totals.leads, goals.leads, "◎", progress(totals.leads, goals.leads))}
       ${kpi("Reuniões realizadas", totals.meetingsCompleted, goals.meetingsCompleted, "◷", progress(totals.meetingsCompleted, goals.meetingsCompleted))}
@@ -488,6 +612,7 @@ function renderDashboard() {
         ${upcomingActivities(4)}
       </section>
     </div>`;
+  updateDashboardWidgets();
 }
 
 function kpi(label, value, goal, icon, percentage, currency = false) {
@@ -510,16 +635,111 @@ function upcomingActivities(limit) {
 
 function renderLeads() {
   $("#view-leads").innerHTML = `
-    ${pageHead("PIPELINE COMERCIAL", "Oportunidades em movimento", "Visualize cada lead e avance as negociações sem perder contexto.", `<span class="date-chip">${state.leads.length} leads</span><button class="button primary" data-action="open-lead">+ Novo lead</button>`)}
-    <div class="kanban">${STAGES.map((stage) => {
+    ${pageHead("PIPELINE COMERCIAL", "Oportunidades em movimento", "Arraste os cards e personalize as etapas de acordo com seu processo.", `<span class="date-chip">${state.leads.length} leads</span><button class="button ghost" data-action="manage-stages">⚙ Etapas</button><button class="button primary" data-action="open-lead">+ Novo lead</button>`)}
+    <div class="kanban">${state.stages.map((stage) => {
       const leads = state.leads.filter((lead) => lead.stage === stage.value);
-      return `<section class="kanban-column" data-drop-stage="${stage.value}"><div class="kanban-head"><span><i style="--column-color:${stage.color}"></i>${stage.label}</span><b class="kanban-count">${leads.length}</b></div><div class="kanban-cards">${leads.length ? leads.map(leadCard).join("") : `<div class="empty-column">Solte um lead nesta etapa</div>`}</div></section>`;
+      return `<section class="kanban-column" data-drop-stage="${stage.value}"><div class="kanban-head"><span><i style="--column-color:${stage.color}"></i>${escapeHtml(stage.label)}</span><b class="kanban-count">${leads.length}</b></div><div class="kanban-cards">${leads.length ? leads.map(leadCard).join("") : `<div class="empty-column">Solte um lead nesta etapa</div>`}</div></section>`;
     }).join("")}</div>`;
 }
 
 function leadCard(lead) {
   const overdue = lead.next_follow_up && lead.next_follow_up < todayIso();
   return `<article class="lead-card" draggable="true" data-action="edit-lead" data-id="${lead.id}" title="Arraste para mudar de etapa ou clique para editar"><div class="lead-card-top"><div><h3>${escapeHtml(lead.name)}</h3><p>${escapeHtml(lead.clinic_name || lead.specialty || "Sem clínica informada")}</p></div><span class="lead-card-value">${formatCurrency(lead.deal_value || state.settings.deal_value)}</span></div><div class="lead-meta"><span>${escapeHtml(lead.source || "Sem origem")}</span><span class="lead-follow-up ${overdue ? "overdue" : ""}">${lead.next_follow_up ? `Follow-up ${formatDate(lead.next_follow_up)}` : "Sem follow-up"}</span></div></article>`;
+}
+
+function openStageDialog() {
+  renderStageManager();
+  $("#new-stage-name").value = "";
+  $("#stage-dialog").showModal();
+}
+
+function renderStageManager() {
+  $("#stage-list").innerHTML = state.stages.map((stage, index) => {
+    const leadCount = state.leads.filter((lead) => lead.stage === stage.value).length;
+    return `<div class="stage-editor" data-stage-id="${stage.id}">
+      <span class="stage-order">${index + 1}</span>
+      <input class="stage-color" data-stage-color type="color" value="${stage.color || "#2bdcaf"}" aria-label="Cor da etapa ${escapeHtml(stage.label)}" />
+      <label class="field"><span>Nome da etapa</span><input data-stage-name maxlength="48" value="${escapeHtml(stage.label)}" /></label>
+      <span class="stage-lead-count">${leadCount} ${leadCount === 1 ? "lead" : "leads"}</span>
+      <button class="button small" data-stage-action="save" type="button">Salvar</button>
+      <button class="icon-button danger-icon" data-stage-action="delete" type="button" aria-label="Excluir ${escapeHtml(stage.label)}">×</button>
+    </div>`;
+  }).join("");
+}
+
+async function handleStageDialogClick(event) {
+  const button = event.target.closest("[data-stage-action]");
+  if (!button) return;
+  const row = button.closest("[data-stage-id]");
+  const stage = state.stages.find((item) => item.id === row?.dataset.stageId);
+  if (!stage) return;
+  if (button.dataset.stageAction === "save") {
+    const name = row.querySelector("[data-stage-name]").value.trim();
+    const color = row.querySelector("[data-stage-color]").value;
+    if (!name) return toast("Digite um nome para a etapa.", "error");
+    button.disabled = true;
+    try {
+      const saved = await store.saveStage({ id: stage.id, name, color });
+      Object.assign(stage, { ...saved, label: saved.name || name, color });
+      populateStageOptions();
+      renderLeads();
+      renderStageManager();
+      toast("Etapa atualizada.");
+    } catch (error) {
+      button.disabled = false;
+      toast(error.message, "error");
+    }
+  }
+  if (button.dataset.stageAction === "delete") await deletePipelineStage(stage);
+}
+
+async function addPipelineStage(event) {
+  event.preventDefault();
+  const name = $("#new-stage-name").value.trim();
+  if (!name) return;
+  const submit = event.submitter;
+  submit.disabled = true;
+  try {
+    const created = await store.saveStage({
+      stage_key: `custom_${crypto.randomUUID().replaceAll("-", "")}`,
+      name,
+      color: $("#new-stage-color").value,
+      position: state.stages.length,
+    });
+    state.stages.push({ ...created, value: created.stage_key, label: created.name });
+    populateStageOptions();
+    renderLeads();
+    renderStageManager();
+    event.target.reset();
+    $("#new-stage-color").value = "#2bdcaf";
+    toast("Nova etapa adicionada ao pipeline.");
+  } catch (error) {
+    toast(error.message, "error");
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+async function deletePipelineStage(stage) {
+  if (state.stages.length <= 1) return toast("O pipeline precisa ter pelo menos uma etapa.", "error");
+  const currentIndex = state.stages.findIndex((item) => item.id === stage.id);
+  const fallback = state.stages[currentIndex + 1] || state.stages[currentIndex - 1];
+  const affected = state.leads.filter((lead) => lead.stage === stage.value).length;
+  const detail = affected ? ` Os ${affected} ${affected === 1 ? "lead será movido" : "leads serão movidos"} para “${fallback.label}”.` : "";
+  if (!confirm(`Excluir a etapa “${stage.label}”?${detail}`)) return;
+  try {
+    if (affected) await store.reassignStage(stage.value, fallback.value);
+    await store.deleteStage(stage.id);
+    state.leads = reassignStage(state.leads, stage.value, fallback.value).leads;
+    state.stages = state.stages.filter((item) => item.id !== stage.id);
+    populateStageOptions();
+    renderDashboard();
+    renderLeads();
+    renderStageManager();
+    toast("Etapa excluída.");
+  } catch (error) {
+    toast(error.message, "error");
+  }
 }
 
 function clearLeadDragVisuals() {
@@ -610,7 +830,7 @@ function renderAgenda() {
   const overdue = open.filter(isOverdue).length;
   const today = open.filter((activity) => activity.due_at?.slice(0,10) === todayIso()).length;
   $("#view-agenda").innerHTML = `
-    ${pageHead("AGENDA COMERCIAL", "Próximos passos", "Follow-ups, reuniões e contatos organizados por prazo.", `<button class="button primary" data-action="open-activity">+ Nova atividade</button>`)}
+    ${pageHead("AGENDA COMERCIAL", "Próximos passos", "Follow-ups, reuniões e contatos organizados por prazo.", `<button class="button google-button ${state.calendarEnabled ? "connected" : ""}" data-action="connect-google-calendar">${state.calendarEnabled ? "✓ Google Agenda ativo" : "G Conectar Google Agenda"}</button><button class="button primary" data-action="open-activity">+ Nova atividade</button>`)}
     <div class="agenda-layout"><section class="panel">
       <div class="agenda-group"><h2 class="agenda-group-title">PENDENTES · ${open.length}</h2>${open.length ? open.map(activityRow).join("") : emptyState("✓", "Nenhuma pendência", "Sua agenda está limpa. Crie uma atividade quando definir o próximo passo.", "")}</div>
       ${done.length ? `<div class="agenda-group"><h2 class="agenda-group-title">CONCLUÍDAS · ${done.length}</h2>${done.slice(0,8).map(activityRow).join("")}</div>` : ""}
@@ -623,7 +843,8 @@ function isOverdue(activity) {
 
 function activityRow(activity) {
   const lead = state.leads.find((item) => item.id === activity.lead_id);
-  return `<div class="activity-row"><button class="activity-check ${activity.completed_at ? "done" : ""}" data-action="toggle-activity" data-id="${activity.id}" aria-label="${activity.completed_at ? "Reabrir" : "Concluir"} atividade"></button><div class="activity-main"><b>${escapeHtml(activity.title)}</b><span>${escapeHtml(lead?.name || "Atividade geral")} · ${activityKindLabel(activity.kind)}</span></div><span class="activity-time ${isOverdue(activity) ? "overdue" : ""}">${activity.due_at ? formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Sem prazo"}</span></div>`;
+  const calendarUrl = googleCalendarUrl({ title: activity.title, dueAt: activity.due_at, details: `CRM Agência Líder Local\nLead: ${lead?.name || "Atividade geral"}\nTipo: ${activityKindLabel(activity.kind)}` });
+  return `<div class="activity-row"><button class="activity-check ${activity.completed_at ? "done" : ""}" data-action="toggle-activity" data-id="${activity.id}" aria-label="${activity.completed_at ? "Reabrir" : "Concluir"} atividade"></button><div class="activity-main"><b>${escapeHtml(activity.title)}</b><span>${escapeHtml(lead?.name || "Atividade geral")} · ${activityKindLabel(activity.kind)}</span>${state.calendarEnabled && calendarUrl ? `<a class="calendar-link" href="${calendarUrl}" target="_blank" rel="noopener">Adicionar ao Google Agenda ↗</a>` : ""}</div><span class="activity-time ${isOverdue(activity) ? "overdue" : ""}">${activity.due_at ? formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Sem prazo"}</span></div>`;
 }
 
 function activityKindLabel(value) {
@@ -632,9 +853,10 @@ function activityKindLabel(value) {
 
 function renderGoals() {
   const goals = deriveGoals(state.settings);
+  const monthLabel = formatDate(`${state.month}-01`, { month: "long", year: "numeric" });
   $("#view-goals").innerHTML = `
-    ${pageHead("METAS E CONVERSÕES", "Configure a órbita do funil", "Ao alterar a meta de leads ou uma taxa, todas as etapas são recalculadas automaticamente.", `<span class="date-chip">Baseado na planilha Métricas</span>`)}
-    <div class="goals-layout"><section class="panel"><div class="panel-head"><div><h2>Premissas editáveis</h2><span>Percentuais em escala de 0 a 100</span></div></div><form id="goals-form" class="goal-form">
+    ${pageHead("METAS E CONVERSÕES", `Metas de ${monthLabel}`, "Cada mês possui metas próprias. Ao alterar um número, todo o funil é recalculado automaticamente.", `${monthInput("goals-month")}<span class="date-chip">Meta mensal</span>`)}
+    <div class="goals-layout"><section class="panel"><div class="panel-head"><div><h2>Premissas do mês</h2><span>Percentuais em escala de 0 a 100</span></div></div><form id="goals-form" class="goal-form">
       ${goalInput("leads_goal", "Meta de leads", state.settings.leads_goal, 1)}
       ${goalInput("deal_value", "Setup + MRR (R$)", state.settings.deal_value, 100)}
       ${goalInput("lead_to_message", "Leads → mensagem (%)", state.settings.lead_to_message, .1)}
@@ -671,15 +893,17 @@ async function handleMainClick(event) {
   if (action.dataset.action === "open-lead") openLeadDialog();
   if (action.dataset.action === "edit-lead") openLeadDialog(state.leads.find((lead) => lead.id === action.dataset.id));
   if (action.dataset.action === "open-activity") openActivityDialog();
+  if (action.dataset.action === "manage-stages") openStageDialog();
+  if (action.dataset.action === "connect-google-calendar") connectGoogleCalendar();
   if (action.dataset.action === "save-metric") await saveMetricRow(action.closest("tr"));
   if (action.dataset.action === "toggle-activity") await toggleActivity(action.dataset.id);
 }
 
 async function handleMainChange(event) {
-  if (event.target.id === "dashboard-month" || event.target.id === "metrics-month") {
+  if (["dashboard-month", "metrics-month", "goals-month"].includes(event.target.id)) {
     state.month = event.target.value;
     state.week = "all";
-    try { await reloadMetrics(); } catch (error) { toast(error.message, "error"); }
+    try { await reloadPeriod(); } catch (error) { toast(error.message, "error"); }
   }
   if (event.target.id === "dashboard-week") {
     state.week = event.target.value;
@@ -752,22 +976,43 @@ function openActivityDialog() {
   $("#activity-form").reset();
   $("#activity-lead").innerHTML = `<option value="">Atividade geral</option>${state.leads.map((lead) => `<option value="${lead.id}">${escapeHtml(lead.name)}</option>`).join("")}`;
   $("#activity-due").value = `${todayIso()}T09:00`;
+  $("#activity-google").checked = state.calendarEnabled;
   $("#activity-dialog").showModal();
+}
+
+function connectGoogleCalendar() {
+  state.calendarEnabled = true;
+  localStorage.setItem(CALENDAR_KEY, "1");
+  renderAgenda();
+  window.open("https://calendar.google.com/calendar/u/0/r", "_blank", "noopener");
+  toast("Google Agenda ativado. Agora você pode enviar cada compromisso com um clique.");
 }
 
 async function saveActivityFromDialog(event) {
   event.preventDefault();
+  const openInGoogle = $("#activity-google").checked;
+  const googleWindow = openInGoogle ? window.open("about:blank", "_blank") : null;
   const payload = {
     title: $("#activity-title").value.trim(), lead_id: $("#activity-lead").value || null,
     kind: $("#activity-kind").value, due_at: $("#activity-due").value ? new Date($("#activity-due").value).toISOString() : null,
   };
   try {
-    await store.saveActivity(payload);
+    const created = await store.saveActivity(payload);
+    if (openInGoogle) {
+      state.calendarEnabled = true;
+      localStorage.setItem(CALENDAR_KEY, "1");
+      const lead = state.leads.find((item) => item.id === created.lead_id);
+      const calendarUrl = googleCalendarUrl({ title: created.title, dueAt: created.due_at, details: `CRM Agência Líder Local\nLead: ${lead?.name || "Atividade geral"}\nTipo: ${activityKindLabel(created.kind)}` });
+      if (googleWindow && calendarUrl) googleWindow.location.href = calendarUrl;
+    }
     state.activities = await store.getActivities();
     $("#activity-dialog").close();
     renderDashboard(); renderAgenda();
     toast("Atividade criada.");
-  } catch (error) { toast(error.message, "error"); }
+  } catch (error) {
+    googleWindow?.close();
+    toast(error.message, "error");
+  }
 }
 
 async function toggleActivity(id) {
@@ -801,9 +1046,10 @@ async function saveGoals(event) {
   event.preventDefault();
   const settings = Object.fromEntries($$("[data-goal-field]").map((input) => [input.dataset.goalField, Math.max(0, Number(input.value) || 0)]));
   try {
-    state.settings = await store.saveSettings(settings);
+    state.settings = await store.saveSettings(state.month, settings);
     renderDashboard(); renderMetrics(); renderGoals();
-    toast("Metas atualizadas. Todo o funil foi recalculado.");
+    updateDashboardWidgets();
+    toast("Metas do mês atualizadas. Todo o funil foi recalculado.");
   } catch (error) { toast(error.message, "error"); }
 }
 
