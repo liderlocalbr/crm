@@ -68,6 +68,10 @@ const state = {
   mapsPendingLeadPlace: null,
   mapsGuideState: "",
   mapsGuideCity: "",
+  mapsSubtab: "new",
+  mapsSavedSearches: [],
+  mapsSavedSearchesLoading: false,
+  mapsActiveSavedSearchId: null,
 };
 
 const mock = createMockData();
@@ -1050,23 +1054,134 @@ function activityRow(activity) {
   return `<div class="activity-row"><button class="activity-check ${activity.completed_at ? "done" : ""}" data-action="toggle-activity" data-id="${activity.id}" aria-label="${activity.completed_at ? "Reabrir" : "Concluir"} atividade"></button><div class="activity-main"><b>${escapeHtml(activity.title)}</b><span>${escapeHtml(lead?.name || "Atividade geral")} · ${activityKindLabel(activity.kind)}</span>${calendarAction}</div><span class="activity-time ${isOverdue(activity) ? "overdue" : ""}">${activity.due_at ? formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Sem prazo"}</span></div>`;
 }
 
+function mapsSavedTabsMarkup() {
+  return `<div class="maps-subtabs" role="tablist" aria-label="Pesquisas no Maps">
+    <button class="maps-subtab ${state.mapsSubtab === "new" ? "active" : ""}" type="button" data-action="maps-subtab-new">Nova pesquisa</button>
+    <button class="maps-subtab ${state.mapsSubtab === "saved" ? "active" : ""}" type="button" data-action="maps-subtab-saved">Pesquisas salvas <span>${state.mapsSavedSearches.length}</span></button>
+  </div>`;
+}
+
+function savedSearchesMarkup() {
+  if (state.mapsSavedSearchesLoading) return `<div class="loading">Carregando pesquisas salvas…</div>`;
+  if (!state.mapsSavedSearches.length) return emptyState("▣", "Nenhuma pesquisa salva", "Faça uma busca no Maps e salve os resultados para reutilizá-los sem consumir a API.", "");
+  return `<div class="saved-searches-list">${state.mapsSavedSearches.map((search) => `<article class="saved-search-card">
+    <div class="saved-search-main"><div class="saved-search-title-row"><h3>${escapeHtml(search.name)}</h3><span class="saved-search-count">${Number(search.result_count || 0)} empresas</span></div>
+      <p class="saved-search-query"><b>${escapeHtml(search.keyword)}</b> · ${escapeHtml(search.locality)}</p>
+      <div class="saved-search-meta"><span>${search.is_complete ? "Pesquisa completa" : "Pesquisa com mais resultados disponíveis"}</span><span>Filtro: ${{ all: "Todas", new: "Não prospectadas", prospected: "Já prospectadas", lead: "Já adicionadas como lead" }[search.prospect_filter] || "Todas"}</span>${search.guide_city ? `<span>Guia: ${escapeHtml(search.guide_city)}</span>` : ""}<span>Atualizada ${formatDate(search.updated_at, { day: "2-digit", month: "short", year: "numeric" })}</span></div>
+    </div><div class="saved-search-actions"><button class="button primary small" type="button" data-action="open-saved-search" data-id="${escapeHtml(search.id)}">Abrir pesquisa</button><button class="button ghost small" type="button" data-action="delete-saved-search" data-id="${escapeHtml(search.id)}">Excluir</button></div>
+  </article>`).join("")}</div>`;
+}
+
+async function loadSavedSearches() {
+  if (isLocalDemo || !state.user) return [];
+  state.mapsSavedSearchesLoading = true;
+  renderMapsSearch();
+  try {
+    state.mapsSavedSearches = await rest("saved_place_searches", { query: `owner_id=eq.${state.user.id}&select=id,name,keyword,locality,guide_state,guide_city,prospect_filter,result_count,is_complete,last_opened_at,created_at,updated_at&order=updated_at.desc&limit=100` }) || [];
+    return state.mapsSavedSearches;
+  } finally {
+    state.mapsSavedSearchesLoading = false;
+    renderMapsSearch();
+  }
+}
+
+async function loadSavedSearchResults(savedSearchId) {
+  if (isLocalDemo) return [];
+  const rows = await rest("saved_place_search_results", { query: `saved_search_id=eq.${savedSearchId}&select=place_id,name,address,phone,website,rating,rating_count,maps_url,position&order=position.asc&limit=150` }) || [];
+  return rows.map((row) => ({ id: row.place_id, name: row.name, address: row.address || "", phone: row.phone || "", website: row.website || "", rating: row.rating == null ? null : Number(row.rating), ratingCount: Number(row.rating_count || 0), mapsUrl: row.maps_url || "", position: row.position }));
+}
+
+async function persistSavedSearchResults(savedSearchId) {
+  if (isLocalDemo || !savedSearchId) return;
+  await rest("saved_place_search_results", { method: "DELETE", query: `saved_search_id=eq.${savedSearchId}`, prefer: "return=minimal" });
+  const rows = state.mapsResults.slice(0, 150).map((place, position) => ({ saved_search_id: savedSearchId, place_id: String(place.id), name: place.name, address: place.address || "", phone: place.phone || "", website: place.website || "", rating: place.rating ?? null, rating_count: place.ratingCount ?? null, maps_url: place.mapsUrl || "", position }));
+  if (rows.length) await rest("saved_place_search_results", { method: "POST", body: rows, prefer: "return=minimal" });
+  await rest("saved_place_searches", { method: "PATCH", query: `id=eq.${savedSearchId}`, body: { result_count: state.mapsResults.length, is_complete: !state.mapsHasMore, updated_at: new Date().toISOString() }, prefer: "return=minimal" });
+}
+
+async function saveCurrentSearch() {
+  if (isLocalDemo || !state.mapsSearched || !state.mapsResults.length) return;
+  const defaultName = `${state.mapsKeyword} · ${state.mapsLocality}`;
+  const name = window.prompt("Dê um nome para esta pesquisa:", defaultName)?.trim();
+  if (!name) return;
+  if (name.length < 2) { toast("Use um nome com pelo menos 2 caracteres.", "error"); return; }
+  const current = state.mapsSavedSearches.find((item) => item.name.trim().toLowerCase() === name.toLowerCase());
+  const body = { name, keyword: mapsCacheValue(state.mapsKeyword), locality: mapsCacheValue(state.mapsLocality), guide_state: state.mapsGuideState || null, guide_city: state.mapsGuideCity || null, prospect_filter: state.mapsProspectFilter || "all", result_count: state.mapsResults.length, is_complete: !state.mapsHasMore, updated_at: new Date().toISOString() };
+  let savedSearchId = current?.id || null;
+  if (current) {
+    await rest("saved_place_searches", { method: "PATCH", query: `id=eq.${current.id}`, body, prefer: "return=minimal" });
+  } else {
+    const created = await rest("saved_place_searches", { method: "POST", body: { owner_id: state.user.id, ...body }, prefer: "return=representation" });
+    savedSearchId = created?.[0]?.id || null;
+  }
+  await persistSavedSearchResults(savedSearchId);
+  state.mapsActiveSavedSearchId = savedSearchId;
+  await loadSavedSearches();
+  toast("Pesquisa salva. Você poderá reabri-la sem consumir a Serper.");
+}
+
+async function openSavedSearch(id) {
+  const saved = state.mapsSavedSearches.find((item) => item.id === id);
+  if (!saved) return;
+  state.mapsSubtab = "new";
+  state.mapsActiveSavedSearchId = saved.id;
+  state.mapsKeyword = saved.keyword;
+  state.mapsLocality = saved.locality;
+  state.mapsGuideState = saved.guide_state || "";
+  state.mapsGuideCity = saved.guide_city || "";
+  state.mapsProspectFilter = saved.prospect_filter || "all";
+  state.mapsLoading = true;
+  state.mapsError = "";
+  renderMapsSearch();
+  try {
+    const savedPlaces = await loadSavedSearchResults(saved.id).catch(() => []);
+    const cachedPlaces = savedPlaces.length ? savedPlaces : await loadCachedPlaces(state.mapsKeyword, state.mapsLocality);
+    state.mapsResults = dedupePlaces(cachedPlaces);
+    const run = await loadSearchRun(state.mapsKeyword, state.mapsLocality).catch(() => null);
+    state.mapsSearchCenter = run?.search_center || "";
+    state.mapsSearchBatch = Math.max(0, Math.ceil(state.mapsResults.length / 20) - 1);
+    state.mapsHasMore = state.mapsResults.length < 150 && !run?.completed_at;
+    await loadPlaceReferences(state.mapsResults);
+    state.mapsSearched = true;
+    await rest("saved_place_searches", { method: "PATCH", query: `id=eq.${saved.id}`, body: { last_opened_at: new Date().toISOString(), updated_at: new Date().toISOString() }, prefer: "return=minimal" });
+    toast(`${state.mapsResults.length} resultado(s) carregado(s) do histórico, sem consumir a Serper.`);
+  } catch (error) {
+    state.mapsError = error.message;
+  } finally {
+    state.mapsLoading = false;
+    renderMapsSearch();
+  }
+}
+
+async function deleteSavedSearch(id) {
+  const saved = state.mapsSavedSearches.find((item) => item.id === id);
+  if (!saved || !window.confirm(`Excluir a pesquisa salva “${saved.name}”? Os resultados em cache não serão apagados.`)) return;
+  await rest("saved_place_searches", { method: "DELETE", query: `id=eq.${id}`, prefer: "return=minimal" });
+  await loadSavedSearches();
+  toast("Pesquisa salva excluída.");
+}
+
 function renderMapsSearch() {
   const section = $("#view-maps");
   if (!section) return;
+  const content = state.mapsSubtab === "saved"
+    ? `<section class="panel saved-searches-panel">${savedSearchesMarkup()}</section>`
+    : `<section class="maps-search-layout">
+        <section class="panel">
+          <form id="maps-search-form" class="form-grid">
+            <label class="field"><span>Palavra-chave</span><input id="maps-keyword" required minlength="2" placeholder="Ex.: dentista" value="${escapeHtml(state.mapsKeyword)}" /></label>
+            <label class="field"><span>Cidade – região</span><input id="maps-locality" required minlength="2" placeholder="Ex.: Mogi das Cruzes - SP" value="${escapeHtml(state.mapsLocality)}" /></label>
+            <button class="button primary" type="submit" ${state.mapsLoading ? "disabled" : ""}>${state.mapsLoading ? "Buscando…" : "Buscar no Maps"}</button>
+          </form>
+        </section>
+        ${cityGuideMarkup()}
+      </section>
+      <section class="panel">${mapsResultsMarkup()}</section>`;
   section.innerHTML = `
     ${pageHead("PROSPECÇÃO", "Buscar leads no Maps", "Encontre clínicas e profissionais por palavra-chave e cidade usando o Google Maps.")}
-    <section class="maps-search-layout">
-      <section class="panel">
-        <form id="maps-search-form" class="form-grid">
-          <label class="field"><span>Palavra-chave</span><input id="maps-keyword" required minlength="2" placeholder="Ex.: dentista" value="${escapeHtml(state.mapsKeyword)}" /></label>
-          <label class="field"><span>Cidade – região</span><input id="maps-locality" required minlength="2" placeholder="Ex.: Mogi das Cruzes - SP" value="${escapeHtml(state.mapsLocality)}" /></label>
-          <button class="button primary" type="submit" ${state.mapsLoading ? "disabled" : ""}>${state.mapsLoading ? "Buscando…" : "Buscar no Maps"}</button>
-        </form>
-      </section>
-      ${cityGuideMarkup()}
-    </section>
-    <section class="panel">${mapsResultsMarkup()}</section>`;
-  $("#maps-search-form").addEventListener("submit", handleMapsSearch);
+    ${mapsSavedTabsMarkup()}
+    ${content}`;
+  $("#maps-search-form")?.addEventListener("submit", handleMapsSearch);
   bindCityGuide();
 }
 
@@ -1154,7 +1269,7 @@ function mapsResultsMarkup() {
   if (!state.mapsSearched) return emptyState("⌖", "Busque por leads no Maps", "Digite uma palavra-chave (ex.: dentista) e uma cidade para encontrar clínicas e profissionais.", "");
   if (!state.mapsResults.length) return emptyState("⌖", "Nada encontrado", "Tente outra palavra-chave ou cidade.", "");
   const places = filteredMapsResults();
-  const filter = `<div class="maps-results-toolbar"><div><b>${state.mapsResults.length} empresa(s) encontrada(s)</b>${state.mapsResults.length < 150 && state.mapsHasMore ? " · ainda há mais resultados" : ""}</div><select id="maps-prospect-filter" class="compact-select"><option value="all" ${state.mapsProspectFilter === "all" ? "selected" : ""}>Todas</option><option value="new" ${state.mapsProspectFilter === "new" ? "selected" : ""}>Não prospectadas</option><option value="prospected" ${state.mapsProspectFilter === "prospected" ? "selected" : ""}>Já prospectadas</option><option value="lead" ${state.mapsProspectFilter === "lead" ? "selected" : ""}>Já adicionadas como lead</option></select></div>`;
+  const filter = `<div class="maps-results-toolbar"><div><b>${state.mapsResults.length} empresa(s) encontrada(s)</b>${state.mapsResults.length < 150 && state.mapsHasMore ? " · ainda há mais resultados" : ""}</div><div class="maps-results-toolbar-actions"><select id="maps-prospect-filter" class="compact-select"><option value="all" ${state.mapsProspectFilter === "all" ? "selected" : ""}>Todas</option><option value="new" ${state.mapsProspectFilter === "new" ? "selected" : ""}>Não prospectadas</option><option value="prospected" ${state.mapsProspectFilter === "prospected" ? "selected" : ""}>Já prospectadas</option><option value="lead" ${state.mapsProspectFilter === "lead" ? "selected" : ""}>Já adicionadas como lead</option></select><button class="button ghost small" type="button" data-action="save-maps-search">Salvar pesquisa</button></div></div>`;
   const more = state.mapsHasMore && state.mapsResults.length < 150 ? `<button class="button ghost maps-load-more" type="button" data-action="load-more-places">Buscar mais 20 (${state.mapsResults.length}/150)</button>` : "";
   if (!places.length) return `${filter}${emptyState("⌖", "Nenhuma empresa neste filtro", "Altere o filtro para visualizar os demais resultados.", "")}${more}`;
   return `${filter}<div class="maps-results">${places.map(mapsResultCard).join("")}</div>${more}`;
@@ -1372,6 +1487,7 @@ async function loadMorePlaces() {
     state.mapsHasMore = Boolean(payload.hasMore) && state.mapsResults.length < 150;
     await applyPlacesResults(payload.places, state.mapsKeyword, state.mapsLocality, true, true);
     await saveSearchRun(state.mapsKeyword, state.mapsLocality, { returnedCount: state.mapsResults.length, center: state.mapsSearchCenter, completed: !state.mapsHasMore }).catch((runError) => console.warn("maps_run_write_failed", runError?.message));
+    if (state.mapsActiveSavedSearchId) await persistSavedSearchResults(state.mapsActiveSavedSearchId).catch((savedError) => console.warn("saved_search_results_write_failed", savedError?.message));
   } catch (error) {
     state.mapsError = error.message;
     state.mapsLoading = false;
@@ -1579,6 +1695,11 @@ async function handleMainClick(event) {
   if (action.dataset.action === "add-place-lead") await addPlaceAsLead(action.dataset.placeId);
   if (action.dataset.action === "register-place-prospect") await registerPlaceProspect(action.dataset.placeId);
   if (action.dataset.action === "load-more-places") await loadMorePlaces();
+  if (action.dataset.action === "save-maps-search") await saveCurrentSearch();
+  if (action.dataset.action === "maps-subtab-new") { state.mapsSubtab = "new"; renderMapsSearch(); }
+  if (action.dataset.action === "maps-subtab-saved") { state.mapsSubtab = "saved"; await loadSavedSearches(); }
+  if (action.dataset.action === "open-saved-search") await openSavedSearch(action.dataset.id);
+  if (action.dataset.action === "delete-saved-search") await deleteSavedSearch(action.dataset.id);
   if (action.dataset.action === "retry-pending-search") await retryPendingSearch();
   if (action.dataset.action === "open-day") openDayDialog(action.dataset.date);
 }
