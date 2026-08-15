@@ -1,11 +1,29 @@
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "../config.js";
 
 // Endpoint serverless da Vercel: GET /api/places-search?keyword=...&locality=...
-// Submete um job assíncrono (Push-Pull) à Oxylabs usando source: google_maps com
-// múltiplas páginas, pra trazer bem mais que os 3 resultados do local_pack da busca
-// normal. Quem consulta o resultado é /api/places-search-status.js.
+// Submete um job assíncrono (Push-Pull) à Oxylabs usando o parser dedicado de
+// google_search. A busca local aparece no local_pack estruturado da resposta
+// parseada; quem consulta o resultado é /api/places-search-status.js.
 
 export const config = { maxDuration: 20 };
+
+const BRAZILIAN_STATE_NAMES = {
+  AC: "Acre", AL: "Alagoas", AP: "Amapá", AM: "Amazonas", BA: "Bahia", CE: "Ceará",
+  DF: "Distrito Federal", ES: "Espírito Santo", GO: "Goiás", MA: "Maranhão", MT: "Mato Grosso",
+  MS: "Mato Grosso do Sul", MG: "Minas Gerais", PA: "Pará", PB: "Paraíba", PR: "Paraná",
+  PE: "Pernambuco", PI: "Piauí", RJ: "Rio de Janeiro", RN: "Rio Grande do Norte", RS: "Rio Grande do Sul",
+  RO: "Rondônia", RR: "Roraima", SC: "Santa Catarina", SP: "São Paulo", SE: "Sergipe", TO: "Tocantins",
+};
+
+function buildGeoLocation(locality) {
+  const parts = locality.split(/\s*(?:-|,)\s*/).map((part) => part.trim()).filter(Boolean);
+  if (parts.length >= 2) {
+    const city = parts[0];
+    const state = BRAZILIAN_STATE_NAMES[parts.at(-1).toUpperCase()] || parts.at(-1);
+    return `${city},${state},Brazil`;
+  }
+  return `${parts[0] || locality},Brazil`;
+}
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store, max-age=0");
@@ -50,14 +68,24 @@ export default async function handler(req, res) {
       .replace(/\s*,\s*/g, " "); // Remove vírgulas: "São Paulo, SP" → "São Paulo SP"
     
     const query = `${keyword} em ${normalizedLocality}`;
-    
+    const geoLocation = buildGeoLocation(locality);
+
     const submitResponse = await fetch("https://data.oxylabs.io/v1/queries", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`,
       },
-      body: JSON.stringify({ source: "google_maps", query, pages: 1 }),
+      body: JSON.stringify({
+        // google_maps não possui parser dedicado; google_search parseado entrega
+        // o local_pack estruturado que a interface já sabe renderizar.
+        source: "google_search",
+        query,
+        geo_location: geoLocation,
+        locale: "pt-BR",
+        parse: true,
+        pages: 1,
+      }),
     });
     const payload = await submitResponse.json().catch(() => null);
     if (!submitResponse.ok || !payload?.id) {
@@ -65,7 +93,7 @@ export default async function handler(req, res) {
       res.status(submitResponse.status || 502).json({ message: payload?.message || payload?.status || "Não foi possível iniciar a busca na Oxylabs." });
       return;
     }
-    console.log("oxylabs_job_submitted", payload.id, keyword, locality, "→", query);
+    console.log("oxylabs_job_submitted", payload.id, keyword, locality, "→", query, "geo:", geoLocation);
     res.status(200).json({ jobId: payload.id });
   } catch (error) {
     console.log("oxylabs_submit_exception", error.message);
