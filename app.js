@@ -72,6 +72,8 @@ const state = {
   mapsSavedSearches: [],
   mapsSavedSearchesLoading: false,
   mapsActiveSavedSearchId: null,
+  mapsSelectedPlaceIds: [],
+  mapsViewMode: "cards",
 };
 
 const mock = createMockData();
@@ -1130,6 +1132,7 @@ async function openSavedSearch(id) {
   state.mapsGuideState = saved.guide_state || "";
   state.mapsGuideCity = saved.guide_city || "";
   state.mapsProspectFilter = saved.prospect_filter || "all";
+  state.mapsSelectedPlaceIds = [];
   state.mapsLoading = true;
   state.mapsError = "";
   renderMapsSearch();
@@ -1260,6 +1263,24 @@ function filteredMapsResults() {
   });
 }
 
+function mapsSelectionToolbar(places) {
+  const selectedCount = state.mapsSelectedPlaceIds.filter((id) => state.mapsResults.some((place) => place.id === id)).length;
+  const stageOptions = state.stages.map((stage) => `<option value="${escapeHtml(stage.value)}">${escapeHtml(stage.label)}</option>`).join("");
+  return `<div class="maps-selection-toolbar ${selectedCount ? "has-selection" : ""}">
+    <div class="maps-selection-summary"><label class="maps-select-all"><input type="checkbox" id="maps-select-visible" ${places.length && places.every((place) => state.mapsSelectedPlaceIds.includes(place.id)) ? "checked" : ""} /><span></span></label><b>${selectedCount ? `${selectedCount} selecionada(s)` : "Selecione empresas"}</b><button class="text-button" type="button" data-action="select-visible-places">Selecionar resultados visíveis</button></div>
+    ${selectedCount ? `<div class="maps-bulk-actions"><select id="maps-bulk-stage" class="compact-select" aria-label="Etapa do funil">${stageOptions}</select><button class="button primary small" type="button" data-action="add-selected-to-funnel">Adicionar ao funil</button><button class="button ghost small" type="button" data-action="clear-place-selection">Limpar seleção</button></div>` : ""}
+  </div>`;
+}
+
+function mapsResultActions(place, reference, lead) {
+  const action = lead ? `<button class="button ghost small" type="button" data-action="edit-lead" data-id="${escapeHtml(lead.id)}">Abrir lead</button>` : `<button class="button primary small" type="button" data-action="register-place-prospect" data-place-id="${escapeHtml(place.id)}">${reference ? "Atualizar prospecção" : "Registrar prospecção"}</button>`;
+  return `${place.mapsUrl ? `<a class="button ghost small" href="${escapeHtml(place.mapsUrl)}" target="_blank" rel="noopener">Ver no Maps ↗</a>` : ""}${reference ? `<select class="compact-select prospect-status-select" data-place-id="${escapeHtml(place.id)}" aria-label="Status da prospecção"><option value="prospected" ${reference.status === "prospected" ? "selected" : ""}>Prospectada</option><option value="contacted" ${reference.status === "contacted" ? "selected" : ""}>Em contato</option><option value="converted" ${reference.status === "converted" ? "selected" : ""}>Convertida</option><option value="discarded" ${reference.status === "discarded" ? "selected" : ""}>Descartada</option></select>` : ""}${action}${lead ? "" : `<button class="button primary small" type="button" data-action="add-place-lead" data-place-id="${escapeHtml(place.id)}">+ Adicionar como lead</button>`}`;
+}
+
+function placeSelectionMarkup(place) {
+  return `<label class="maps-place-selector" title="Selecionar ${escapeHtml(place.name)}"><input type="checkbox" class="maps-place-select" data-place-id="${escapeHtml(place.id)}" ${state.mapsSelectedPlaceIds.includes(place.id) ? "checked" : ""} /><span></span></label>`;
+}
+
 function mapsResultsMarkup() {
   if (state.mapsLoading) return `<div class="loading">${escapeHtml(state.mapsStatusMessage || "Buscando no Google Maps…")}</div>`;
   if (state.mapsError) {
@@ -1269,10 +1290,19 @@ function mapsResultsMarkup() {
   if (!state.mapsSearched) return emptyState("⌖", "Busque por leads no Maps", "Digite uma palavra-chave (ex.: dentista) e uma cidade para encontrar clínicas e profissionais.", "");
   if (!state.mapsResults.length) return emptyState("⌖", "Nada encontrado", "Tente outra palavra-chave ou cidade.", "");
   const places = filteredMapsResults();
-  const filter = `<div class="maps-results-toolbar"><div><b>${state.mapsResults.length} empresa(s) encontrada(s)</b>${state.mapsResults.length < 150 && state.mapsHasMore ? " · ainda há mais resultados" : ""}</div><div class="maps-results-toolbar-actions"><select id="maps-prospect-filter" class="compact-select"><option value="all" ${state.mapsProspectFilter === "all" ? "selected" : ""}>Todas</option><option value="new" ${state.mapsProspectFilter === "new" ? "selected" : ""}>Não prospectadas</option><option value="prospected" ${state.mapsProspectFilter === "prospected" ? "selected" : ""}>Já prospectadas</option><option value="lead" ${state.mapsProspectFilter === "lead" ? "selected" : ""}>Já adicionadas como lead</option></select><button class="button ghost small" type="button" data-action="save-maps-search">Salvar pesquisa</button></div></div>`;
+  const filter = `<div class="maps-results-toolbar"><div><b>${state.mapsResults.length} empresa(s) encontrada(s)</b>${state.mapsResults.length < 150 && state.mapsHasMore ? " · ainda há mais resultados" : ""}</div><div class="maps-results-toolbar-actions"><select id="maps-prospect-filter" class="compact-select"><option value="all" ${state.mapsProspectFilter === "all" ? "selected" : ""}>Todas</option><option value="new" ${state.mapsProspectFilter === "new" ? "selected" : ""}>Não prospectadas</option><option value="prospected" ${state.mapsProspectFilter === "prospected" ? "selected" : ""}>Já prospectadas</option><option value="lead" ${state.mapsProspectFilter === "lead" ? "selected" : ""}>Já adicionadas como lead</option></select><button class="button ghost small" type="button" data-action="save-maps-search">Salvar pesquisa</button><div class="maps-view-toggle"><button class="${state.mapsViewMode === "cards" ? "active" : ""}" type="button" data-action="maps-view-cards">Cards</button><button class="${state.mapsViewMode === "list" ? "active" : ""}" type="button" data-action="maps-view-list">Lista</button></div></div></div>`;
   const more = state.mapsHasMore && state.mapsResults.length < 150 ? `<button class="button ghost maps-load-more" type="button" data-action="load-more-places">Buscar mais 20 (${state.mapsResults.length}/150)</button>` : "";
-  if (!places.length) return `${filter}${emptyState("⌖", "Nenhuma empresa neste filtro", "Altere o filtro para visualizar os demais resultados.", "")}${more}`;
-  return `${filter}<div class="maps-results">${places.map(mapsResultCard).join("")}</div>${more}`;
+  const content = places.length ? (state.mapsViewMode === "list" ? `<div class="maps-results-list">${places.map(mapsResultListRow).join("")}</div>` : `<div class="maps-results">${places.map(mapsResultCard).join("")}</div>`) : emptyState("⌖", "Nenhuma empresa neste filtro", "Altere o filtro para visualizar os demais resultados.", "");
+  return `${filter}${mapsSelectionToolbar(places)}${content}${more}`;
+}
+
+function mapsResultListRow(place) {
+  const reference = placeTracking(place);
+  const lead = reference?.lead_id ? state.leads.find((item) => item.id === reference.lead_id) : null;
+  const status = prospectStatusMeta(reference?.status);
+  const statusMarkup = status ? `<span class="prospect-badge ${status.className}">${status.label}</span>` : `<span class="prospect-badge new">Nova</span>`;
+  const rowState = status ? `prospect-state-${status.className}` : "prospect-state-new";
+  return `<div class="maps-result-row ${rowState}">${placeSelectionMarkup(place)}<div class="maps-list-main"><b>${escapeHtml(place.name)}</b><span>${escapeHtml(place.address || "Sem endereço")}</span></div><div class="maps-list-contact"><span>${escapeHtml(place.phone || "Sem telefone")}</span>${place.rating ? `<span>★ ${place.rating} (${place.ratingCount || 0})</span>` : ""}</div><div>${statusMarkup}</div><div class="maps-list-actions">${mapsResultActions(place, reference, lead)}</div></div>`;
 }
 
 function mapsResultCard(place) {
@@ -1280,18 +1310,10 @@ function mapsResultCard(place) {
   const lead = reference?.lead_id ? state.leads.find((item) => item.id === reference.lead_id) : null;
   const status = prospectStatusMeta(reference?.status);
   const statusMarkup = status ? `<span class="prospect-badge ${status.className}">${status.label}${reference.prospected_at ? ` · ${formatDate(reference.prospected_at, { day: "2-digit", month: "short" })}` : ""}</span>` : `<span class="prospect-badge new">Nova</span>`;
-  const action = lead ? `<button class="button ghost small" type="button" data-action="edit-lead" data-id="${escapeHtml(lead.id)}">Abrir lead</button>` : `<button class="button primary small" type="button" data-action="register-place-prospect" data-place-id="${escapeHtml(place.id)}">${reference ? "Atualizar prospecção" : "Registrar prospecção"}</button>`;
   const cardStateClass = status ? `prospect-state-${status.className}` : "prospect-state-new";
-  return `<div class="lead-card maps-result-card ${cardStateClass}">
+  return `<div class="lead-card maps-result-card ${cardStateClass}">${placeSelectionMarkup(place)}
     <div class="lead-card-top"><div><h3>${escapeHtml(place.name)}</h3>${statusMarkup}</div>${place.rating ? `<span class="lead-card-value">★ ${place.rating} (${place.ratingCount || 0})</span>` : ""}</div>
-    <p>${escapeHtml(place.address)}</p>
-    ${place.phone ? `<p>${escapeHtml(place.phone)}</p>` : ""}
-    <div class="maps-result-actions">
-      ${place.mapsUrl ? `<a class="button ghost small" href="${escapeHtml(place.mapsUrl)}" target="_blank" rel="noopener">Ver no Maps ↗</a>` : ""}
-      ${reference ? `<select class="compact-select prospect-status-select" data-place-id="${escapeHtml(place.id)}" aria-label="Status da prospecção"><option value="prospected" ${reference.status === "prospected" ? "selected" : ""}>Prospectada</option><option value="contacted" ${reference.status === "contacted" ? "selected" : ""}>Em contato</option><option value="converted" ${reference.status === "converted" ? "selected" : ""}>Convertida</option><option value="discarded" ${reference.status === "discarded" ? "selected" : ""}>Descartada</option></select>` : ""}
-      ${action}
-      ${lead ? "" : `<button class="button primary small" type="button" data-action="add-place-lead" data-place-id="${escapeHtml(place.id)}">+ Adicionar como lead</button>`}
-    </div>
+    <p>${escapeHtml(place.address)}</p>${place.phone ? `<p>${escapeHtml(place.phone)}</p>` : ""}<div class="maps-result-actions">${mapsResultActions(place, reference, lead)}</div>
   </div>`;
 }
 
@@ -1432,6 +1454,8 @@ async function handleMapsSearch(event) {
   state.mapsSearchCenter = "";
   state.mapsHasMore = false;
   state.mapsProspectFilter = "all";
+  state.mapsSelectedPlaceIds = [];
+  state.mapsActiveSavedSearchId = null;
   state.mapsError = "";
   state.mapsPendingJobId = null;
   renderMapsSearch();
@@ -1604,6 +1628,49 @@ async function updatePlaceStatus(placeId, status) {
   }
 }
 
+function togglePlaceSelection(placeId, checked) {
+  const selected = new Set(state.mapsSelectedPlaceIds);
+  checked ? selected.add(placeId) : selected.delete(placeId);
+  state.mapsSelectedPlaceIds = [...selected];
+  renderMapsSearch();
+}
+
+function selectVisiblePlaces() {
+  const visible = filteredMapsResults();
+  const selected = new Set(state.mapsSelectedPlaceIds);
+  const allSelected = visible.length > 0 && visible.every((place) => selected.has(place.id));
+  visible.forEach((place) => allSelected ? selected.delete(place.id) : selected.add(place.id));
+  state.mapsSelectedPlaceIds = [...selected];
+  renderMapsSearch();
+}
+
+async function addSelectedPlacesToFunnel() {
+  const selected = state.mapsResults.filter((place) => state.mapsSelectedPlaceIds.includes(place.id));
+  const stage = $("#maps-bulk-stage")?.value || state.stages[0]?.value || "new";
+  if (!selected.length) { toast("Selecione pelo menos uma empresa.", "error"); return; }
+  if (!selected.some((place) => !state.leads.some((lead) => lead.place_id === place.id))) { toast("As empresas selecionadas já estão no funil.", "error"); return; }
+  const stageLabel = state.stages.find((item) => item.value === stage)?.label || stage;
+  if (!window.confirm(`Adicionar ${selected.length} empresa(s) ao funil na etapa “${stageLabel}”?`)) return;
+  let added = 0;
+  let skipped = 0;
+  try {
+    for (const place of selected) {
+      const existing = state.leads.find((lead) => lead.place_id === place.id);
+      if (existing) { skipped += 1; continue; }
+      const created = await store.saveLead({ name: place.name, clinic_name: place.name, specialty: place.category || state.mapsKeyword, stage, source: "Google Maps", whatsapp: place.phone || "", email: "", deal_value: state.settings.deal_value, next_follow_up: null, notes: [place.address, place.website, place.mapsUrl].filter(Boolean).join("\\n"), place_id: place.id });
+      state.leads.unshift(created);
+      await savePlaceReference(place, { status: "prospected", leadId: created.id });
+      added += 1;
+    }
+    state.mapsSelectedPlaceIds = [];
+    renderMapsSearch();
+    toast(`${added} empresa(s) adicionada(s) ao funil${skipped ? ` · ${skipped} já existia(m)` : ""}.`);
+  } catch (error) {
+    toast(error.message || "Não foi possível adicionar as empresas ao funil.", "error");
+    renderMapsSearch();
+  }
+}
+
 async function addPlaceAsLead(placeId) {
   const place = state.mapsResults.find((item) => item.id === placeId);
   if (!place) return;
@@ -1696,6 +1763,11 @@ async function handleMainClick(event) {
   if (action.dataset.action === "register-place-prospect") await registerPlaceProspect(action.dataset.placeId);
   if (action.dataset.action === "load-more-places") await loadMorePlaces();
   if (action.dataset.action === "save-maps-search") await saveCurrentSearch();
+  if (action.dataset.action === "select-visible-places") selectVisiblePlaces();
+  if (action.dataset.action === "clear-place-selection") { state.mapsSelectedPlaceIds = []; renderMapsSearch(); }
+  if (action.dataset.action === "add-selected-to-funnel") await addSelectedPlacesToFunnel();
+  if (action.dataset.action === "maps-view-cards") { state.mapsViewMode = "cards"; renderMapsSearch(); }
+  if (action.dataset.action === "maps-view-list") { state.mapsViewMode = "list"; renderMapsSearch(); }
   if (action.dataset.action === "maps-subtab-new") { state.mapsSubtab = "new"; renderMapsSearch(); }
   if (action.dataset.action === "maps-subtab-saved") { state.mapsSubtab = "saved"; await loadSavedSearches(); }
   if (action.dataset.action === "open-saved-search") await openSavedSearch(action.dataset.id);
@@ -1714,6 +1786,8 @@ async function handleMainChange(event) {
     state.mapsProspectFilter = event.target.value;
     renderMapsSearch();
   }
+  if (event.target.id === "maps-select-visible") selectVisiblePlaces();
+  if (event.target.classList.contains("maps-place-select")) togglePlaceSelection(event.target.dataset.placeId, event.target.checked);
   if (event.target.classList.contains("prospect-status-select")) updatePlaceStatus(event.target.dataset.placeId, event.target.value);
   if (event.target.id === "agenda-month") {
     state.agendaMonth = event.target.value;
