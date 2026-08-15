@@ -1298,21 +1298,23 @@ function mapsResultsMarkup() {
 
 function mapsResultListRow(place) {
   const reference = placeTracking(place);
-  const lead = reference?.lead_id ? state.leads.find((item) => item.id === reference.lead_id) : null;
+  const lead = state.leads.find((item) => item.place_id === place.id) || (reference?.lead_id ? state.leads.find((item) => item.id === reference.lead_id) : null);
   const status = prospectStatusMeta(reference?.status);
-  const statusMarkup = status ? `<span class="prospect-badge ${status.className}">${status.label}</span>` : `<span class="prospect-badge new">Nova</span>`;
-  const rowState = status ? `prospect-state-${status.className}` : "prospect-state-new";
-  return `<div class="maps-result-row ${rowState}">${placeSelectionMarkup(place)}<div class="maps-list-main"><b>${escapeHtml(place.name)}</b><span>${escapeHtml(place.address || "Sem endereço")}</span></div><div class="maps-list-contact"><span>${escapeHtml(place.phone || "Sem telefone")}</span>${place.rating ? `<span>★ ${place.rating} (${place.ratingCount || 0})</span>` : ""}</div><div>${statusMarkup}</div><div class="maps-list-actions">${mapsResultActions(place, reference, lead)}</div></div>`;
+  const funnelTag = lead ? `<span class="funnel-badge">● No funil</span>` : "";
+  const statusMarkup = `${status ? `<span class="prospect-badge ${status.className}">${status.label}</span>` : `<span class="prospect-badge new">Nova</span>`}${funnelTag}`;
+  const rowState = `${status ? `prospect-state-${status.className}` : "prospect-state-new"}${lead ? " maps-in-funnel" : ""}`;
+  return `<div class="maps-result-row ${rowState}">${placeSelectionMarkup(place)}<div class="maps-list-main"><b>${escapeHtml(place.name)}</b><span>${escapeHtml(place.address || "Sem endereço")}</span></div><div class="maps-list-contact"><span>${escapeHtml(place.phone || "Sem telefone")}</span>${place.rating ? `<span>★ ${place.rating} (${place.ratingCount || 0})</span>` : ""}</div><div class="maps-list-status">${statusMarkup}</div><div class="maps-list-actions">${mapsResultActions(place, reference, lead)}</div></div>`;
 }
 
 function mapsResultCard(place) {
   const reference = placeTracking(place);
-  const lead = reference?.lead_id ? state.leads.find((item) => item.id === reference.lead_id) : null;
+  const lead = state.leads.find((item) => item.place_id === place.id) || (reference?.lead_id ? state.leads.find((item) => item.id === reference.lead_id) : null);
   const status = prospectStatusMeta(reference?.status);
-  const statusMarkup = status ? `<span class="prospect-badge ${status.className}">${status.label}${reference.prospected_at ? ` · ${formatDate(reference.prospected_at, { day: "2-digit", month: "short" })}` : ""}</span>` : `<span class="prospect-badge new">Nova</span>`;
-  const cardStateClass = status ? `prospect-state-${status.className}` : "prospect-state-new";
+  const funnelTag = lead ? `<span class="funnel-badge">● No funil</span>` : "";
+  const statusMarkup = `${status ? `<span class="prospect-badge ${status.className}">${status.label}${reference.prospected_at ? ` · ${formatDate(reference.prospected_at, { day: "2-digit", month: "short" })}` : ""}</span>` : `<span class="prospect-badge new">Nova</span>`}${funnelTag}`;
+  const cardStateClass = `${status ? `prospect-state-${status.className}` : "prospect-state-new"}${lead ? " maps-in-funnel" : ""}`;
   return `<div class="lead-card maps-result-card ${cardStateClass}">${placeSelectionMarkup(place)}
-    <div class="lead-card-top"><div><h3>${escapeHtml(place.name)}</h3>${statusMarkup}</div>${place.rating ? `<span class="lead-card-value">★ ${place.rating} (${place.ratingCount || 0})</span>` : ""}</div>
+    <div class="lead-card-top"><div><h3>${escapeHtml(place.name)}</h3><div class="maps-status-line">${statusMarkup}</div></div>${place.rating ? `<span class="lead-card-value">★ ${place.rating} (${place.ratingCount || 0})</span>` : ""}</div>
     <p>${escapeHtml(place.address)}</p>${place.phone ? `<p>${escapeHtml(place.phone)}</p>` : ""}<div class="maps-result-actions">${mapsResultActions(place, reference, lead)}</div>
   </div>`;
 }

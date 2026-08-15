@@ -327,6 +327,12 @@ button { color: inherit; }
 .maps-result-row.prospect-state-contacted { border-left: 3px solid #66a7ff; }
 .maps-result-row.prospect-state-converted { border-left: 3px solid #b58cff; }
 .maps-result-row.prospect-state-discarded { border-left: 3px solid #f36d75; opacity: .78; }
+.maps-status-line { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.funnel-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border: 1px solid rgba(255,197,87,.5); border-radius: 999px; background: rgba(112,77,19,.5); color: #ffd56f; font-size: 10px; font-weight: 800; letter-spacing: .02em; white-space: nowrap; }
+.maps-in-funnel { border-color: rgba(255,197,87,.48); box-shadow: inset 4px 0 0 #ffc557, 0 0 0 1px rgba(255,197,87,.08); }
+.maps-in-funnel .lead-card-value { color: #ffd56f; }
+.maps-list-status { display: flex; align-items: center; min-width: 145px; }
+.maps-result-row.maps-in-funnel { background: rgba(92,67,24,.24); }
 
 .modal { width: min(680px, calc(100vw - 24px)); max-height: calc(100vh - 34px); padding: 0; border: 1px solid var(--line-strong); border-radius: 18px; color: var(--text); background: #0d1517; box-shadow: var(--shadow); }
 .modal::backdrop { background: rgba(1,6,7,.78); backdrop-filter: blur(5px); }
