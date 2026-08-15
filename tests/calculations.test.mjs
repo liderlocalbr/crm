@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, monthBounds, moveLeadToStage, weekOfMonth } from "../calculations.js";
+import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarUrl, monthBounds, moveLeadToStage, reassignStage, weekOfMonth } from "../calculations.js";
 
 test("reproduz a projeção da planilha Métricas", () => {
   assert.deepEqual(deriveGoals(DEFAULT_SETTINGS), {
@@ -43,4 +43,29 @@ test("move somente o lead arrastado para a nova etapa", () => {
   assert.equal(result.lead.stage, "scheduled");
   assert.equal(result.leads[1], original[1]);
   assert.equal(original[0].stage, "new");
+});
+
+test("realoca todos os leads ao excluir uma etapa", () => {
+  const original = [
+    { id: "lead-1", stage: "custom" },
+    { id: "lead-2", stage: "new" },
+    { id: "lead-3", stage: "custom" },
+  ];
+  const result = reassignStage(original, "custom", "new");
+
+  assert.equal(result.changed, 2);
+  assert.deepEqual(result.leads.map((lead) => lead.stage), ["new", "new", "new"]);
+  assert.equal(original[0].stage, "custom");
+});
+
+test("gera link de evento para o Google Agenda", () => {
+  const url = googleCalendarUrl({
+    title: "Reunião de diagnóstico",
+    dueAt: "2026-08-20T13:00:00.000Z",
+    details: "Lead: Clínica A",
+  });
+
+  assert.match(url, /^https:\/\/calendar\.google\.com\/calendar\/render\?/);
+  assert.match(url, /text=Reuni%C3%A3o\+de\+diagn%C3%B3stico/);
+  assert.match(url, /dates=20260820T130000Z%2F20260820T134500Z/);
 });
