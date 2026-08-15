@@ -119,6 +119,7 @@ export default async function handler(req, res) {
 
     const content = payload?.results?.[0]?.content;
     const listings = extractListings(content);
+    if (listings.length) console.log("oxylabs_first_listing_raw", safeStringify(listings[0], 1200));
     const seen = new Set();
     const places = [];
     for (const item of listings) {
