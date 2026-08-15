@@ -303,7 +303,7 @@ button { color: inherit; }
 .summary-tile b { display: block; font: 700 30px Manrope, sans-serif; margin-top: 6px; }
 
 .goals-layout { display: grid; grid-template-columns: minmax(360px,.72fr) minmax(0,1fr); gap: 14px; }
-.settings-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(280px,320px); gap: 14px; align-items: start; }
+.settings-layout { display: grid; grid-template-columns: minmax(0,1fr); gap: 14px; align-items: start; }
 .settings-layout > .panel { min-width: 0; padding: 17px; }
 .settings-layout .form-stack { gap: 10px; }
 .settings-layout .panel-head { margin-bottom: 10px; }
@@ -318,15 +318,11 @@ button { color: inherit; }
 .template-usage-note b { color: var(--mint); }
 .settings-controls-grid { gap: 10px; }
 .settings-randomize-toggle { margin-top: -1px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.018); }
-.settings-layout .settings-help { position: sticky; top: 14px; }
-.settings-help p { margin: 0; }
 .message-template-remove { color: var(--muted); align-self: end; margin-bottom: 2px; }
 .message-template-remove:hover { color: var(--red); border-color: rgba(243,109,117,.5); }
 .settings-callout { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; padding: 10px 12px; border: 1px solid rgba(43,220,175,.18); border-radius: 9px; background: rgba(43,220,175,.05); color: var(--muted); font-size: 11px; }
 .settings-callout b { color: var(--text); }
 .settings-callout code { color: var(--mint); }
-.settings-help p { color: var(--muted); font-size: 12px; line-height: 1.65; }
-.settings-help p + p { margin-top: 14px; }
 .goal-form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .goal-form .span-2 { grid-column: span 2; }
 .projection-flow { display: flex; flex-direction: column; gap: 10px; }
@@ -507,7 +503,6 @@ button { color: inherit; }
   .filters > * { flex: 1; }
   .goals-layout, .settings-layout { grid-template-columns: 1fr; }
   .template-limit-grid, .settings-controls-grid { grid-template-columns: 1fr; }
-  .settings-layout .settings-help { position: static; }
   .stage-editor { grid-template-columns: 26px 30px 34px minmax(0,1fr) auto 30px; gap: 6px; }
   .stage-lead-count { display: none; }
 }
