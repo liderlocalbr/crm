@@ -265,9 +265,12 @@ function hasValidGoogleToken() {
   return Boolean(state.googleAccessToken && expiry > Date.now() + 30_000);
 }
 
+function hasGoogleIdentity() {
+  return Boolean(state.user?.identities?.some((identity) => identity.provider === "google"));
+}
+
 function syncGoogleConnection() {
-  const hasGoogleIdentity = Boolean(state.user?.identities?.some((identity) => identity.provider === "google"));
-  state.calendarConnected = hasGoogleIdentity && hasValidGoogleToken();
+  state.calendarConnected = hasGoogleIdentity() && hasValidGoogleToken();
 }
 
 async function loadGoogleEvents({ notify = false } = {}) {
@@ -627,6 +630,7 @@ async function enterApp() {
     sessionStorage.removeItem("agencia-lider-local.crm.oauth-success");
     if (oauthError) toast(oauthError, "error");
     if (oauthSuccess && state.calendarConnected) toast("Google Agenda conectado de verdade.");
+    if (oauthSuccess && !state.calendarConnected && hasGoogleIdentity()) toast("Conta Google vinculada. Autorize novamente o acesso ao calendário para ativar os eventos.", "error");
     if (state.calendarConnected) await loadGoogleEvents();
   }
 }
@@ -1124,8 +1128,10 @@ function renderAgenda() {
   const byDay = activitiesByDay();
   const googleByDay = googleEventsByDay();
   const googleActions = state.calendarConnected
-    ? `<button class="button google-button connected" data-action="refresh-google-calendar" ${state.googleEventsLoading ? "disabled" : ""}>${state.googleEventsLoading ? "Atualizando…" : "↻ Atualizar Google"}</button>`
-    : `<button class="button google-button" data-action="connect-google-calendar">G Conectar Google Agenda</button>`;
+    ? `<button class="button google-button connected" data-action="refresh-google-calendar" ${state.googleEventsLoading ? "disabled" : ""}>${state.googleEventsLoading ? "Atualizando…" : "↻ Google conectado"}</button>`
+    : hasGoogleIdentity()
+      ? `<button class="button google-button connected" data-action="connect-google-calendar" title="Conta Google vinculada; clique para autorizar o acesso ao calendário">✓ Google vinculado · autorizar Agenda</button>`
+      : `<button class="button google-button" data-action="connect-google-calendar">G Conectar Google Agenda</button>`;
   const cells = calendarCells(state.agendaMonth);
   $("#view-agenda").innerHTML = `
     ${pageHead("AGENDA COMERCIAL", "Calendário de atividades", "Clique em um dia para ver os agendamentos.", `${monthInput("agenda-month", state.agendaMonth)}${googleActions}<button class="button primary" data-action="open-activity">+ Criar atividade</button>`)}
@@ -2103,7 +2109,7 @@ async function connectGoogleCalendar() {
       prompt: "consent",
       skip_http_redirect: "true",
     });
-    const response = await fetch(`${SUPABASE_URL}/auth/v1/user/identities/authorize?${params}`, {
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/authorize?${params}`, {
       headers: { apikey: SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${state.session.access_token}` },
     });
     const payload = await response.json().catch(() => null);
