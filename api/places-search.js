@@ -72,7 +72,7 @@ export default async function handler(req, res) {
     const response = await fetch("https://google.serper.dev/maps", {
       method: "POST",
       headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ q: query, gl: "br", hl: "pt-br", type: "search", num: 50 }),
+      body: JSON.stringify({ q: query, gl: "br", hl: "pt-br", num: 50 }),
     });
     const payload = await response.json().catch(() => null);
     if (!response.ok) {

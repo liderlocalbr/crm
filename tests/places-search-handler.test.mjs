@@ -68,7 +68,6 @@ test("consulta Serper Maps e normaliza até 50 lugares", async () => {
       q: "Dentista, Mogi das Cruzes - SP",
       gl: "br",
       hl: "pt-br",
-      type: "search",
       num: 50,
     });
   } finally {
