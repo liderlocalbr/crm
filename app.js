@@ -2168,17 +2168,17 @@ async function syncActivityToGoogle(id) {
 
 async function saveActivityFromDialog(event) {
   event.preventDefault();
-  const openInGoogle = $("#activity-google").checked || $("#activity-meet").checked;
+  const wantsMeet = $("#activity-kind").value === "meeting" && $("#activity-meet").checked;
+  const openInGoogle = $("#activity-google").checked || wantsMeet;
   const payload = {
     title: $("#activity-title").value.trim(), lead_id: $("#activity-lead").value || null,
     kind: $("#activity-kind").value, due_at: $("#activity-due").value ? new Date($("#activity-due").value).toISOString() : null,
-    add_google_meet: $("#activity-kind").value === "meeting" && $("#activity-meet").checked,
   };
   try {
     const savedActivity = state.editingActivityId
       ? await store.updateActivity(state.editingActivityId, payload)
       : await store.saveActivity(payload);
-    const created = savedActivity;
+    const created = { ...savedActivity, add_google_meet: wantsMeet };
     let googleError = null;
     let syncedGoogleActivity = null;
     const googleWindow = openInGoogle ? window.open("about:blank", "_blank") : null;
