@@ -47,6 +47,7 @@ const state = {
   mapsResults: [],
   mapsLoading: false,
   mapsError: "",
+  mapsStatusMessage: "",
   mapsSearched: false,
 };
 
@@ -1047,7 +1048,7 @@ function renderMapsSearch() {
 }
 
 function mapsResultsMarkup() {
-  if (state.mapsLoading) return `<div class="loading">Buscando no Google Maps…</div>`;
+  if (state.mapsLoading) return `<div class="loading">${escapeHtml(state.mapsStatusMessage || "Buscando no Google Maps…")}</div>`;
   if (state.mapsError) return `<div class="google-calendar-state error">${escapeHtml(state.mapsError)}</div>`;
   if (!state.mapsSearched) return emptyState("⌖", "Busque por leads no Maps", "Digite uma palavra-chave (ex.: dentista) e uma cidade para encontrar clínicas e profissionais.", "");
   if (!state.mapsResults.length) return emptyState("⌖", "Nada encontrado", "Tente outra palavra-chave ou cidade.", "");
@@ -1078,32 +1079,45 @@ async function handleMapsSearch(event) {
   state.mapsLocality = locality;
   state.mapsLoading = true;
   state.mapsError = "";
+  state.mapsStatusMessage = "Iniciando busca…";
   renderMapsSearch();
   try {
     if (isLocalDemo) throw new Error("A busca no Maps não está disponível no modo demonstração.");
-    const params = new URLSearchParams({ keyword, locality });
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 45000);
-    let response;
-    try {
-      response = await fetch(`/api/places-search?${params}`, {
-        headers: { Authorization: `Bearer ${state.session.access_token}` },
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timeout);
-    }
-    const payload = await response.json().catch(() => null);
-    if (!response.ok) throw new Error(payload?.message || "Não foi possível buscar no Google Maps.");
-    state.mapsResults = payload.places || [];
+    const submitParams = new URLSearchParams({ keyword, locality });
+    const submitResponse = await fetch(`/api/places-search?${submitParams}`, {
+      headers: { Authorization: `Bearer ${state.session.access_token}` },
+    });
+    const submitPayload = await submitResponse.json().catch(() => null);
+    if (!submitResponse.ok || !submitPayload?.jobId) throw new Error(submitPayload?.message || "Não foi possível iniciar a busca.");
+
+    state.mapsResults = await pollPlacesJob(submitPayload.jobId);
     state.mapsSearched = true;
     await rest("place_search_usage", { method: "POST", body: { owner_id: state.user.id, keyword, locality } });
   } catch (error) {
-    state.mapsError = error.name === "AbortError" ? "A busca demorou demais e foi cancelada. Tente novamente." : error.message;
+    state.mapsError = error.message;
   } finally {
     state.mapsLoading = false;
+    state.mapsStatusMessage = "";
     renderMapsSearch();
   }
+}
+
+async function pollPlacesJob(jobId) {
+  const maxAttempts = 24;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    state.mapsStatusMessage = `Buscando no Google Maps… (${attempt * 3}s)`;
+    renderMapsSearch();
+    const params = new URLSearchParams({ jobId });
+    const response = await fetch(`/api/places-search-status?${params}`, {
+      headers: { Authorization: `Bearer ${state.session.access_token}` },
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(payload?.message || "Não foi possível checar o status da busca.");
+    if (payload.status === "done") return payload.places || [];
+    if (payload.status === "error") throw new Error(payload.message || "A busca falhou.");
+  }
+  throw new Error("A busca demorou demais. Tente novamente em instantes.");
 }
 
 async function addPlaceAsLead(placeId) {
