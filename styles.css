@@ -477,3 +477,26 @@ button { color: inherit; }
   .maps-results-toolbar { align-items: stretch; flex-direction: column; }
   .maps-results-toolbar .compact-select { width: 100%; }
 }
+
+/* Resultados do Maps compactos */
+.maps-results { gap: 9px; }
+.maps-result-card { padding: 9px; border-radius: 9px; }
+.maps-result-card .lead-card-top, .maps-result-card > p, .maps-result-card .maps-result-actions { margin-left: 24px; }
+.maps-result-card .lead-card-top { gap: 6px; }
+.maps-result-card h3 { font-size: 12px; line-height: 1.2; }
+.maps-result-card > p { margin-top: 4px; font-size: 10px; line-height: 1.25; }
+.maps-result-card .maps-result-actions { gap: 5px; margin-top: 7px; }
+.maps-result-card .maps-result-actions .button, .maps-result-card .maps-result-actions .compact-select { min-height: 27px; padding: 5px 7px; font-size: 10px; }
+.maps-result-card .prospect-badge, .maps-result-card .funnel-badge { margin-top: 4px; padding: 3px 6px; font-size: 9px; }
+.maps-result-row { gap: 8px; padding: 8px 10px 8px 12px; border-radius: 8px; font-size: 11px; }
+.maps-list-main, .maps-list-contact { gap: 2px; }
+.maps-list-main b { font-size: 11px; }
+.maps-list-main span, .maps-list-contact span { font-size: 10px; }
+.maps-list-actions { gap: 4px; }
+.maps-list-actions .button, .maps-list-actions .compact-select { min-height: 26px; padding: 4px 6px; font-size: 10px; }
+.maps-list-status { min-width: 125px; }
+.maps-result-row .funnel-badge, .maps-result-row .prospect-badge { padding: 3px 6px; font-size: 9px; }
+@media (max-width: 860px) {
+  .maps-result-row { gap: 6px; padding: 7px 8px 7px 10px; }
+  .maps-list-actions .button, .maps-list-actions .compact-select { min-height: 24px; padding: 3px 5px; font-size: 9px; }
+}
