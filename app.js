@@ -463,6 +463,13 @@ const store = {
     const rows = await rest("activities", { method: "PATCH", query: `id=eq.${id}&owner_id=eq.${state.user.id}`, body: { completed_at } });
     return rows[0];
   },
+  async deleteActivity(id) {
+    if (isLocalDemo) {
+      mock.activities = mock.activities.filter((activity) => activity.id !== id);
+      return;
+    }
+    await rest("activities", { method: "DELETE", query: `id=eq.${id}&owner_id=eq.${state.user.id}`, prefer: "return=minimal" });
+  },
 };
 
 async function bootstrap() {
@@ -1191,7 +1198,7 @@ function activityRow(activity) {
       ? `<a class="calendar-link" href="${escapeHtml(activity.google_event_url || "https://calendar.google.com/calendar/u/0/r")}" target="_blank" rel="noopener">Abrir no Google Agenda ↗</a>`
       : `<button class="calendar-link calendar-action" data-action="sync-google-activity" data-id="${activity.id}">Adicionar ao Google Agenda</button>`
     : "";
-  return `<div class="activity-row ${activity.completed_at ? "done" : ""}"><button class="activity-check ${activity.completed_at ? "done" : ""}" data-action="toggle-activity" data-id="${activity.id}" aria-label="${activity.completed_at ? "Reabrir" : "Concluir"} atividade"></button><div class="activity-main"><b>${escapeHtml(activity.title)}</b><span>${escapeHtml(lead?.name || "Atividade geral")} · ${activityKindLabel(activity.kind)}</span>${calendarAction}</div><span class="activity-time ${isOverdue(activity) ? "overdue" : ""}">${activity.due_at ? formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Sem prazo"}</span></div>`;
+  return `<div class="activity-row ${activity.completed_at ? "done" : ""}"><button class="activity-check ${activity.completed_at ? "done" : ""}" data-action="toggle-activity" data-id="${activity.id}" aria-label="${activity.completed_at ? "Reabrir" : "Concluir"} atividade"></button><div class="activity-main"><b>${escapeHtml(activity.title)}</b><span>${escapeHtml(lead?.name || "Atividade geral")} · ${activityKindLabel(activity.kind)}</span>${calendarAction}</div><span class="activity-time ${isOverdue(activity) ? "overdue" : ""}">${activity.due_at ? formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Sem prazo"}</span><button type="button" class="activity-delete" data-action="delete-activity" data-id="${activity.id}" aria-label="Excluir atividade" title="Excluir atividade">×</button></div>`;
 }
 
 function mapsSavedTabsMarkup() {
@@ -1892,6 +1899,7 @@ async function handleLeadDialogClick(event) {
   if (!action) return;
   if (action.dataset.action === "toggle-activity") await toggleActivity(action.dataset.id);
   if (action.dataset.action === "edit-activity") openEditActivityDialog(action.dataset.id);
+  if (action.dataset.action === "delete-activity") await deleteActivity(action.dataset.id);
 }
 
 async function handleMainClick(event) {
@@ -1911,6 +1919,7 @@ async function handleMainClick(event) {
   if (action.dataset.action === "connect-google-calendar") connectGoogleCalendar();
   if (action.dataset.action === "refresh-google-calendar") await loadGoogleEvents({ notify: true });
   if (action.dataset.action === "sync-google-activity") await syncActivityToGoogle(action.dataset.id);
+  if (action.dataset.action === "delete-activity") await deleteActivity(action.dataset.id);
   if (action.dataset.action === "save-metric") await saveMetricRow(action.closest("tr"));
   if (action.dataset.action === "toggle-activity") await toggleActivity(action.dataset.id);
   if (action.dataset.action === "add-place-lead") await addPlaceAsLead(action.dataset.placeId);
@@ -1970,7 +1979,7 @@ function leadActivitiesMarkup(lead) {
   if (!lead) return "";
   const activities = state.activities.filter((activity) => activity.lead_id === lead.id).sort((a, b) => String(a.completed_at || "").localeCompare(String(b.completed_at || "")) || String(a.due_at || "9999").localeCompare(String(b.due_at || "9999")));
   if (!activities.length) return `<div class="lead-activities-empty">Nenhuma atividade cadastrada para este lead.</div>`;
-  return `<div class="lead-activities-head"><div><span class="eyebrow">ATIVIDADES</span><h3>Atividades do lead</h3></div><span class="date-chip">${activities.length}</span></div><div class="lead-activities-list">${activities.map((activity) => `<div class="lead-activity-row ${activity.completed_at ? "done" : ""}"><button type="button" class="activity-check ${activity.completed_at ? "done" : ""}" data-action="toggle-activity" data-id="${activity.id}" aria-label="${activity.completed_at ? "Desconcluir" : "Concluir"} atividade"></button><div><b>${escapeHtml(activity.title)}</b><span>${activity.due_at ? formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Sem prazo"} · ${activityKindLabel(activity.kind)}</span></div><button type="button" class="lead-activity-edit" data-action="edit-activity" data-id="${activity.id}" aria-label="Editar atividade" title="Editar atividade">✎</button></div>`).join("")}</div>`;
+  return `<div class="lead-activities-head"><div><span class="eyebrow">ATIVIDADES</span><h3>Atividades do lead</h3></div><span class="date-chip">${activities.length}</span></div><div class="lead-activities-list">${activities.map((activity) => `<div class="lead-activity-row ${activity.completed_at ? "done" : ""}"><button type="button" class="activity-check ${activity.completed_at ? "done" : ""}" data-action="toggle-activity" data-id="${activity.id}" aria-label="${activity.completed_at ? "Desconcluir" : "Concluir"} atividade"></button><div><b>${escapeHtml(activity.title)}</b><span>${activity.due_at ? formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Sem prazo"} · ${activityKindLabel(activity.kind)}</span></div><button type="button" class="lead-activity-edit" data-action="edit-activity" data-id="${activity.id}" aria-label="Editar atividade" title="Editar atividade">✎</button><button type="button" class="activity-delete" data-action="delete-activity" data-id="${activity.id}" aria-label="Excluir atividade" title="Excluir atividade">×</button></div>`).join("")}</div>`;
 }
 
 function renderLeadActivitiesPanel(lead) {
@@ -2213,6 +2222,20 @@ async function saveActivityFromDialog(event) {
   } catch (error) {
     toast(error.message, "error");
   }
+}
+
+async function deleteActivity(id) {
+  const current = state.activities.find((activity) => activity.id === id);
+  if (!current) return;
+  if (!window.confirm(`Excluir a atividade “${current.title}”? Esta ação não pode ser desfeita.`)) return;
+  try {
+    await store.deleteActivity(id);
+    state.activities = await store.getActivities();
+    renderDashboard(); renderLeads(); renderAgenda();
+    const lead = state.leads.find((item) => item.id === current.lead_id);
+    if ($("#lead-dialog")?.open && lead) renderLeadActivitiesPanel(lead);
+    toast("Atividade excluída.");
+  } catch (error) { toast(error.message, "error"); }
 }
 
 async function toggleActivity(id) {

@@ -270,7 +270,7 @@ button { color: inherit; }
 }
 .agenda-group { margin-bottom: 22px; }
 .agenda-group-title { color: var(--muted); font: 700 10px monospace; letter-spacing: .08em; margin: 0 0 7px; }
-.activity-row { display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 14px; align-items: center; padding: 15px; border: 1px solid var(--line); border-radius: 11px; background: #0c1315; margin-bottom: 9px; }
+.activity-row { display: grid; grid-template-columns: 42px minmax(0,1fr) auto auto; gap: 14px; align-items: center; padding: 15px; border: 1px solid var(--line); border-radius: 11px; background: #0c1315; margin-bottom: 9px; }
 .activity-check { width: 22px; height: 22px; border: 1px solid var(--line-strong); border-radius: 50%; background: transparent; cursor: pointer; }
 .activity-check.done { background: var(--green); border-color: var(--green); box-shadow: inset 0 0 0 5px #0c1315; }
 .activity-main b { display: block; font-size: 13px; }
@@ -576,6 +576,8 @@ button { color: inherit; }
 .lead-activity-row span { color: var(--muted); font-size: 10px; }
 .lead-activity-edit { width: 28px; height: 28px; flex: 0 0 28px; border: 1px solid var(--line); border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; }
 .lead-activity-edit:hover { color: var(--green); border-color: rgba(43,220,175,.42); background: var(--green-soft); }
+.activity-delete { width: 28px; height: 28px; flex: 0 0 28px; border: 1px solid rgba(243,109,117,.25); border-radius: 7px; background: transparent; color: #d8898f; cursor: pointer; font-size: 17px; line-height: 1; }
+.activity-delete:hover { color: #fff; border-color: rgba(243,109,117,.7); background: rgba(243,109,117,.18); }
 .lead-activities-empty { color: var(--muted); font-size: 12px; }
 
 /* Atividades vinculadas exibidas no card do Pipeline */
