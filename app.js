@@ -1166,7 +1166,8 @@ function mapsResultCard(place) {
   const status = prospectStatusMeta(reference?.status);
   const statusMarkup = status ? `<span class="prospect-badge ${status.className}">${status.label}${reference.prospected_at ? ` · ${formatDate(reference.prospected_at, { day: "2-digit", month: "short" })}` : ""}</span>` : `<span class="prospect-badge new">Nova</span>`;
   const action = lead ? `<button class="button ghost small" type="button" data-action="edit-lead" data-id="${escapeHtml(lead.id)}">Abrir lead</button>` : `<button class="button primary small" type="button" data-action="register-place-prospect" data-place-id="${escapeHtml(place.id)}">${reference ? "Atualizar prospecção" : "Registrar prospecção"}</button>`;
-  return `<div class="lead-card maps-result-card">
+  const cardStateClass = status ? `prospect-state-${status.className}` : "prospect-state-new";
+  return `<div class="lead-card maps-result-card ${cardStateClass}">
     <div class="lead-card-top"><div><h3>${escapeHtml(place.name)}</h3>${statusMarkup}</div>${place.rating ? `<span class="lead-card-value">★ ${place.rating} (${place.ratingCount || 0})</span>` : ""}</div>
     <p>${escapeHtml(place.address)}</p>
     ${place.phone ? `<p>${escapeHtml(place.phone)}</p>` : ""}
