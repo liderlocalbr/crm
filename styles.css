@@ -370,3 +370,20 @@ button { color: inherit; }
   .stage-add-form { grid-template-columns: minmax(0,1fr) 44px; }
   .stage-add-form .button { grid-column: 1 / -1; }
 }
+
+/* Busca no Maps: lote incremental e acompanhamento de prospecção */
+.maps-results-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 14px; color: var(--muted); font-size: 12px; }
+.maps-results-toolbar b { color: var(--text); font-size: 13px; }
+.maps-load-more { display: block; margin: 16px auto 4px; min-width: 190px; }
+.prospect-badge { display: inline-flex; align-items: center; gap: 4px; margin-top: 7px; border-radius: 999px; padding: 4px 8px; font-size: 10px; font-weight: 800; letter-spacing: .02em; }
+.prospect-badge.new { color: #b9c8ce; background: rgba(130, 153, 164, .15); }
+.prospect-badge.prospected { color: #7fe6c3; background: rgba(43, 220, 175, .14); }
+.prospect-badge.contacted { color: #8ec7ff; background: rgba(99, 169, 255, .15); }
+.prospect-badge.converted { color: #d4b1ff; background: rgba(189, 136, 255, .15); }
+.prospect-badge.discarded { color: #ff9fa5; background: rgba(243, 109, 117, .14); }
+.prospect-status-select { min-height: 36px; padding-top: 7px; padding-bottom: 7px; font-size: 11px; }
+.maps-result-actions { flex-wrap: wrap; }
+@media (max-width: 720px) {
+  .maps-results-toolbar { align-items: stretch; flex-direction: column; }
+  .maps-results-toolbar .compact-select { width: 100%; }
+}

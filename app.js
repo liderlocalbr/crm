@@ -60,6 +60,12 @@ const state = {
   mapsStatusMessage: "",
   mapsSearched: false,
   mapsPendingJobId: null,
+  mapsSearchBatch: 0,
+  mapsSearchCenter: "",
+  mapsHasMore: false,
+  mapsProspectFilter: "all",
+  mapsReferences: [],
+  mapsPendingLeadPlace: null,
   mapsGuideState: "",
   mapsGuideCity: "",
 };
@@ -1115,6 +1121,30 @@ function bindCityGuide() {
   });
 }
 
+function prospectStatusMeta(status) {
+  return ({
+    prospected: { label: "Prospectada", className: "prospected" },
+    contacted: { label: "Em contato", className: "contacted" },
+    converted: { label: "Convertida", className: "converted" },
+    discarded: { label: "Descartada", className: "discarded" },
+  })[status] || null;
+}
+
+function placeTracking(place) {
+  return state.mapsReferences.find((reference) => reference.place_id === place.id) || null;
+}
+
+function filteredMapsResults() {
+  if (state.mapsProspectFilter === "all") return state.mapsResults;
+  return state.mapsResults.filter((place) => {
+    const reference = placeTracking(place);
+    if (state.mapsProspectFilter === "new") return !reference;
+    if (state.mapsProspectFilter === "prospected") return Boolean(reference);
+    if (state.mapsProspectFilter === "lead") return Boolean(reference?.lead_id);
+    return true;
+  });
+}
+
 function mapsResultsMarkup() {
   if (state.mapsLoading) return `<div class="loading">${escapeHtml(state.mapsStatusMessage || "Buscando no Google Maps…")}</div>`;
   if (state.mapsError) {
@@ -1123,17 +1153,28 @@ function mapsResultsMarkup() {
   }
   if (!state.mapsSearched) return emptyState("⌖", "Busque por leads no Maps", "Digite uma palavra-chave (ex.: dentista) e uma cidade para encontrar clínicas e profissionais.", "");
   if (!state.mapsResults.length) return emptyState("⌖", "Nada encontrado", "Tente outra palavra-chave ou cidade.", "");
-  return `<div class="maps-results">${state.mapsResults.map(mapsResultCard).join("")}</div>`;
+  const places = filteredMapsResults();
+  const filter = `<div class="maps-results-toolbar"><div><b>${state.mapsResults.length} empresa(s) encontrada(s)</b>${state.mapsResults.length < 150 && state.mapsHasMore ? " · ainda há mais resultados" : ""}</div><select id="maps-prospect-filter" class="compact-select"><option value="all" ${state.mapsProspectFilter === "all" ? "selected" : ""}>Todas</option><option value="new" ${state.mapsProspectFilter === "new" ? "selected" : ""}>Não prospectadas</option><option value="prospected" ${state.mapsProspectFilter === "prospected" ? "selected" : ""}>Já prospectadas</option><option value="lead" ${state.mapsProspectFilter === "lead" ? "selected" : ""}>Já adicionadas como lead</option></select></div>`;
+  const more = state.mapsHasMore && state.mapsResults.length < 150 ? `<button class="button ghost maps-load-more" type="button" data-action="load-more-places">Buscar mais 20 (${state.mapsResults.length}/150)</button>` : "";
+  if (!places.length) return `${filter}${emptyState("⌖", "Nenhuma empresa neste filtro", "Altere o filtro para visualizar os demais resultados.", "")}${more}`;
+  return `${filter}<div class="maps-results">${places.map(mapsResultCard).join("")}</div>${more}`;
 }
 
 function mapsResultCard(place) {
+  const reference = placeTracking(place);
+  const lead = reference?.lead_id ? state.leads.find((item) => item.id === reference.lead_id) : null;
+  const status = prospectStatusMeta(reference?.status);
+  const statusMarkup = status ? `<span class="prospect-badge ${status.className}">${status.label}${reference.prospected_at ? ` · ${formatDate(reference.prospected_at, { day: "2-digit", month: "short" })}` : ""}</span>` : `<span class="prospect-badge new">Nova</span>`;
+  const action = lead ? `<button class="button ghost small" type="button" data-action="edit-lead" data-id="${escapeHtml(lead.id)}">Abrir lead</button>` : `<button class="button primary small" type="button" data-action="register-place-prospect" data-place-id="${escapeHtml(place.id)}">${reference ? "Atualizar prospecção" : "Registrar prospecção"}</button>`;
   return `<div class="lead-card maps-result-card">
-    <div class="lead-card-top"><h3>${escapeHtml(place.name)}</h3>${place.rating ? `<span class="lead-card-value">★ ${place.rating} (${place.ratingCount || 0})</span>` : ""}</div>
+    <div class="lead-card-top"><div><h3>${escapeHtml(place.name)}</h3>${statusMarkup}</div>${place.rating ? `<span class="lead-card-value">★ ${place.rating} (${place.ratingCount || 0})</span>` : ""}</div>
     <p>${escapeHtml(place.address)}</p>
     ${place.phone ? `<p>${escapeHtml(place.phone)}</p>` : ""}
     <div class="maps-result-actions">
       ${place.mapsUrl ? `<a class="button ghost small" href="${escapeHtml(place.mapsUrl)}" target="_blank" rel="noopener">Ver no Maps ↗</a>` : ""}
-      <button class="button primary small" type="button" data-action="add-place-lead" data-place-id="${escapeHtml(place.id)}">+ Adicionar como lead</button>
+      ${reference ? `<select class="compact-select prospect-status-select" data-place-id="${escapeHtml(place.id)}" aria-label="Status da prospecção"><option value="prospected" ${reference.status === "prospected" ? "selected" : ""}>Prospectada</option><option value="contacted" ${reference.status === "contacted" ? "selected" : ""}>Em contato</option><option value="converted" ${reference.status === "converted" ? "selected" : ""}>Convertida</option><option value="discarded" ${reference.status === "discarded" ? "selected" : ""}>Descartada</option></select>` : ""}
+      ${action}
+      ${lead ? "" : `<button class="button primary small" type="button" data-action="add-place-lead" data-place-id="${escapeHtml(place.id)}">+ Adicionar como lead</button>`}
     </div>
   </div>`;
 }
@@ -1153,7 +1194,7 @@ async function loadCachedPlaces(keyword, locality) {
     is_complete: "eq.true",
     select: "place_id,name,address,phone,website,rating,rating_count,maps_url,position",
     order: "position.asc",
-    limit: "50",
+    limit: "150",
   });
   const rows = await rest("place_search_cache", { query: params.toString() });
   return rows.map((row) => ({
@@ -1168,11 +1209,48 @@ async function loadCachedPlaces(keyword, locality) {
   }));
 }
 
+async function loadSearchRun(keyword, locality) {
+  if (isLocalDemo) return null;
+  const rows = await rest("place_search_runs", { query: `owner_id=eq.${state.user.id}&keyword=eq.${encodeURIComponent(mapsCacheValue(keyword))}&locality=eq.${encodeURIComponent(mapsCacheValue(locality))}&select=requested_count,returned_count,search_center,completed_at&limit=1` });
+  return rows?.[0] || null;
+}
+
+async function saveSearchRun(keyword, locality, { returnedCount, center, completed = false } = {}) {
+  if (isLocalDemo) return;
+  await rest("place_search_runs", {
+    method: "POST",
+    query: "on_conflict=owner_id,keyword,locality",
+    body: {
+      owner_id: state.user.id,
+      keyword: mapsCacheValue(keyword),
+      locality: mapsCacheValue(locality),
+      requested_count: Math.min(150, Math.max(20, returnedCount || 20)),
+      returned_count: returnedCount || 0,
+      search_center: center || null,
+      ...(completed ? { completed_at: new Date().toISOString() } : { completed_at: null }),
+    },
+    prefer: "resolution=merge-duplicates,return=minimal",
+  });
+}
+
+async function loadPlaceReferences(places = state.mapsResults) {
+  if (isLocalDemo) {
+    state.mapsReferences = [];
+    return [];
+  }
+  const rows = await rest("place_references", {
+    query: `owner_id=eq.${state.user.id}&select=place_id,status,prospected_at,lead_id,notes&limit=1000`,
+  });
+  const ids = new Set(places.map((place) => String(place.id)));
+  state.mapsReferences = rows.filter((row) => ids.has(String(row.place_id)));
+  return state.mapsReferences;
+}
+
 async function savePlacesCache(keyword, locality, places) {
   if (isLocalDemo || !places.length) return;
   const normalizedKeyword = mapsCacheValue(keyword);
   const normalizedLocality = mapsCacheValue(locality);
-  const rows = places.slice(0, 50).map((place, position) => ({
+  const rows = places.slice(0, 150).map((place, position) => ({
     owner_id: state.user.id,
     keyword: normalizedKeyword,
     locality: normalizedLocality,
@@ -1195,6 +1273,27 @@ async function savePlacesCache(keyword, locality, places) {
   });
 }
 
+function dedupePlaces(places) {
+  const seen = new Set();
+  return places.filter((place) => {
+    const key = String(place.id || `${mapsCacheValue(place.name)}|${mapsCacheValue(place.address)}`);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 150).map((place, index) => ({ ...place, position: index + 1 }));
+}
+
+async function fetchSerperPlacesBatch(keyword, locality, batch = 0, center = "") {
+  const params = new URLSearchParams({ keyword, locality, batch: String(batch), ...(center ? { center } : {}), _: String(Date.now()) });
+  const response = await fetch(`/api/places-search?${params}`, {
+    headers: { Authorization: `Bearer ${state.session.access_token}` },
+    cache: "no-store",
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || !Array.isArray(payload?.places)) throw new Error(payload?.message || "Não foi possível concluir a busca.");
+  return payload;
+}
+
 async function handleMapsSearch(event) {
   event.preventDefault();
   const keyword = $("#maps-keyword").value.trim();
@@ -1205,6 +1304,12 @@ async function handleMapsSearch(event) {
   }
   state.mapsKeyword = keyword;
   state.mapsLocality = locality;
+  state.mapsResults = [];
+  state.mapsReferences = [];
+  state.mapsSearchBatch = 0;
+  state.mapsSearchCenter = "";
+  state.mapsHasMore = false;
+  state.mapsProspectFilter = "all";
   state.mapsError = "";
   state.mapsPendingJobId = null;
   renderMapsSearch();
@@ -1216,12 +1321,17 @@ async function handleMapsSearch(event) {
     try {
       const cachedPlaces = await loadCachedPlaces(keyword, locality);
       if (cachedPlaces.length) {
-        state.mapsResults = cachedPlaces;
+        state.mapsResults = dedupePlaces(cachedPlaces);
+        const cachedRun = await loadSearchRun(keyword, locality).catch(() => null);
+        state.mapsSearchCenter = cachedRun?.search_center || "";
+        state.mapsSearchBatch = Math.max(0, Math.ceil(state.mapsResults.length / 20) - 1);
+        state.mapsHasMore = state.mapsResults.length < 150 && !cachedRun?.completed_at;
+        await loadPlaceReferences(state.mapsResults);
         state.mapsSearched = true;
         state.mapsLoading = false;
         state.mapsStatusMessage = "";
         renderMapsSearch();
-        toast(`${cachedPlaces.length} resultado(s) carregado(s) do histórico, sem consumir a Serper.`);
+        toast(`${state.mapsResults.length} resultado(s) carregado(s) do histórico, sem consumir a Serper.`);
         return;
       }
     } catch (cacheError) {
@@ -1229,17 +1339,33 @@ async function handleMapsSearch(event) {
     }
     state.mapsStatusMessage = "Buscando empresas na Serper…";
     renderMapsSearch();
-    const submitParams = new URLSearchParams({ keyword, locality, _: String(Date.now()) });
-    const submitResponse = await fetch(`/api/places-search?${submitParams}`, {
-      headers: { Authorization: `Bearer ${state.session.access_token}` },
-      cache: "no-store",
-    });
-    const submitPayload = await submitResponse.json().catch(() => null);
-    if (!submitResponse.ok || !Array.isArray(submitPayload?.places)) {
-      throw new Error(submitPayload?.message || "Não foi possível concluir a busca.");
-    }
+    const payload = await fetchSerperPlacesBatch(keyword, locality, 0);
+    state.mapsSearchCenter = payload.center || "";
+    state.mapsHasMore = Boolean(payload.hasMore);
+    await applyPlacesResults(payload.places, keyword, locality);
+    await saveSearchRun(keyword, locality, { returnedCount: state.mapsResults.length, center: state.mapsSearchCenter, completed: !state.mapsHasMore }).catch((runError) => console.warn("maps_run_write_failed", runError?.message));
+  } catch (error) {
+    state.mapsError = error.message;
+    state.mapsLoading = false;
+    state.mapsStatusMessage = "";
+    renderMapsSearch();
+  }
+}
 
-    await applyPlacesResults(submitPayload.places, keyword, locality);
+async function loadMorePlaces() {
+  if (state.mapsLoading || !state.mapsHasMore || state.mapsResults.length >= 150) return;
+  state.mapsLoading = true;
+  state.mapsError = "";
+  state.mapsStatusMessage = `Buscando mais empresas… (${Math.min(state.mapsResults.length + 20, 150)}/150)`;
+  renderMapsSearch();
+  try {
+    const nextBatch = state.mapsSearchBatch + 1;
+    const payload = await fetchSerperPlacesBatch(state.mapsKeyword, state.mapsLocality, nextBatch, state.mapsSearchCenter);
+    state.mapsSearchBatch = nextBatch;
+    state.mapsSearchCenter = payload.center || state.mapsSearchCenter;
+    state.mapsHasMore = Boolean(payload.hasMore) && state.mapsResults.length < 150;
+    await applyPlacesResults(payload.places, state.mapsKeyword, state.mapsLocality, true, true);
+    await saveSearchRun(state.mapsKeyword, state.mapsLocality, { returnedCount: state.mapsResults.length, center: state.mapsSearchCenter, completed: !state.mapsHasMore }).catch((runError) => console.warn("maps_run_write_failed", runError?.message));
   } catch (error) {
     state.mapsError = error.message;
     state.mapsLoading = false;
@@ -1264,13 +1390,14 @@ async function retryPendingSearch() {
   }
 }
 
-async function applyPlacesResults(places, keyword, locality, logUsage = true) {
+async function applyPlacesResults(places, keyword, locality, logUsage = true, append = false) {
   try {
-    state.mapsResults = Array.isArray(places) ? places.slice(0, 50) : [];
+    state.mapsResults = dedupePlaces(append ? [...state.mapsResults, ...(Array.isArray(places) ? places : [])] : (Array.isArray(places) ? places : []));
     state.mapsSearched = true;
     state.mapsPendingJobId = null;
     try {
       await savePlacesCache(keyword, locality, state.mapsResults);
+      await loadPlaceReferences(state.mapsResults);
     } catch (cacheError) {
       console.warn("maps_cache_write_failed", cacheError?.message);
     }
@@ -1307,24 +1434,78 @@ async function pollPlacesJob(jobId) {
   throw new Error("A busca ainda está processando. Clique em \"Verificar de novo\" em vez de buscar de novo.");
 }
 
+async function savePlaceReference(place, { status = "prospected", notes = null, leadId = null } = {}) {
+  if (!place || isLocalDemo) return null;
+  const body = {
+    owner_id: state.user.id,
+    place_id: place.id,
+    keyword: state.mapsKeyword,
+    locality: state.mapsLocality,
+    status,
+    prospected_at: new Date().toISOString(),
+    ...(notes ? { notes } : {}),
+    ...(leadId ? { lead_id: leadId } : {}),
+  };
+  const rows = await rest("place_references", {
+    method: "POST",
+    query: "on_conflict=owner_id,place_id",
+    body,
+    prefer: "resolution=merge-duplicates,return=representation",
+  });
+  const saved = rows?.[0] || body;
+  state.mapsReferences = [...state.mapsReferences.filter((item) => item.place_id !== place.id), saved];
+  return saved;
+}
+
+async function registerPlaceProspect(placeId) {
+  const place = state.mapsResults.find((item) => item.id === placeId);
+  if (!place) return;
+  try {
+    const notes = window.prompt("Observação da prospecção (opcional):", "") || null;
+    await savePlaceReference(place, { status: "prospected", notes });
+    renderMapsSearch();
+    toast(`${place.name} registrada como prospectada.`);
+  } catch (error) {
+    toast(error.message || "Não foi possível registrar a prospecção.", "error");
+  }
+}
+
+async function updatePlaceStatus(placeId, status) {
+  const place = state.mapsResults.find((item) => item.id === placeId);
+  if (!place) return;
+  try {
+    await savePlaceReference(place, { status });
+    renderMapsSearch();
+    toast("Status da prospecção atualizado.");
+  } catch (error) {
+    toast(error.message || "Não foi possível atualizar o status.", "error");
+  }
+}
+
 async function addPlaceAsLead(placeId) {
   const place = state.mapsResults.find((item) => item.id === placeId);
   if (!place) return;
+  const reference = placeTracking(place);
+  const existingLead = state.leads.find((lead) => lead.place_id === place.id) || (reference?.lead_id ? state.leads.find((lead) => lead.id === reference.lead_id) : null);
+  if (existingLead) {
+    openLeadDialog(existingLead);
+    toast("Esta empresa já está cadastrada como lead.");
+    return;
+  }
+  state.mapsPendingLeadPlace = place;
   openLeadDialog({
     clinic_name: place.name,
+    specialty: place.category || state.mapsKeyword,
     whatsapp: place.phone || "",
+    place_id: place.id,
     notes: [place.address, place.website, place.mapsUrl].filter(Boolean).join("\n"),
   });
   if (isLocalDemo) return;
   try {
-    await rest("place_references", {
-      method: "POST",
-      query: "on_conflict=owner_id,place_id",
-      body: { owner_id: state.user.id, place_id: place.id, keyword: state.mapsKeyword, locality: state.mapsLocality },
-      prefer: "resolution=merge-duplicates,return=representation",
-    });
-  } catch {
-    // Referência é só um registro auxiliar de deduplicação; não deve travar o fluxo de criar o lead.
+    await savePlaceReference(place, { status: "prospected" });
+    renderMapsSearch();
+  } catch (error) {
+    toast(error.message || "Não foi possível registrar a prospecção.", "error");
   }
 }
 
@@ -1390,6 +1571,8 @@ async function handleMainClick(event) {
   if (action.dataset.action === "save-metric") await saveMetricRow(action.closest("tr"));
   if (action.dataset.action === "toggle-activity") await toggleActivity(action.dataset.id);
   if (action.dataset.action === "add-place-lead") await addPlaceAsLead(action.dataset.placeId);
+  if (action.dataset.action === "register-place-prospect") await registerPlaceProspect(action.dataset.placeId);
+  if (action.dataset.action === "load-more-places") await loadMorePlaces();
   if (action.dataset.action === "retry-pending-search") await retryPendingSearch();
   if (action.dataset.action === "open-day") openDayDialog(action.dataset.date);
 }
@@ -1400,6 +1583,11 @@ async function handleMainChange(event) {
     state.week = "all";
     try { await reloadPeriod(); } catch (error) { toast(error.message, "error"); }
   }
+  if (event.target.id === "maps-prospect-filter") {
+    state.mapsProspectFilter = event.target.value;
+    renderMapsSearch();
+  }
+  if (event.target.classList.contains("prospect-status-select")) updatePlaceStatus(event.target.dataset.placeId, event.target.value);
   if (event.target.id === "agenda-month") {
     state.agendaMonth = event.target.value;
     renderAgenda();
@@ -1450,6 +1638,7 @@ async function saveLeadFromDialog(event) {
   const id = $("#lead-id").value;
   const payload = {
     ...(id ? { id } : {}), name: $("#lead-name").value.trim(), clinic_name: $("#lead-clinic").value.trim() || null,
+    ...(state.mapsPendingLeadPlace && !id ? { place_id: state.mapsPendingLeadPlace.id } : {}),
     specialty: $("#lead-specialty").value.trim() || null, whatsapp: $("#lead-whatsapp").value.trim() || null,
     email: $("#lead-email").value.trim() || null, source: $("#lead-source").value, stage: $("#lead-stage").value,
     deal_value: Number($("#lead-value").value) || null, next_follow_up: $("#lead-follow-up").value || null, notes: $("#lead-notes").value.trim() || null,
@@ -1459,6 +1648,11 @@ async function saveLeadFromDialog(event) {
     state.leads = id
       ? state.leads.map((lead) => lead.id === saved.id ? saved : lead)
       : [saved, ...state.leads.filter((lead) => lead.id !== saved.id)];
+    if (state.mapsPendingLeadPlace && !id) {
+      try { await savePlaceReference(state.mapsPendingLeadPlace, { status: "prospected", leadId: saved.id }); } catch (referenceError) { console.warn("place_reference_lead_link_failed", referenceError?.message); }
+      state.mapsPendingLeadPlace = null;
+      await loadPlaceReferences(state.mapsResults);
+    }
     $("#lead-dialog").close();
     renderDashboard(); renderLeads(); renderAgenda();
     toast(id ? "Lead atualizado." : "Lead adicionado ao pipeline.");
