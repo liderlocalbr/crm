@@ -917,7 +917,7 @@ function metricTableRow(row) {
   const weekday = new Date(`${row.metric_date}T12:00:00`).getDay();
   const isWeekend = weekday === 0 || weekday === 6;
   const isToday = row.metric_date === todayIso();
-  return `<tr data-metric-date="${row.metric_date}" class="${isWeekend ? "weekend-row" : ""}"><td class="metric-date ${isToday ? "today-cell" : ""}">${formatDate(row.metric_date, { day: "2-digit", month: "2-digit", weekday: "short" })}</td><td><span class="week-tag">S${weekOfMonth(row.metric_date)}</span></td>${fields.map((field) => `<td><input class="metric-input" data-field="${field}" type="number" min="0" value="${Number(row[field]) || 0}" aria-label="${field}" /></td>`).join("")}<td data-revenue>${formatCurrency((Number(row.sales) || 0) * state.settings.deal_value)}</td><td><button class="button small save-row" data-action="save-metric">Salvar</button></td></tr>`;
+  return `<tr data-metric-date="${row.metric_date}" class="${isWeekend ? "weekend-row" : ""} ${isToday ? "today-row" : ""}"><td class="metric-date">${formatDate(row.metric_date, { day: "2-digit", month: "2-digit", weekday: "short" })}</td><td><span class="week-tag">S${weekOfMonth(row.metric_date)}</span></td>${fields.map((field) => `<td><input class="metric-input" data-field="${field}" type="number" min="0" value="${Number(row[field]) || 0}" aria-label="${field}" /></td>`).join("")}<td data-revenue>${formatCurrency((Number(row.sales) || 0) * state.settings.deal_value)}</td><td><button class="button small save-row" data-action="save-metric">Salvar</button></td></tr>`;
 }
 
 const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];

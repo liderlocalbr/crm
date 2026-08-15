@@ -203,7 +203,10 @@ button { color: inherit; }
 .table-total td { background: #10191b; color: var(--green); font-weight: 700; }
 .weekend-row td { background: rgba(243,109,117,.06); }
 .weekend-row .metric-date { color: var(--red) !important; }
-.metric-date.today-cell { color: var(--green) !important; border: 1px dashed var(--green) !important; border-radius: 8px; background: var(--green-soft); font-weight: 700; }
+.today-row td { border-top: 1px dashed var(--green); border-bottom: 1px dashed var(--green); background: var(--green-soft); }
+.today-row td:first-child { border-left: 1px dashed var(--green); border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+.today-row td:last-child { border-right: 1px dashed var(--green); border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+.today-row .metric-date { color: var(--green) !important; font-weight: 700; }
 .save-row { opacity: .58; }
 .save-row.changed { opacity: 1; color: var(--green); border-color: rgba(43,220,175,.25); }
 
