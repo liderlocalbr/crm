@@ -57,9 +57,12 @@
 
     <div id="app-shell" class="app-shell hidden">
       <aside class="sidebar">
-        <div class="brand">
-          <span class="brand-mark"><i></i></span>
-          <span><b>LÍDER LOCAL</b><small>CRM</small></span>
+        <div class="sidebar-head">
+          <div class="brand">
+            <span class="brand-mark"><i></i></span>
+            <span><b>LÍDER LOCAL</b><small>CRM</small></span>
+          </div>
+          <button id="sidebar-pin-button" class="sidebar-pin-button" type="button" aria-label="Desafixar painel lateral" aria-pressed="true" title="Desafixar painel lateral">⌖</button>
         </div>
         <nav id="main-nav" class="main-nav" aria-label="Navegação principal">
           <button class="nav-item active" data-view="dashboard"><span class="nav-icon">⌁</span> Dashboard</button>
@@ -130,7 +133,7 @@
         </div>
         <div class="form-stack">
           <label class="field"><span>Título *</span><input id="activity-title" required placeholder="Ligar para confirmar horário" /></label>
-          <label class="field"><span>Lead</span><select id="activity-lead"></select></label>
+          <label id="activity-lead-field" class="field"><span>Lead</span><select id="activity-lead"></select></label>
           <div class="form-grid">
             <label class="field"><span>Tipo</span><select id="activity-kind"><option value="follow_up">Follow-up</option><option value="whatsapp">WhatsApp</option><option value="call">Ligação</option><option value="email">E-mail</option><option value="meeting">Reunião</option><option value="note">Nota</option></select></label>
             <label class="field"><span>Quando</span><input id="activity-due" type="datetime-local" /></label>

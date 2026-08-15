@@ -10,6 +10,7 @@ const SESSION_KEY = "agencia-lider-local.crm.session.v1";
 const GOOGLE_TOKEN_KEY = "agencia-lider-local.crm.google-token.v1";
 const GOOGLE_TOKEN_EXPIRY_KEY = "agencia-lider-local.crm.google-token-expiry.v1";
 const GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
+const SIDEBAR_PIN_KEY = "agencia-lider-local.crm.sidebar-pinned.v1";
 const VIEW_ROUTES = { dashboard: "/dashboard", leads: "/pipeline", metrics: "/registro-diario", agenda: "/agenda", maps: "/buscar-no-maps", goals: "/metas" };
 const ROUTE_VIEWS = Object.fromEntries(Object.entries(VIEW_ROUTES).map(([view, route]) => [route, view]));
 function viewFromLocation() { return ROUTE_VIEWS[location.pathname.replace(/\/+$/, "") || "/"] || "dashboard"; }
@@ -50,6 +51,7 @@ const state = {
   googleEvents: [],
   googleEventsLoading: false,
   googleEventsError: "",
+  sidebarPinned: localStorage.getItem(SIDEBAR_PIN_KEY) !== "0",
   month: currentMonth(),
   agendaMonth: currentMonth(),
   week: "all",
@@ -492,6 +494,7 @@ function setupStaticEvents() {
     if (button) navigate(button.dataset.view);
   });
   $("#mobile-menu-button").addEventListener("click", () => $(".sidebar").classList.toggle("open"));
+  $("#sidebar-pin-button").addEventListener("click", toggleSidebarPin);
   window.addEventListener("popstate", () => navigate(viewFromLocation(), { history: false }));
   $$(".modal-close").forEach((button) => button.addEventListener("click", () => $("#lead-dialog").close()));
   $$(".activity-close").forEach((button) => button.addEventListener("click", () => $("#activity-dialog").close()));
@@ -640,6 +643,23 @@ async function logout() {
   location.href = location.pathname;
 }
 
+function syncSidebarState() {
+  const shell = $("#app-shell");
+  const pin = $("#sidebar-pin-button");
+  if (!shell || !pin) return;
+  shell.classList.toggle("sidebar-pinned", state.sidebarPinned);
+  shell.classList.toggle("sidebar-auto-hide", !state.sidebarPinned);
+  pin.classList.toggle("active", state.sidebarPinned);
+  pin.setAttribute("aria-pressed", state.sidebarPinned ? "true" : "false");
+  pin.title = state.sidebarPinned ? "Desafixar painel lateral" : "Fixar painel lateral";
+}
+
+function toggleSidebarPin() {
+  state.sidebarPinned = !state.sidebarPinned;
+  localStorage.setItem(SIDEBAR_PIN_KEY, state.sidebarPinned ? "1" : "0");
+  syncSidebarState();
+}
+
 function navigate(view, options = {}) {
   if (!VIEW_ROUTES[view]) view = "dashboard";
   state.view = view;
@@ -661,6 +681,7 @@ function renderAll() {
   renderMapsSearch();
   renderGoals();
   navigate(state.view, { history: false });
+  syncSidebarState();
 }
 
 function pageHead(eyebrow, title, subtitle, actions = "", inlineStatus = "") {
@@ -1982,6 +2003,8 @@ function openActivityDialog(presetDate = null, leadId = null) {
   $("#activity-form").reset();
   $("#activity-lead").innerHTML = `<option value="">Atividade geral</option>${state.leads.map((item) => `<option value="${item.id}">${escapeHtml(item.name)}</option>`).join("")}`;
   $("#activity-lead").value = leadId || "";
+  $("#activity-lead-field").classList.toggle("hidden", Boolean(leadId));
+  $("#activity-lead").disabled = Boolean(leadId);
   $("#activity-due").value = `${presetDate || todayIso()}T09:00`;
   $("#activity-google").checked = state.calendarConnected;
   $("#activity-google").disabled = !state.calendarConnected;
@@ -2066,14 +2089,27 @@ async function saveActivityFromDialog(event) {
   try {
     const created = await store.saveActivity(payload);
     let googleError = null;
+    let syncedGoogleActivity = null;
+    const googleWindow = openInGoogle ? window.open("about:blank", "_blank") : null;
     if (openInGoogle) {
-      try { await createGoogleEvent(created); } catch (error) { googleError = error; }
+      try {
+        syncedGoogleActivity = await createGoogleEvent(created);
+        if (!googleWindow) toast("O navegador bloqueou a nova aba. Permita pop-ups para abrir o evento do Google Agenda.", "error");
+      } catch (error) {
+        googleError = error;
+        if (googleWindow && !googleWindow.closed) googleWindow.close();
+      }
     }
     state.activities = await store.getActivities();
     $("#activity-dialog").close();
     renderDashboard(); renderLeads(); renderAgenda();
-    if (openInGoogle && !googleError) await loadGoogleEvents();
-    toast(googleError ? `Atividade criada no CRM, mas não no Google: ${googleError.message}` : openInGoogle ? "Atividade criada no CRM e no Google Agenda." : "Atividade criada.", googleError ? "error" : "success");
+    if (openInGoogle && !googleError) {
+      await loadGoogleEvents();
+      const googleUrl = syncedGoogleActivity?.google_event_url;
+      if (googleUrl && googleWindow && !googleWindow.closed) googleWindow.location.href = googleUrl;
+      else if (googleUrl && !googleWindow) window.open(googleUrl, "_blank");
+    }
+    toast(googleError ? `Atividade criada no CRM, mas não no Google: ${googleError.message}` : openInGoogle ? "Atividade criada no CRM e o evento foi aberto no Google Agenda." : "Atividade criada.", googleError ? "error" : "success");
   } catch (error) {
     toast(error.message, "error");
   }
