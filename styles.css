@@ -333,6 +333,15 @@ button { color: inherit; }
 .maps-in-funnel .lead-card-value { color: #ffd56f; }
 .maps-list-status { display: flex; align-items: center; min-width: 145px; }
 .maps-result-row.maps-in-funnel { background: rgba(92,67,24,.24); }
+.lead-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 13px; padding-top: 11px; border-top: 1px solid var(--line); }
+.contact-check-label { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.lead-contact-toggle { display: inline-grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 2px solid #607174; border-radius: 50%; background: #091113; color: #081111; cursor: pointer; font-size: 13px; font-weight: 900; transition: .16s ease; }
+.lead-contact-toggle:hover { border-color: #66a7ff; box-shadow: 0 0 0 3px rgba(102,167,255,.1); }
+.lead-contact-toggle.checked { border-color: #66a7ff; background: #66a7ff; box-shadow: inset 0 0 0 4px #0b1718, 0 0 0 3px rgba(102,167,255,.12); }
+.lead-contacted { border-color: rgba(102,167,255,.55); box-shadow: inset 4px 0 0 #66a7ff, 0 0 0 1px rgba(102,167,255,.08); }
+.contacted-tag { display: inline-flex; align-items: center; margin-top: 6px; padding: 4px 8px; border: 1px solid rgba(102,167,255,.45); border-radius: 999px; background: rgba(41,83,136,.36); color: #a9d0ff; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.lead-card-subtitle { display: flex; align-items: flex-start; gap: 7px; flex-direction: column; }
+.lead-card-subtitle p { margin: 0; }
 
 .modal { width: min(680px, calc(100vw - 24px)); max-height: calc(100vh - 34px); padding: 0; border: 1px solid var(--line-strong); border-radius: 18px; color: var(--text); background: #0d1517; box-shadow: var(--shadow); }
 .modal::backdrop { background: rgba(1,6,7,.78); backdrop-filter: blur(5px); }
