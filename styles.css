@@ -80,14 +80,17 @@ button { color: inherit; }
 .sidebar-pin-button:hover, .sidebar-pin-button.active { color: var(--green); border-color: rgba(43,220,175,.4); background: var(--green-soft); }
 .app-shell.sidebar-auto-hide .sidebar { width: 84px; padding-left: 12px; padding-right: 12px; }
 .app-shell.sidebar-auto-hide .sidebar-head { justify-content: center; min-height: 34px; }
-.app-shell.sidebar-auto-hide .sidebar .brand > span:last-child, .app-shell.sidebar-auto-hide .nav-item:not(:hover) { color: transparent; }
-.app-shell.sidebar-auto-hide .sidebar .brand > span:last-child, .app-shell.sidebar-auto-hide .nav-item { overflow: hidden; white-space: nowrap; }
+.app-shell.sidebar-auto-hide .sidebar .brand > span:last-child, .app-shell.sidebar-auto-hide .user-chip > span:last-child { display: none; }
+.app-shell.sidebar-auto-hide .nav-item .nav-label { display: none; }
+.app-shell.sidebar-auto-hide .nav-item { overflow: hidden; white-space: nowrap; }
 .app-shell.sidebar-auto-hide .sidebar .brand { padding: 0; }
 .app-shell.sidebar-auto-hide .sidebar-pin-button { position: absolute; top: 30px; right: -14px; opacity: 0; background: #101b1d; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
 .app-shell.sidebar-auto-hide .sidebar:hover { width: 276px; padding-left: 20px; padding-right: 20px; }
 .app-shell.sidebar-auto-hide .sidebar:hover .sidebar-head { justify-content: space-between; }
 .app-shell.sidebar-auto-hide .sidebar:hover .brand { padding: 0 12px; }
-.app-shell.sidebar-auto-hide .sidebar:hover .brand > span:last-child, .app-shell.sidebar-auto-hide .sidebar:hover .user-chip > span:last-child, .app-shell.sidebar-auto-hide .sidebar:hover #logout-button { display: flex; color: inherit; }
+.app-shell.sidebar-auto-hide .sidebar:hover .brand > span:last-child, .app-shell.sidebar-auto-hide .sidebar:hover .user-chip > span:last-child { display: flex; color: inherit; }
+.app-shell.sidebar-auto-hide .sidebar:hover .nav-item .nav-label { display: inline; }
+.app-shell.sidebar-auto-hide .sidebar:hover #logout-button { display: flex; }
 .app-shell.sidebar-auto-hide .sidebar:hover .main-nav { align-items: stretch; }
 .app-shell.sidebar-auto-hide .sidebar:hover .nav-item { width: auto; justify-content: flex-start; padding: 15px; gap: 13px; color: #8a9a9d; }
 .app-shell.sidebar-auto-hide .sidebar:hover .sidebar-pin-button, .app-shell.sidebar-auto-hide .sidebar-pin-button:focus-visible { opacity: 1; }
@@ -459,7 +462,8 @@ button { color: inherit; }
   .app-shell.sidebar-auto-hide .sidebar { width: 276px; padding: 30px 20px 22px; }
   .app-shell.sidebar-auto-hide .sidebar-head { justify-content: space-between; }
   .app-shell.sidebar-auto-hide .sidebar .brand { padding: 0 12px; }
-  .app-shell.sidebar-auto-hide .sidebar .brand > span:last-child, .app-shell.sidebar-auto-hide .nav-item, .app-shell.sidebar-auto-hide .nav-item:not(:hover), .app-shell.sidebar-auto-hide .user-chip > span:last-child, .app-shell.sidebar-auto-hide #logout-button { display: flex; color: inherit; }
+  .app-shell.sidebar-auto-hide .sidebar .brand > span:last-child, .app-shell.sidebar-auto-hide .nav-item .nav-label, .app-shell.sidebar-auto-hide .user-chip > span:last-child, .app-shell.sidebar-auto-hide #logout-button { display: flex; color: inherit; }
+  .app-shell.sidebar-auto-hide .nav-item { overflow: visible; }
   .app-shell.sidebar-auto-hide .main-nav { align-items: stretch; }
   .app-shell.sidebar-auto-hide .nav-item { width: auto; justify-content: flex-start; padding: 15px; gap: 13px; }
   .app-shell.sidebar-auto-hide .sidebar-pin-button { position: static; opacity: 1; box-shadow: none; }
