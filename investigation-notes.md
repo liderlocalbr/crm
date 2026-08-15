@@ -93,3 +93,9 @@ O erro real informado pelo usuário foi `Too many requests. (Total Render Dynami
 A documentação oficial de Local Search recomenda `source: "google_maps"`, `query`, `pages` e `limit`; a consulta dinâmica da documentação recomenda 5 páginas × 10 resultados para até 50 empresas quando usando HTML. Porém, essa abordagem é incompatível com a quota atual da conta porque exige Render Dynamic. A correção econômica precisa separar: buscar via fluxo não renderizado/parsed quando possível, usar no máximo uma renderização por pesquisa como fallback, e cachear o resultado no Supabase antes de novas chamadas.
 
 Fontes: https://developers.oxylabs.io/products/web-scraper-api/features/js-rendering-and-browser-control ; https://developers.oxylabs.io/api-targets/search-engines/google/search/local-search.md ; https://developers.oxylabs.io/products/web-scraper-api/features/result-processing-and-storage/output-types/capturing-network-requests-fetch-xhr.md
+
+## Nova funcionalidade — ampliar resultados e registrar prospecção
+
+A consulta atual ao endpoint `google.serper.dev/maps` retorna 20 lugares por consulta. Testes com `page: 2` e `page: 3` retornaram zero; testes com diferentes centros geográficos (`ll`) e zoom local retornaram conjuntos potencialmente distintos. A estratégia recomendada é botão incremental “Buscar mais 20”, com limite de 150, ou grade territorial controlada.
+
+O schema atual possui `place_references` com `owner_id`, `place_id`, keyword, locality, notes e timestamps, além de `leads` sem `place_id`. O novo fluxo deve usar `place_id`/`cid` como identidade externa, marcar prospectado e relacionar eventual lead existente sem duplicar registros.

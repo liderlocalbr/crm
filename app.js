@@ -10,6 +10,9 @@ const SESSION_KEY = "agencia-lider-local.crm.session.v1";
 const GOOGLE_TOKEN_KEY = "agencia-lider-local.crm.google-token.v1";
 const GOOGLE_TOKEN_EXPIRY_KEY = "agencia-lider-local.crm.google-token-expiry.v1";
 const GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
+const VIEW_ROUTES = { dashboard: "/dashboard", leads: "/pipeline", metrics: "/registro-diario", agenda: "/agenda", maps: "/buscar-no-maps", goals: "/metas" };
+const ROUTE_VIEWS = Object.fromEntries(Object.entries(VIEW_ROUTES).map(([view, route]) => [route, view]));
+function viewFromLocation() { return ROUTE_VIEWS[location.pathname.replace(/\/+$/, "") || "/"] || "dashboard"; }
 const CITY_GUIDE_STATES = [
   ["AC", "Acre"], ["AL", "Alagoas"], ["AP", "Amapá"], ["AM", "Amazonas"], ["BA", "Bahia"],
   ["CE", "Ceará"], ["DF", "Distrito Federal"], ["ES", "Espírito Santo"], ["GO", "Goiás"], ["MA", "Maranhão"],
@@ -50,7 +53,7 @@ const state = {
   month: currentMonth(),
   agendaMonth: currentMonth(),
   week: "all",
-  view: "dashboard",
+  view: viewFromLocation(),
   loading: false,
   mapsKeyword: "",
   mapsLocality: "",
@@ -489,6 +492,7 @@ function setupStaticEvents() {
     if (button) navigate(button.dataset.view);
   });
   $("#mobile-menu-button").addEventListener("click", () => $(".sidebar").classList.toggle("open"));
+  window.addEventListener("popstate", () => navigate(viewFromLocation(), { history: false }));
   $$(".modal-close").forEach((button) => button.addEventListener("click", () => $("#lead-dialog").close()));
   $$(".activity-close").forEach((button) => button.addEventListener("click", () => $("#activity-dialog").close()));
   $$(".stage-close").forEach((button) => button.addEventListener("click", () => $("#stage-dialog").close()));
@@ -636,8 +640,10 @@ async function logout() {
   location.href = location.pathname;
 }
 
-function navigate(view) {
+function navigate(view, options = {}) {
+  if (!VIEW_ROUTES[view]) view = "dashboard";
   state.view = view;
+  if (options.history !== false && location.pathname !== VIEW_ROUTES[view]) history.pushState({ view }, "", VIEW_ROUTES[view]);
   $$(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === view));
   $$(".view").forEach((section) => section.classList.toggle("active-view", section.id === `view-${view}`));
   $(".sidebar").classList.remove("open");
@@ -654,6 +660,7 @@ function renderAll() {
   renderAgenda();
   renderMapsSearch();
   renderGoals();
+  navigate(state.view, { history: false });
 }
 
 function pageHead(eyebrow, title, subtitle, actions = "", inlineStatus = "") {
@@ -761,13 +768,19 @@ async function toggleLeadContact(leadId) {
   const contactedAt = lead.contacted_at ? null : new Date().toISOString();
   const currentIndex = state.stages.findIndex((stage) => stage.value === lead.stage);
   const nextStage = contactedAt && currentIndex >= 0 ? state.stages[currentIndex + 1] : null;
-  const previousStage = lead.stage;
+  const restoredStage = !contactedAt && lead.contacted_previous_stage
+    ? state.stages.find((stage) => stage.value === lead.contacted_previous_stage)
+    : null;
+  const nextPayload = contactedAt
+    ? { ...(nextStage ? { stage: nextStage.value, contacted_previous_stage: lead.stage } : {}) }
+    : { ...(restoredStage ? { stage: restoredStage.value } : {}), contacted_previous_stage: null };
   try {
-    const saved = await store.saveLead({ id: lead.id, contacted_at: contactedAt, ...(nextStage ? { stage: nextStage.value } : {}) });
-    Object.assign(lead, saved || { contacted_at: contactedAt, ...(nextStage ? { stage: nextStage.value } : {}) });
+    const saved = await store.saveLead({ id: lead.id, contacted_at: contactedAt, ...nextPayload });
+    Object.assign(lead, saved || { contacted_at: contactedAt, ...nextPayload });
     renderDashboard();
     renderLeads();
-    toast(contactedAt ? `${lead.name} marcado como “Contatado”${nextStage ? ` e movido para ${nextStage.label}.` : "."}` : `${lead.name} removido de “Contatado”.`);
+    const restoredMessage = restoredStage ? ` e voltou para ${restoredStage.label}` : "";
+    toast(contactedAt ? `${lead.name} marcado como “Contatado”${nextStage ? ` e movido para ${nextStage.label}.` : "."}` : `${lead.name} removido de “Contatado”${restoredMessage}.`);
   } catch (error) {
     toast(error.message || "Não foi possível atualizar o contato.", "error");
   }
