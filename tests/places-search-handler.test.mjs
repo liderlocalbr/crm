@@ -44,10 +44,14 @@ test("submete busca local com parser estruturado do Google Search", async () => 
 
     const payload = JSON.parse(oxylabsRequest.options.body);
     assert.deepEqual(payload, {
-      source: "google",
-      url: "https://www.google.com/maps/search/Dentista%20em%20Mogi%20das%20Cruzes%20SP?hl=pt-BR",
+      source: "google_maps",
+      query: "Dentista em Mogi das Cruzes SP",
       geo_location: "Mogi das Cruzes,São Paulo,Brazil",
+      locale: "pt-BR",
       render: "html",
+      xhr: true,
+      pages: 5,
+      limit: 10,
     });
   } finally {
     globalThis.fetch = previousFetch;

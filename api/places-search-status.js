@@ -73,9 +73,55 @@ function extractHtmlListings(html) {
   }).filter(Boolean);
 }
 
-// Tenta HTML do Google Maps, local_pack parseado e formatos alternativos.
+function parseEmbeddedJson(value) {
+  if (typeof value !== "string") return null;
+  const text = value.trim().replace(/^\)\]\}'[,\n]?/, "").trim();
+  if (!(text.startsWith("{") || text.startsWith("["))) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+function collectStructuredListings(value, output = [], seenNodes = new Set(), depth = 0) {
+  if (depth > 14 || output.length >= 100 || value == null) return output;
+  if (typeof value === "string") {
+    const parsed = parseEmbeddedJson(value);
+    if (parsed) collectStructuredListings(parsed, output, seenNodes, depth + 1);
+    return output;
+  }
+  if (typeof value !== "object") return output;
+  if (seenNodes.has(value)) return output;
+  seenNodes.add(value);
+  if (Array.isArray(value)) {
+    for (const item of value) collectStructuredListings(item, output, seenNodes, depth + 1);
+    return output;
+  }
+
+  if (typeof value.response_body === "string") {
+    const parsed = parseEmbeddedJson(value.response_body);
+    if (parsed) collectStructuredListings(parsed, output, seenNodes, depth + 1);
+    else if (value.response_body.includes("<")) output.push(...extractHtmlListings(value.response_body));
+  }
+
+  const name = value.title || value.name || value.business_name;
+  const hasBusinessField = value.address || value.formatted_address || value.phone || value.phone_number || value.website || value.url || value.link || value.rating != null;
+  if (name && hasBusinessField) output.push(value);
+
+  for (const [key, child] of Object.entries(value)) {
+    if (key !== "response_body") collectStructuredListings(child, output, seenNodes, depth + 1);
+  }
+  return output;
+}
+
+// Tenta HTML, XHR JSON, local_pack parseado e formatos alternativos.
 function extractListingsFromContent(content) {
-  if (typeof content === "string") return extractHtmlListings(content);
+  if (typeof content === "string") {
+    const parsed = parseEmbeddedJson(content);
+    return parsed ? collectStructuredListings(parsed) : extractHtmlListings(content);
+  }
+  if (Array.isArray(content)) return collectStructuredListings(content);
   if (!content || typeof content !== "object") return [];
   const localPack = content?.results?.local_pack;
   if (Array.isArray(localPack)) {
