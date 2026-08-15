@@ -162,14 +162,17 @@ button { color: inherit; }
 .stage-badge.negotiation { color: var(--amber); background: var(--amber-soft); border-color: rgba(246,168,33,.2); }
 
 .kanban { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(260px, 1fr); gap: 12px; overflow-x: auto; padding: 2px 2px 18px; scroll-snap-type: x proximity; }
-.kanban-column { background: rgba(12,18,20,.8); border: 1px solid var(--line); border-radius: 15px; min-height: 520px; scroll-snap-align: start; }
+.kanban-column { background: rgba(12,18,20,.8); border: 1px solid var(--line); border-radius: 15px; min-height: 520px; scroll-snap-align: start; transition: border-color .18s ease, box-shadow .18s ease, background .18s ease; }
+.kanban-column.drop-target { border-color: rgba(43,220,175,.72); background: rgba(43,220,175,.045); box-shadow: 0 0 0 2px rgba(43,220,175,.1), 0 18px 40px rgba(0,0,0,.2); }
 .kanban-head { display: flex; align-items: center; justify-content: space-between; padding: 15px; border-bottom: 1px solid var(--line); }
 .kanban-head span { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 12px; }
 .kanban-head i { width: 7px; height: 7px; border-radius: 50%; background: var(--column-color, var(--muted)); }
 .kanban-count { color: var(--muted); font: 700 10px monospace; border: 1px solid var(--line); padding: 3px 6px; border-radius: 999px; }
 .kanban-cards { padding: 10px; display: flex; flex-direction: column; gap: 9px; }
-.lead-card { border: 1px solid var(--line); border-radius: 12px; padding: 13px; background: linear-gradient(145deg, #121b1d, #0e1517); cursor: pointer; transition: .18s ease; }
+.lead-card { border: 1px solid var(--line); border-radius: 12px; padding: 13px; background: linear-gradient(145deg, #121b1d, #0e1517); cursor: grab; user-select: none; transition: .18s ease; }
 .lead-card:hover { transform: translateY(-2px); border-color: #31454a; box-shadow: 0 12px 28px rgba(0,0,0,.18); }
+.lead-card:active { cursor: grabbing; }
+.lead-card.dragging { opacity: .42; transform: scale(.98); border-color: rgba(43,220,175,.42); }
 .lead-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .lead-card h3 { font-size: 13px; margin: 0; }
 .lead-card p { color: var(--muted); margin: 4px 0 0; font-size: 10px; }

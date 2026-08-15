@@ -1,12 +1,14 @@
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./config.js";
-import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, monthBounds, progress, weekOfMonth } from "./calculations.js";
+import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, monthBounds, moveLeadToStage, progress, weekOfMonth } from "./calculations.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const todayIso = () => new Date().toISOString().slice(0, 10);
 const currentMonth = () => todayIso().slice(0, 7);
 const isLocalDemo = ["localhost", "127.0.0.1"].includes(location.hostname) && new URLSearchParams(location.search).get("demo") === "1";
-const SESSION_KEY = "livonno.crm.session.v1";
+const SESSION_KEY = "agencia-lider-local.crm.session.v1";
+let draggedLeadId = null;
+let suppressLeadClick = false;
 
 const STAGES = [
   { value: "new", label: "Novo lead", color: "#63a9ff" },
@@ -254,7 +256,7 @@ async function bootstrap() {
   populateStageOptions();
   if (isLocalDemo) {
     state.session = { access_token: "demo" };
-    state.user = { id: "demo-user", email: "demo@livonno.com", user_metadata: { full_name: "Damião Moreira" } };
+    state.user = { id: "demo-user", email: "demo@agencialiderlocal.com.br", user_metadata: { full_name: "Damião Moreira" } };
     await enterApp();
     return;
   }
@@ -293,6 +295,11 @@ function setupStaticEvents() {
   $(".main-content").addEventListener("click", handleMainClick);
   $(".main-content").addEventListener("change", handleMainChange);
   $(".main-content").addEventListener("input", handleMainInput);
+  $(".main-content").addEventListener("dragstart", handleLeadDragStart);
+  $(".main-content").addEventListener("dragover", handleLeadDragOver);
+  $(".main-content").addEventListener("dragleave", handleLeadDragLeave);
+  $(".main-content").addEventListener("drop", handleLeadDrop);
+  $(".main-content").addEventListener("dragend", handleLeadDragEnd);
 }
 
 function populateStageOptions() {
@@ -506,13 +513,73 @@ function renderLeads() {
     ${pageHead("PIPELINE COMERCIAL", "Oportunidades em movimento", "Visualize cada lead e avance as negociações sem perder contexto.", `<span class="date-chip">${state.leads.length} leads</span><button class="button primary" data-action="open-lead">+ Novo lead</button>`)}
     <div class="kanban">${STAGES.map((stage) => {
       const leads = state.leads.filter((lead) => lead.stage === stage.value);
-      return `<section class="kanban-column"><div class="kanban-head"><span><i style="--column-color:${stage.color}"></i>${stage.label}</span><b class="kanban-count">${leads.length}</b></div><div class="kanban-cards">${leads.length ? leads.map(leadCard).join("") : `<div class="empty-column">Nenhum lead nesta etapa</div>`}</div></section>`;
+      return `<section class="kanban-column" data-drop-stage="${stage.value}"><div class="kanban-head"><span><i style="--column-color:${stage.color}"></i>${stage.label}</span><b class="kanban-count">${leads.length}</b></div><div class="kanban-cards">${leads.length ? leads.map(leadCard).join("") : `<div class="empty-column">Solte um lead nesta etapa</div>`}</div></section>`;
     }).join("")}</div>`;
 }
 
 function leadCard(lead) {
   const overdue = lead.next_follow_up && lead.next_follow_up < todayIso();
-  return `<article class="lead-card" data-action="edit-lead" data-id="${lead.id}"><div class="lead-card-top"><div><h3>${escapeHtml(lead.name)}</h3><p>${escapeHtml(lead.clinic_name || lead.specialty || "Sem clínica informada")}</p></div><span class="lead-card-value">${formatCurrency(lead.deal_value || state.settings.deal_value)}</span></div><div class="lead-meta"><span>${escapeHtml(lead.source || "Sem origem")}</span><span class="lead-follow-up ${overdue ? "overdue" : ""}">${lead.next_follow_up ? `Follow-up ${formatDate(lead.next_follow_up)}` : "Sem follow-up"}</span></div></article>`;
+  return `<article class="lead-card" draggable="true" data-action="edit-lead" data-id="${lead.id}" title="Arraste para mudar de etapa ou clique para editar"><div class="lead-card-top"><div><h3>${escapeHtml(lead.name)}</h3><p>${escapeHtml(lead.clinic_name || lead.specialty || "Sem clínica informada")}</p></div><span class="lead-card-value">${formatCurrency(lead.deal_value || state.settings.deal_value)}</span></div><div class="lead-meta"><span>${escapeHtml(lead.source || "Sem origem")}</span><span class="lead-follow-up ${overdue ? "overdue" : ""}">${lead.next_follow_up ? `Follow-up ${formatDate(lead.next_follow_up)}` : "Sem follow-up"}</span></div></article>`;
+}
+
+function clearLeadDragVisuals() {
+  $$(".lead-card.dragging").forEach((card) => card.classList.remove("dragging"));
+  $$(".kanban-column.drop-target").forEach((column) => column.classList.remove("drop-target"));
+}
+
+function handleLeadDragStart(event) {
+  const card = event.target.closest(".lead-card[data-id]");
+  if (!card) return;
+  draggedLeadId = card.dataset.id;
+  suppressLeadClick = true;
+  card.classList.add("dragging");
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain", draggedLeadId);
+}
+
+function handleLeadDragOver(event) {
+  const column = event.target.closest("[data-drop-stage]");
+  if (!column || !draggedLeadId) return;
+  event.preventDefault();
+  event.dataTransfer.dropEffect = "move";
+  $$(".kanban-column.drop-target").forEach((item) => item.classList.toggle("drop-target", item === column));
+}
+
+function handleLeadDragLeave(event) {
+  const column = event.target.closest("[data-drop-stage]");
+  if (column && !column.contains(event.relatedTarget)) column.classList.remove("drop-target");
+}
+
+async function handleLeadDrop(event) {
+  const column = event.target.closest("[data-drop-stage]");
+  if (!column) return;
+  event.preventDefault();
+  const leadId = draggedLeadId || event.dataTransfer.getData("text/plain");
+  const nextStage = column.dataset.dropStage;
+  clearLeadDragVisuals();
+  draggedLeadId = null;
+  setTimeout(() => { suppressLeadClick = false; }, 0);
+  const movement = moveLeadToStage(state.leads, leadId, nextStage);
+  if (!movement.changed) return;
+
+  state.leads = movement.leads;
+  renderDashboard();
+  renderLeads();
+  try {
+    await store.saveLead({ id: movement.lead.id, stage: nextStage });
+    toast(`${movement.lead.name} movido para ${stageMeta(nextStage).label}.`);
+  } catch (error) {
+    state.leads = moveLeadToStage(state.leads, movement.lead.id, movement.previousStage).leads;
+    renderDashboard();
+    renderLeads();
+    toast(error.message || "Não foi possível mover o lead.", "error");
+  }
+}
+
+function handleLeadDragEnd() {
+  clearLeadDragVisuals();
+  draggedLeadId = null;
+  setTimeout(() => { suppressLeadClick = false; }, 0);
 }
 
 function renderMetrics() {
@@ -600,6 +667,7 @@ async function handleMainClick(event) {
   if (viewTarget) return navigate(viewTarget.dataset.viewTarget);
   const action = event.target.closest("[data-action]");
   if (!action) return;
+  if (suppressLeadClick && action.dataset.action === "edit-lead") return;
   if (action.dataset.action === "open-lead") openLeadDialog();
   if (action.dataset.action === "edit-lead") openLeadDialog(state.leads.find((lead) => lead.id === action.dataset.id));
   if (action.dataset.action === "open-activity") openActivityDialog();

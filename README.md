@@ -1,12 +1,12 @@
-# Livonno CRM
+# Agência Líder Local CRM
 
-CRM de prospecção baseado na planilha **CRM-Livonno-Métricas**. Reúne pipeline de leads, registro diário, agenda de follow-ups, metas encadeadas e dashboard de conversão.
+CRM de prospecção da **Agência Líder Local**, baseado na planilha de métricas comerciais. Reúne pipeline de leads, registro diário, agenda de follow-ups, metas encadeadas e dashboard de conversão.
 
 ## Funcionalidades
 
 - Autenticação por e-mail e senha com Supabase Auth
 - Isolamento dos dados por usuário com Row Level Security (RLS)
-- Pipeline com sete etapas e histórico de movimentações
+- Pipeline com sete etapas e movimentação de cards por arrastar e soltar
 - Cadastro e edição de leads, valor potencial e próximo follow-up
 - Agenda de ligações, WhatsApp, reuniões, e-mails e tarefas
 - Registro diário por mês e resumo de receita
@@ -45,4 +45,4 @@ npm run check
 
 ## Banco de dados
 
-O schema versionado está em `supabase/migrations/202608142117_create_livonno_crm_schema.sql`. A aplicação usa apenas a chave publicável do Supabase no navegador; nenhuma chave administrativa é exposta.
+O schema está versionado na pasta `supabase/migrations`. A aplicação usa apenas a chave publicável do Supabase no navegador; nenhuma chave administrativa é exposta.

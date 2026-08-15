@@ -64,3 +64,18 @@ export function progress(actual, goal) {
   const target = safeNumber(goal);
   return target > 0 ? Math.min(100, Math.max(0, safeNumber(actual) / target * 100)) : 0;
 }
+
+export function moveLeadToStage(leads = [], leadId, nextStage) {
+  const current = leads.find((lead) => lead.id === leadId);
+  if (!current || current.stage === nextStage) {
+    return { leads, lead: current || null, previousStage: current?.stage || null, changed: false };
+  }
+
+  const updated = { ...current, stage: nextStage };
+  return {
+    leads: leads.map((lead) => lead.id === leadId ? updated : lead),
+    lead: updated,
+    previousStage: current.stage,
+    changed: true,
+  };
+}
