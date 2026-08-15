@@ -2128,14 +2128,9 @@ async function connectGoogleCalendar() {
       scopes: GOOGLE_CALENDAR_SCOPE,
       access_type: "offline",
       prompt: "consent",
-      skip_http_redirect: "true",
     });
-    const response = await fetch(`${SUPABASE_URL}/auth/v1/authorize?${params}`, {
-      headers: { apikey: SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${state.session.access_token}` },
-    });
-    const payload = await response.json().catch(() => null);
-    if (!response.ok || !payload?.url) throw new Error(payload?.msg || payload?.message || "Não foi possível iniciar a conexão com o Google.");
-    location.assign(payload.url);
+    const oauthUrl = `${SUPABASE_URL}/auth/v1/authorize?${params}`;
+    location.assign(oauthUrl);
   } catch (error) {
     const message = /provider|enabled|unsupported/i.test(error.message)
       ? "A conexão Google ainda precisa das credenciais OAuth do projeto. Ela não será marcada como ativa antes da autorização real."
