@@ -1079,18 +1079,19 @@ async function handleMapsSearch(event) {
   state.mapsLocality = locality;
   state.mapsLoading = true;
   state.mapsError = "";
-  state.mapsStatusMessage = "Buscando no Google…";
+  state.mapsStatusMessage = "Iniciando busca…";
   renderMapsSearch();
   try {
     if (isLocalDemo) throw new Error("A busca no Maps não está disponível no modo demonstração.");
-    const params = new URLSearchParams({ keyword, locality, _: String(Date.now()) });
-    const response = await fetch(`/api/places-search?${params}`, {
+    const submitParams = new URLSearchParams({ keyword, locality, _: String(Date.now()) });
+    const submitResponse = await fetch(`/api/places-search?${submitParams}`, {
       headers: { Authorization: `Bearer ${state.session.access_token}` },
       cache: "no-store",
     });
-    const payload = await response.json().catch(() => null);
-    if (!response.ok) throw new Error(payload?.message || "Não foi possível buscar no Google Maps.");
-    state.mapsResults = payload.places || [];
+    const submitPayload = await submitResponse.json().catch(() => null);
+    if (!submitResponse.ok || !submitPayload?.jobId) throw new Error(submitPayload?.message || "Não foi possível iniciar a busca.");
+
+    state.mapsResults = await pollPlacesJob(submitPayload.jobId);
     state.mapsSearched = true;
     await rest("place_search_usage", { method: "POST", body: { owner_id: state.user.id, keyword, locality } });
   } catch (error) {
@@ -1100,6 +1101,25 @@ async function handleMapsSearch(event) {
     state.mapsStatusMessage = "";
     renderMapsSearch();
   }
+}
+
+async function pollPlacesJob(jobId) {
+  const maxAttempts = 30;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    state.mapsStatusMessage = `Buscando no Google Maps… (${attempt * 3}s)`;
+    renderMapsSearch();
+    const params = new URLSearchParams({ jobId, _: String(Date.now()) });
+    const response = await fetch(`/api/places-search-status?${params}`, {
+      headers: { Authorization: `Bearer ${state.session.access_token}` },
+      cache: "no-store",
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(payload?.message || "Não foi possível checar o status da busca.");
+    if (payload.status === "done") return payload.places || [];
+    if (payload.status === "error") throw new Error(payload.message || "A busca falhou.");
+  }
+  throw new Error("A busca demorou demais. Tente novamente em instantes.");
 }
 
 async function addPlaceAsLead(placeId) {
