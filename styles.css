@@ -205,6 +205,9 @@ button { color: inherit; }
 .save-row.changed { opacity: 1; color: var(--green); border-color: rgba(43,220,175,.25); }
 
 .agenda-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 14px; }
+.maps-results { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.maps-result-card { cursor: default; }
+.maps-result-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; }
 .agenda-group { margin-bottom: 22px; }
 .agenda-group-title { color: var(--muted); font: 700 10px monospace; letter-spacing: .08em; margin: 0 0 7px; }
 .activity-row { display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 14px; align-items: center; padding: 15px; border: 1px solid var(--line); border-radius: 11px; background: #0c1315; margin-bottom: 9px; }

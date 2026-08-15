@@ -41,6 +41,12 @@ const state = {
   week: "all",
   view: "dashboard",
   loading: false,
+  mapsKeyword: "",
+  mapsLocality: "",
+  mapsResults: [],
+  mapsLoading: false,
+  mapsError: "",
+  mapsSearched: false,
 };
 
 const mock = createMockData();
@@ -426,8 +432,15 @@ async function bootstrap() {
     const saved = JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
     if (saved?.access_token) {
       state.session = saved;
-      const user = await authRequest("/user");
-      state.user = user;
+      try {
+        state.user = await authRequest("/user");
+      } catch (error) {
+        // O access_token salvo pode ter expirado (validade padrão de 1h).
+        // Antes de derrubar a sessão, tenta renovar automaticamente com o refresh_token.
+        if (!saved.refresh_token) throw error;
+        await refreshSession();
+        state.user = await authRequest("/user");
+      }
       await enterApp();
       return;
     }
@@ -598,6 +611,7 @@ function renderAll() {
   renderLeads();
   renderMetrics();
   renderAgenda();
+  renderMapsSearch();
   renderGoals();
 }
 
@@ -928,6 +942,95 @@ function activityRow(activity) {
   return `<div class="activity-row"><button class="activity-check ${activity.completed_at ? "done" : ""}" data-action="toggle-activity" data-id="${activity.id}" aria-label="${activity.completed_at ? "Reabrir" : "Concluir"} atividade"></button><div class="activity-main"><b>${escapeHtml(activity.title)}</b><span>${escapeHtml(lead?.name || "Atividade geral")} · ${activityKindLabel(activity.kind)}</span>${calendarAction}</div><span class="activity-time ${isOverdue(activity) ? "overdue" : ""}">${activity.due_at ? formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Sem prazo"}</span></div>`;
 }
 
+function renderMapsSearch() {
+  const section = $("#view-maps");
+  if (!section) return;
+  section.innerHTML = `
+    ${pageHead("PROSPECÇÃO", "Buscar leads no Maps", "Encontre clínicas e profissionais por palavra-chave e cidade usando o Google Maps.")}
+    <section class="panel">
+      <form id="maps-search-form" class="form-grid">
+        <label class="field"><span>Palavra-chave</span><input id="maps-keyword" required minlength="2" placeholder="Ex.: dentista" value="${escapeHtml(state.mapsKeyword)}" /></label>
+        <label class="field"><span>Cidade</span><input id="maps-locality" required minlength="2" placeholder="Ex.: Mogi das Cruzes - SP" value="${escapeHtml(state.mapsLocality)}" /></label>
+        <button class="button primary" type="submit" ${state.mapsLoading ? "disabled" : ""}>${state.mapsLoading ? "Buscando…" : "Buscar no Maps"}</button>
+      </form>
+    </section>
+    <section class="panel">${mapsResultsMarkup()}</section>`;
+  $("#maps-search-form").addEventListener("submit", handleMapsSearch);
+}
+
+function mapsResultsMarkup() {
+  if (state.mapsLoading) return `<div class="loading">Buscando no Google Maps…</div>`;
+  if (state.mapsError) return `<div class="google-calendar-state error">${escapeHtml(state.mapsError)}</div>`;
+  if (!state.mapsSearched) return emptyState("⌖", "Busque por leads no Maps", "Digite uma palavra-chave (ex.: dentista) e uma cidade para encontrar clínicas e profissionais.", "");
+  if (!state.mapsResults.length) return emptyState("⌖", "Nada encontrado", "Tente outra palavra-chave ou cidade.", "");
+  return `<div class="maps-results">${state.mapsResults.map(mapsResultCard).join("")}</div>`;
+}
+
+function mapsResultCard(place) {
+  return `<div class="lead-card maps-result-card">
+    <div class="lead-card-top"><h3>${escapeHtml(place.name)}</h3>${place.rating ? `<span class="lead-card-value">★ ${place.rating} (${place.ratingCount || 0})</span>` : ""}</div>
+    <p>${escapeHtml(place.address)}</p>
+    ${place.phone ? `<p>${escapeHtml(place.phone)}</p>` : ""}
+    <div class="maps-result-actions">
+      ${place.mapsUrl ? `<a class="button ghost small" href="${escapeHtml(place.mapsUrl)}" target="_blank" rel="noopener">Ver no Maps ↗</a>` : ""}
+      <button class="button primary small" type="button" data-action="add-place-lead" data-place-id="${escapeHtml(place.id)}">+ Adicionar como lead</button>
+    </div>
+  </div>`;
+}
+
+async function handleMapsSearch(event) {
+  event.preventDefault();
+  const keyword = $("#maps-keyword").value.trim();
+  const locality = $("#maps-locality").value.trim();
+  if (keyword.length < 2 || locality.length < 2) {
+    toast("Informe uma palavra-chave e uma cidade válidas.", "error");
+    return;
+  }
+  state.mapsKeyword = keyword;
+  state.mapsLocality = locality;
+  state.mapsLoading = true;
+  state.mapsError = "";
+  renderMapsSearch();
+  try {
+    if (isLocalDemo) throw new Error("A busca no Maps não está disponível no modo demonstração.");
+    const params = new URLSearchParams({ keyword, locality });
+    const response = await fetch(`/api/places-search?${params}`, {
+      headers: { Authorization: `Bearer ${state.session.access_token}` },
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(payload?.message || "Não foi possível buscar no Google Maps.");
+    state.mapsResults = payload.places || [];
+    state.mapsSearched = true;
+    await rest("place_search_usage", { method: "POST", body: { owner_id: state.user.id, keyword, locality } });
+  } catch (error) {
+    state.mapsError = error.message;
+  } finally {
+    state.mapsLoading = false;
+    renderMapsSearch();
+  }
+}
+
+async function addPlaceAsLead(placeId) {
+  const place = state.mapsResults.find((item) => item.id === placeId);
+  if (!place) return;
+  openLeadDialog({
+    clinic_name: place.name,
+    whatsapp: place.phone || "",
+    notes: [place.address, place.website, place.mapsUrl].filter(Boolean).join("\n"),
+  });
+  if (isLocalDemo) return;
+  try {
+    await rest("place_references", {
+      method: "POST",
+      query: "on_conflict=owner_id,place_id",
+      body: { owner_id: state.user.id, place_id: place.id, keyword: state.mapsKeyword, locality: state.mapsLocality },
+      prefer: "resolution=merge-duplicates,return=representation",
+    });
+  } catch {
+    // Referência é só um registro auxiliar de deduplicação; não deve travar o fluxo de criar o lead.
+  }
+}
+
 function googleEventRow(event) {
   const start = event.allDay
     ? formatDate(event.start.slice(0, 10), { day: "2-digit", month: "short" })
@@ -989,6 +1092,7 @@ async function handleMainClick(event) {
   if (action.dataset.action === "sync-google-activity") await syncActivityToGoogle(action.dataset.id);
   if (action.dataset.action === "save-metric") await saveMetricRow(action.closest("tr"));
   if (action.dataset.action === "toggle-activity") await toggleActivity(action.dataset.id);
+  if (action.dataset.action === "add-place-lead") await addPlaceAsLead(action.dataset.placeId);
 }
 
 async function handleMainChange(event) {
