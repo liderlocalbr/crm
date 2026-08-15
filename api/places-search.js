@@ -91,7 +91,6 @@ export default async function handler(req, res) {
         source: "google_maps",
         query: `${keyword} em ${locality}`,
         geo_location: buildGeoLocation(locality),
-        parse: true,
       }),
     });
 
