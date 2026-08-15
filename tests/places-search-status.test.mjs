@@ -13,7 +13,20 @@ function response() {
   };
 }
 
-test("normaliza local_pack parseado em empresas para a interface", async () => {
+function mapsHtml(count = 55) {
+  return Array.from({ length: count }, (_, index) => `
+    <div class="VkpGBb">
+      <a class="vwVdIc" data-cid="cid-${index}" href="https://www.google.com/maps/place/Empresa+${index}">
+        <div class="rllt__details">
+          <div class="dbg0pd">Empresa ${index}</div>
+          <div>4,${index % 10}(100)</div>
+          <div>Rua Central, ${index} — Mogi das Cruzes, SP</div>
+        </div>
+      </a>
+    </div>`).join("");
+}
+
+test("extrai até 50 empresas do HTML bruto do Google Maps", async () => {
   const previousFetch = globalThis.fetch;
   const previousUsername = process.env.OXYLABS_USERNAME;
   const previousPassword = process.env.OXYLABS_PASSWORD;
@@ -25,27 +38,9 @@ test("normaliza local_pack parseado em empresas para a interface", async () => {
     if (url === "https://data.oxylabs.io/v1/queries/job-123") {
       return new Response(JSON.stringify({ status: "done" }), { status: 200 });
     }
-    if (url === "https://data.oxylabs.io/v1/queries/job-123/results?type=parsed") {
+    if (url === "https://data.oxylabs.io/v1/queries/job-123/results") {
       return new Response(JSON.stringify({
-        results: [{
-          page: 1,
-          status_code: 200,
-          content: {
-            results: {
-              local_pack: [{
-                items: [{
-                  title: "Clínica Exemplo",
-                  address: "Rua Central, 100 — Mogi das Cruzes, SP",
-                  phone: "+55 11 99999-0000",
-                  rating: 4.8,
-                  reviews_count: 120,
-                  place_id: "place-1",
-                  links: [{ title: "Site", href: "https://clinica-exemplo.test" }],
-                }],
-              }],
-            },
-          },
-        }],
+        results: [{ page: 1, status_code: 200, content: mapsHtml() }],
       }), { status: 200 });
     }
     throw new Error(`URL inesperada no teste: ${url}`);
@@ -60,19 +55,13 @@ test("normaliza local_pack parseado em empresas para a interface", async () => {
     }, result);
 
     assert.equal(result.statusCode, 200);
-    assert.deepEqual(result.body, {
-      status: "done",
-      places: [{
-        id: "place-1",
-        name: "Clínica Exemplo",
-        address: "Rua Central, 100 — Mogi das Cruzes, SP",
-        phone: "+55 11 99999-0000",
-        website: "https://clinica-exemplo.test",
-        rating: 4.8,
-        ratingCount: 120,
-        mapsUrl: "https://www.google.com/maps/search/?api=1&query=Cl%C3%ADnica%20Exemplo%20Rua%20Central%2C%20100%20%E2%80%94%20Mogi%20das%20Cruzes%2C%20SP",
-      }],
-    });
+    assert.equal(result.body.status, "done");
+    assert.equal(result.body.places.length, 50);
+    assert.equal(result.body.places[0].id, "cid-0");
+    assert.equal(result.body.places[0].name, "Empresa 0");
+    assert.equal(result.body.places[0].rating, 4);
+    assert.equal(result.body.places[0].ratingCount, 100);
+    assert.match(result.body.places[0].mapsUrl, /google\.com\/maps\/place/);
   } finally {
     globalThis.fetch = previousFetch;
     if (previousUsername === undefined) delete process.env.OXYLABS_USERNAME;

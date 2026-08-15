@@ -14,9 +14,68 @@ function safeStringify(value, limit = 1500) {
   }
 }
 
-// Tenta os formatos já conhecidos: local_pack (busca normal, aninhado em grupos
-// com "items"), e formatos mais diretos que a busca dedicada de Maps pode usar.
+function decodeHtml(value = "") {
+  return String(value)
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(parseInt(code, 16)))
+    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)));
+}
+
+function stripHtml(value = "") {
+  return decodeHtml(String(value).replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, " "))
+    .replace(/\s+/g, " ").trim();
+}
+
+function attribute(block, name) {
+  const pattern = new RegExp(`${name}\\s*=\\s*[\\\"']([^\\\"']+)`, "i");
+  return decodeHtml(block.match(pattern)?.[1] || "");
+}
+
+function extractHtmlListings(html) {
+  if (typeof html !== "string" || !html.includes("<")) return [];
+  const blocks = [];
+  const blockPattern = /<div[^>]+class=[\"'][^\"']*\bVkpGBb\b[^\"']*[\"'][^>]*>[\s\S]*?(?=<div[^>]+class=[\"'][^\"']*\bVkpGBb\b|$)/gi;
+  let match;
+  while ((match = blockPattern.exec(html)) && blocks.length < 50) blocks.push(match[0]);
+  if (!blocks.length) {
+    const articlePattern = /<div[^>]+role=[\"']article[\"'][^>]*>[\s\S]*?(?=<div[^>]+role=[\"']article[\"']|$)/gi;
+    while ((match = articlePattern.exec(html)) && blocks.length < 50) blocks.push(match[0]);
+  }
+
+  return blocks.map((block, index) => {
+    const nameMatch = block.match(/class=[\"'][^\"']*\bdbg0pd\b[^\"']*[\"'][^>]*>\s*([^<]+)\s*<\/[^>]+>/i);
+    const name = decodeHtml(nameMatch?.[1] || attribute(block, "aria-label")).trim();
+    if (!name) return null;
+    const textParts = [...block.matchAll(/<div[^>]*>([^<]{2,})<\/div>/gi)].map((item) => stripHtml(item[1])).filter(Boolean);
+    const metadata = textParts.find((part) => /\d[.,]\d\s*\(\d/.test(part)) || "";
+    const ratingMatch = metadata.match(/(\d(?:[.,]\d)?)\s*\((\d[.\d]*)\)/);
+    const address = textParts.find((part) => part !== name && part !== metadata && !/[€$]\s*[€$]/.test(part)) || "";
+    const website = [...block.matchAll(/href=[\"']([^\"']+)[\"']/gi)]
+      .map((item) => decodeHtml(item[1]))
+      .find((href) => /^https?:\/\//i.test(href) && !href.includes("google.")) || "";
+    const mapsHref = [...block.matchAll(/href=[\"']([^\"']+)[\"']/gi)]
+      .map((item) => decodeHtml(item[1]))
+      .find((href) => href.includes("google.") || href.startsWith("/maps/")) || "";
+    const cid = attribute(block, "data-cid") || attribute(block, "data-place-id");
+    return {
+      title: name,
+      address,
+      website,
+      rating: ratingMatch ? Number(ratingMatch[1].replace(",", ".")) : null,
+      reviews_count: ratingMatch ? Number(ratingMatch[2].replace(/\./g, "")) : null,
+      place_id: cid || `html-${index}-${name}`,
+      link: mapsHref,
+    };
+  }).filter(Boolean);
+}
+
+// Tenta HTML do Google Maps, local_pack parseado e formatos alternativos.
 function extractListingsFromContent(content) {
+  if (typeof content === "string") return extractHtmlListings(content);
   if (!content || typeof content !== "object") return [];
   const localPack = content?.results?.local_pack;
   if (Array.isArray(localPack)) {
@@ -112,7 +171,7 @@ export default async function handler(req, res) {
       return;
     }
 
-    const resultsResponse = await fetch(`https://data.oxylabs.io/v1/queries/${jobId}/results?type=parsed`, { headers: { Authorization: auth } });
+    const resultsResponse = await fetch(`https://data.oxylabs.io/v1/queries/${jobId}/results`, { headers: { Authorization: auth } });
     const resultsPayload = await resultsResponse.json().catch(() => null);
     if (!resultsResponse.ok) {
       res.status(200).json({ status: "error", message: resultsPayload?.message || "Não foi possível baixar os resultados." });
@@ -136,8 +195,9 @@ export default async function handler(req, res) {
       if (!place || seen.has(place.name.toLowerCase())) continue;
       seen.add(place.name.toLowerCase());
       places.push(place);
+      if (places.length >= 50) break;
     }
-    res.status(200).json({ status: "done", places });
+    res.status(200).json({ status: "done", places: places.slice(0, 50) });
   } catch (error) {
     console.log("oxylabs_status_failed", error?.name, error?.message);
     res.status(502).json({ message: "Não foi possível checar o status da busca agora." });

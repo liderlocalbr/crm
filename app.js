@@ -1071,6 +1071,63 @@ function mapsResultCard(place) {
   </div>`;
 }
 
+function mapsCacheValue(value) {
+  return String(value || "").trim().replace(/\s+/g, " ").replace(/\s*[-,]\s*/g, " ").toLocaleLowerCase("pt-BR");
+}
+
+async function loadCachedPlaces(keyword, locality) {
+  if (isLocalDemo) return [];
+  const normalizedKeyword = mapsCacheValue(keyword);
+  const normalizedLocality = mapsCacheValue(locality);
+  const params = new URLSearchParams({
+    owner_id: `eq.${state.user.id}`,
+    keyword: `eq.${normalizedKeyword}`,
+    locality: `eq.${normalizedLocality}`,
+    is_complete: "eq.true",
+    select: "place_id,name,address,phone,website,rating,rating_count,maps_url,position",
+    order: "position.asc",
+    limit: "50",
+  });
+  const rows = await rest("place_search_cache", { query: params.toString() });
+  return rows.map((row) => ({
+    id: row.place_id,
+    name: row.name,
+    address: row.address || "",
+    phone: row.phone || "",
+    website: row.website || "",
+    rating: row.rating ?? null,
+    ratingCount: row.rating_count ?? null,
+    mapsUrl: row.maps_url || "",
+  }));
+}
+
+async function savePlacesCache(keyword, locality, places) {
+  if (isLocalDemo || !places.length) return;
+  const normalizedKeyword = mapsCacheValue(keyword);
+  const normalizedLocality = mapsCacheValue(locality);
+  const rows = places.slice(0, 50).map((place, position) => ({
+    owner_id: state.user.id,
+    keyword: normalizedKeyword,
+    locality: normalizedLocality,
+    place_id: String(place.id || `${normalizedKeyword}-${normalizedLocality}-${position}`),
+    name: place.name,
+    address: place.address || "",
+    phone: place.phone || "",
+    website: place.website || "",
+    rating: place.rating ?? null,
+    rating_count: place.ratingCount ?? null,
+    maps_url: place.mapsUrl || "",
+    position,
+    is_complete: true,
+  }));
+  await rest("place_search_cache", {
+    method: "POST",
+    query: "on_conflict=owner_id,keyword,locality,place_id",
+    body: rows,
+    prefer: "resolution=merge-duplicates,return=minimal",
+  });
+}
+
 async function handleMapsSearch(event) {
   event.preventDefault();
   const keyword = $("#maps-keyword").value.trim();
@@ -1087,7 +1144,23 @@ async function handleMapsSearch(event) {
   try {
     if (isLocalDemo) throw new Error("A busca no Maps não está disponível no modo demonstração.");
     state.mapsLoading = true;
-    state.mapsStatusMessage = "Iniciando busca…";
+    state.mapsStatusMessage = "Verificando resultados salvos…";
+    renderMapsSearch();
+    try {
+      const cachedPlaces = await loadCachedPlaces(keyword, locality);
+      if (cachedPlaces.length) {
+        state.mapsResults = cachedPlaces;
+        state.mapsSearched = true;
+        state.mapsLoading = false;
+        state.mapsStatusMessage = "";
+        renderMapsSearch();
+        toast(`${cachedPlaces.length} resultado(s) carregado(s) do histórico, sem consumir a Oxylabs.`);
+        return;
+      }
+    } catch (cacheError) {
+      console.warn("maps_cache_read_failed", cacheError?.message);
+    }
+    state.mapsStatusMessage = "Iniciando busca na Oxylabs…";
     renderMapsSearch();
     const submitParams = new URLSearchParams({ keyword, locality, _: String(Date.now()) });
     const submitResponse = await fetch(`/api/places-search?${submitParams}`, {
@@ -1127,6 +1200,11 @@ async function pollAndApply(jobId, keyword, locality, logUsage = true) {
     state.mapsResults = await pollPlacesJob(jobId);
     state.mapsSearched = true;
     state.mapsPendingJobId = null;
+    try {
+      await savePlacesCache(keyword, locality, state.mapsResults);
+    } catch (cacheError) {
+      console.warn("maps_cache_write_failed", cacheError?.message);
+    }
     if (logUsage) await rest("place_search_usage", { method: "POST", body: { owner_id: state.user.id, keyword, locality } });
   } finally {
     state.mapsLoading = false;

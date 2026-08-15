@@ -1,9 +1,8 @@
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "../config.js";
 
 // Endpoint serverless da Vercel: GET /api/places-search?keyword=...&locality=...
-// Submete um job assíncrono (Push-Pull) à Oxylabs usando o parser dedicado de
-// google_search. A busca local aparece no local_pack estruturado da resposta
-// parseada; quem consulta o resultado é /api/places-search-status.js.
+// Submete um job assíncrono (Push-Pull) à Oxylabs para Google Maps em HTML.
+// O endpoint de status extrai até 50 cards da página e devolve dados normalizados.
 
 export const config = { maxDuration: 20 };
 
@@ -77,14 +76,13 @@ export default async function handler(req, res) {
         Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`,
       },
       body: JSON.stringify({
-        // google_maps não possui parser dedicado; google_search parseado entrega
-        // o local_pack estruturado que a interface já sabe renderizar.
-        source: "google_search",
+        source: "google_maps",
         query,
         geo_location: geoLocation,
         locale: "pt-BR",
-        parse: true,
+        render: "html",
         pages: 1,
+        limit: 50,
       }),
     });
     const payload = await submitResponse.json().catch(() => null);
