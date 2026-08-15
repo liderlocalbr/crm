@@ -528,6 +528,7 @@ function setupStaticEvents() {
   $("#stage-list").addEventListener("dragend", handleStageReorderEnd);
   $("#day-dialog").addEventListener("click", handleDayDialogClick);
   $("#day-dialog").addEventListener("close", () => { openDayIso = null; });
+  $("#lead-dialog").addEventListener("click", handleLeadDialogClick);
   $(".main-content").addEventListener("click", handleMainClick);
   $(".main-content").addEventListener("change", handleMainChange);
   $(".main-content").addEventListener("input", handleMainInput);
@@ -1220,14 +1221,14 @@ async function loadSavedSearches({ render = true } = {}) {
 
 async function loadSavedSearchResults(savedSearchId) {
   if (isLocalDemo) return [];
-  const rows = await rest("saved_place_search_results", { query: `saved_search_id=eq.${savedSearchId}&select=place_id,name,address,phone,website,rating,rating_count,maps_url,position&order=position.asc&limit=150` }) || [];
-  return rows.map((row) => ({ id: row.place_id, name: row.name, address: row.address || "", phone: row.phone || "", website: row.website || "", rating: row.rating == null ? null : Number(row.rating), ratingCount: Number(row.rating_count || 0), mapsUrl: row.maps_url || "", position: row.position }));
+  const rows = await rest("saved_place_search_results", { query: `saved_search_id=eq.${savedSearchId}&select=place_id,name,address,phone,website,cnpj,rating,rating_count,maps_url,position&order=position.asc&limit=150` }) || [];
+  return rows.map((row) => ({ id: row.place_id, name: row.name, address: row.address || "", phone: row.phone || "", website: row.website || "", cnpj: row.cnpj || "", rating: row.rating == null ? null : Number(row.rating), ratingCount: Number(row.rating_count || 0), mapsUrl: row.maps_url || "", position: row.position }));
 }
 
 async function persistSavedSearchResults(savedSearchId) {
   if (isLocalDemo || !savedSearchId) return;
   await rest("saved_place_search_results", { method: "DELETE", query: `saved_search_id=eq.${savedSearchId}`, prefer: "return=minimal" });
-  const rows = state.mapsResults.slice(0, 150).map((place, position) => ({ saved_search_id: savedSearchId, place_id: String(place.id), name: place.name, address: place.address || "", phone: place.phone || "", website: place.website || "", rating: place.rating ?? null, rating_count: place.ratingCount ?? null, maps_url: place.mapsUrl || "", position }));
+  const rows = state.mapsResults.slice(0, 150).map((place, position) => ({ saved_search_id: savedSearchId, place_id: String(place.id), name: place.name, address: place.address || "", phone: place.phone || "", website: place.website || "", cnpj: place.cnpj || "", rating: place.rating ?? null, rating_count: place.ratingCount ?? null, maps_url: place.mapsUrl || "", position }));
   if (rows.length) await rest("saved_place_search_results", { method: "POST", body: rows, prefer: "return=minimal" });
   await rest("saved_place_searches", { method: "PATCH", query: `id=eq.${savedSearchId}`, body: { result_count: state.mapsResults.length, is_complete: !state.mapsHasMore, updated_at: new Date().toISOString() }, prefer: "return=minimal" });
 }
@@ -1463,7 +1464,7 @@ async function loadCachedPlaces(keyword, locality) {
     keyword: `eq.${normalizedKeyword}`,
     locality: `eq.${normalizedLocality}`,
     is_complete: "eq.true",
-    select: "place_id,name,address,phone,website,rating,rating_count,maps_url,position",
+    select: "place_id,name,address,phone,website,cnpj,rating,rating_count,maps_url,position",
     order: "position.asc",
     limit: "150",
   });
@@ -1474,6 +1475,7 @@ async function loadCachedPlaces(keyword, locality) {
     address: row.address || "",
     phone: row.phone || "",
     website: row.website || "",
+    cnpj: row.cnpj || "",
     rating: row.rating ?? null,
     ratingCount: row.rating_count ?? null,
     mapsUrl: row.maps_url || "",
@@ -1531,6 +1533,7 @@ async function savePlacesCache(keyword, locality, places) {
     address: place.address || "",
     phone: place.phone || "",
     website: place.website || "",
+    cnpj: place.cnpj || "",
     rating: place.rating ?? null,
     rating_count: place.ratingCount ?? null,
     maps_url: place.mapsUrl || "",
@@ -1790,7 +1793,7 @@ async function addSelectedPlacesToFunnel() {
     for (const place of selected) {
       const existing = state.leads.find((lead) => lead.place_id === place.id);
       if (existing) { skipped += 1; continue; }
-      const created = await store.saveLead({ name: place.name, clinic_name: place.name, specialty: place.category || state.mapsKeyword, stage, source: "Google Maps", whatsapp: place.phone || "", email: "", deal_value: state.settings.deal_value, next_follow_up: null, notes: [place.address, place.website, place.mapsUrl].filter(Boolean).join("\\n"), place_id: place.id });
+      const created = await store.saveLead({ name: place.name, clinic_name: place.name, website: place.website || "", cnpj: place.cnpj || "", stage, source: "Prospecção ativa", whatsapp: place.phone || "", email: "", deal_value: state.settings.deal_value, next_follow_up: null, notes: [place.address, place.mapsUrl].filter(Boolean).join("\\n"), place_id: place.id });
       state.leads.unshift(created);
       await savePlaceReference(place, { status: "prospected", leadId: created.id });
       added += 1;
@@ -1817,10 +1820,12 @@ async function addPlaceAsLead(placeId) {
   state.mapsPendingLeadPlace = place;
   openLeadDialog({
     clinic_name: place.name,
-    specialty: place.category || state.mapsKeyword,
+    website: place.website || "",
+    cnpj: place.cnpj || "",
     whatsapp: place.phone || "",
+    source: "Prospecção ativa",
     place_id: place.id,
-    notes: [place.address, place.website, place.mapsUrl].filter(Boolean).join("\n"),
+    notes: [place.address, place.mapsUrl].filter(Boolean).join("\n"),
   });
   if (isLocalDemo) return;
   try {
@@ -1874,6 +1879,13 @@ function projectionRows(goals) {
 
 function emptyState(icon, title, text, action) {
   return `<div class="empty-state"><div><i>${icon}</i><h3>${title}</h3><p>${text}</p>${action}</div></div>`;
+}
+
+async function handleLeadDialogClick(event) {
+  const action = event.target.closest("[data-action]");
+  if (!action) return;
+  if (action.dataset.action === "toggle-activity") await toggleActivity(action.dataset.id);
+  if (action.dataset.action === "edit-activity") openEditActivityDialog(action.dataset.id);
 }
 
 async function handleMainClick(event) {
@@ -1970,7 +1982,8 @@ function openLeadDialog(lead = null) {
   $("#lead-activity-button").classList.toggle("hidden", !lead);
   $("#lead-name").value = lead?.name || "";
   $("#lead-clinic").value = lead?.clinic_name || "";
-  $("#lead-specialty").value = lead?.specialty || "";
+  $("#lead-website").value = lead?.website || "";
+  $("#lead-cnpj").value = lead?.cnpj || "";
   $("#lead-whatsapp").value = lead?.whatsapp || "";
   $("#lead-email").value = lead?.email || "";
   $("#lead-source").value = lead?.source || "Prospecção ativa";
@@ -1991,8 +2004,9 @@ async function saveLeadFromDialog(event) {
   const id = $("#lead-id").value;
   const payload = {
     ...(id ? { id } : {}), name: $("#lead-name").value.trim(), clinic_name: $("#lead-clinic").value.trim() || null,
+    website: $("#lead-website").value.trim() || null, cnpj: $("#lead-cnpj").value.trim() || null,
     ...(state.mapsPendingLeadPlace && !id ? { place_id: state.mapsPendingLeadPlace.id } : {}),
-    specialty: $("#lead-specialty").value.trim() || null, whatsapp: $("#lead-whatsapp").value.trim() || null,
+    whatsapp: $("#lead-whatsapp").value.trim() || null,
     email: $("#lead-email").value.trim() || null, source: $("#lead-source").value, stage: $("#lead-stage").value,
     deal_value: Number($("#lead-value").value) || null, next_follow_up: $("#lead-follow-up").value || null, notes: $("#lead-notes").value.trim() || null,
   };
@@ -2179,6 +2193,8 @@ async function saveActivityFromDialog(event) {
     state.activities = await store.getActivities();
     $("#activity-dialog").close();
     renderDashboard(); renderLeads(); renderAgenda();
+    const activityLead = state.leads.find((item) => item.id === created.lead_id);
+    if ($("#lead-dialog")?.open && activityLead) renderLeadActivitiesPanel(activityLead);
     if (openInGoogle && !googleError) {
       await loadGoogleEvents();
       const googleUrl = syncedGoogleActivity?.google_event_url;

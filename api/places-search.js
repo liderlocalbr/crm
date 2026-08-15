@@ -39,6 +39,7 @@ function normalizePlace(place, position) {
     address,
     phone: String(place.phoneNumber || place.phone || "").trim(),
     website: String(place.website || place.site || "").trim(),
+    cnpj: String(place.cnpj || place.CNPJ || place.taxId || place.tax_id || place.registrationNumber || "").trim(),
     rating: place.rating == null ? null : Number(place.rating),
     ratingCount: Number(place.ratingCount ?? place.reviewsCount ?? place.reviews ?? 0) || 0,
     mapsUrl,
