@@ -386,7 +386,13 @@ button { color: inherit; }
 .maps-result-card { position: relative; overflow: hidden; }
 .maps-result-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--line-strong); }
 .maps-result-card.prospect-state-prospected { border-color: rgba(243,109,117,.72); background: linear-gradient(145deg, rgba(96,31,40,.94), rgba(43,17,23,.98)); box-shadow: 0 0 0 1px rgba(243,109,117,.14), 0 12px 30px rgba(243,109,117,.14); }
-.maps-result-card.prospect-state-prospected::before { background: var(--red); box-shadow: 0 0 20px rgba(243,109,117,.85); }
+.maps-result-card.prospect-state-prospected::before { background: #ff7f86; box-shadow: 0 0 18px rgba(255,127,134,.65); }
+.maps-result-card.prospect-state-prospected h3 { color: #fff7f7; }
+.maps-result-card.prospect-state-prospected p { color: #f3dfe1; }
+.maps-result-card.prospect-state-prospected .lead-card-value { color: #ffe9eb; }
+.maps-result-card.prospect-state-prospected .prospect-badge.prospected { color: #fff; background: rgba(255,127,134,.28); border-color: rgba(255,210,213,.36); }
+.maps-result-card.prospect-state-prospected .button.ghost { color: #fff4f5; border-color: rgba(255,213,216,.38); background: rgba(20,8,11,.28); }
+.maps-result-card.prospect-state-prospected .button.ghost:hover { background: rgba(255,255,255,.12); border-color: rgba(255,230,232,.62); }
 .maps-result-card.prospect-state-contacted { border-color: rgba(99,169,255,.5); background: linear-gradient(145deg, rgba(24,48,78,.9), rgba(13,25,42,.96)); }
 .maps-result-card.prospect-state-contacted::before { background: var(--blue); box-shadow: 0 0 18px rgba(99,169,255,.65); }
 .maps-result-card.prospect-state-converted { border-color: rgba(189,136,255,.54); background: linear-gradient(145deg, rgba(62,37,91,.9), rgba(27,20,42,.96)); }
