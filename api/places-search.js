@@ -49,7 +49,7 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
         Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`,
       },
-      body: JSON.stringify({ source: "google_maps", query: `${keyword} em ${locality}, Brasil`, pages: 3 }),
+      body: JSON.stringify({ source: "google_maps", query: `${keyword} em ${locality}, Brasil`, pages: 1 }),
     });
     const payload = await submitResponse.json().catch(() => null);
     if (!submitResponse.ok || !payload?.id) {

@@ -49,6 +49,7 @@ const state = {
   mapsError: "",
   mapsStatusMessage: "",
   mapsSearched: false,
+  mapsPendingJobId: null,
 };
 
 const mock = createMockData();
@@ -1049,7 +1050,10 @@ function renderMapsSearch() {
 
 function mapsResultsMarkup() {
   if (state.mapsLoading) return `<div class="loading">${escapeHtml(state.mapsStatusMessage || "Buscando no Google Maps…")}</div>`;
-  if (state.mapsError) return `<div class="google-calendar-state error">${escapeHtml(state.mapsError)}</div>`;
+  if (state.mapsError) {
+    const retryButton = state.mapsPendingJobId ? `<button class="button primary small" type="button" data-action="retry-pending-search">Verificar de novo</button>` : "";
+    return `<div class="google-calendar-state error">${escapeHtml(state.mapsError)} ${retryButton}</div>`;
+  }
   if (!state.mapsSearched) return emptyState("⌖", "Busque por leads no Maps", "Digite uma palavra-chave (ex.: dentista) e uma cidade para encontrar clínicas e profissionais.", "");
   if (!state.mapsResults.length) return emptyState("⌖", "Nada encontrado", "Tente outra palavra-chave ou cidade.", "");
   return `<div class="maps-results">${state.mapsResults.map(mapsResultCard).join("")}</div>`;
@@ -1077,12 +1081,14 @@ async function handleMapsSearch(event) {
   }
   state.mapsKeyword = keyword;
   state.mapsLocality = locality;
-  state.mapsLoading = true;
   state.mapsError = "";
-  state.mapsStatusMessage = "Iniciando busca…";
+  state.mapsPendingJobId = null;
   renderMapsSearch();
   try {
     if (isLocalDemo) throw new Error("A busca no Maps não está disponível no modo demonstração.");
+    state.mapsLoading = true;
+    state.mapsStatusMessage = "Iniciando busca…";
+    renderMapsSearch();
     const submitParams = new URLSearchParams({ keyword, locality, _: String(Date.now()) });
     const submitResponse = await fetch(`/api/places-search?${submitParams}`, {
       headers: { Authorization: `Bearer ${state.session.access_token}` },
@@ -1091,11 +1097,37 @@ async function handleMapsSearch(event) {
     const submitPayload = await submitResponse.json().catch(() => null);
     if (!submitResponse.ok || !submitPayload?.jobId) throw new Error(submitPayload?.message || "Não foi possível iniciar a busca.");
 
-    state.mapsResults = await pollPlacesJob(submitPayload.jobId);
-    state.mapsSearched = true;
-    await rest("place_search_usage", { method: "POST", body: { owner_id: state.user.id, keyword, locality } });
+    await pollAndApply(submitPayload.jobId, keyword, locality);
   } catch (error) {
     state.mapsError = error.message;
+    state.mapsLoading = false;
+    state.mapsStatusMessage = "";
+    renderMapsSearch();
+  }
+}
+
+async function retryPendingSearch() {
+  if (!state.mapsPendingJobId) return;
+  state.mapsError = "";
+  state.mapsLoading = true;
+  state.mapsStatusMessage = "Verificando o job em andamento…";
+  renderMapsSearch();
+  try {
+    await pollAndApply(state.mapsPendingJobId, state.mapsKeyword, state.mapsLocality, false);
+  } catch (error) {
+    state.mapsError = error.message;
+    state.mapsLoading = false;
+    state.mapsStatusMessage = "";
+    renderMapsSearch();
+  }
+}
+
+async function pollAndApply(jobId, keyword, locality, logUsage = true) {
+  try {
+    state.mapsResults = await pollPlacesJob(jobId);
+    state.mapsSearched = true;
+    state.mapsPendingJobId = null;
+    if (logUsage) await rest("place_search_usage", { method: "POST", body: { owner_id: state.user.id, keyword, locality } });
   } finally {
     state.mapsLoading = false;
     state.mapsStatusMessage = "";
@@ -1104,7 +1136,7 @@ async function handleMapsSearch(event) {
 }
 
 async function pollPlacesJob(jobId) {
-  const maxAttempts = 30;
+  const maxAttempts = 20;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     await new Promise((resolve) => setTimeout(resolve, 3000));
     state.mapsStatusMessage = `Buscando no Google Maps… (${attempt * 3}s)`;
@@ -1117,9 +1149,10 @@ async function pollPlacesJob(jobId) {
     const payload = await response.json().catch(() => null);
     if (!response.ok) throw new Error(payload?.message || "Não foi possível checar o status da busca.");
     if (payload.status === "done") return payload.places || [];
-    if (payload.status === "error") throw new Error(payload.message || "A busca falhou.");
+    if (payload.status === "error") { state.mapsPendingJobId = null; throw new Error(payload.message || "A busca falhou."); }
   }
-  throw new Error("A busca demorou demais. Tente novamente em instantes.");
+  state.mapsPendingJobId = jobId;
+  throw new Error("A Oxylabs ainda está processando. Clique em \"Verificar de novo\" em vez de buscar de novo (evita gastar outra busca do seu crédito).");
 }
 
 async function addPlaceAsLead(placeId) {
@@ -1205,6 +1238,7 @@ async function handleMainClick(event) {
   if (action.dataset.action === "save-metric") await saveMetricRow(action.closest("tr"));
   if (action.dataset.action === "toggle-activity") await toggleActivity(action.dataset.id);
   if (action.dataset.action === "add-place-lead") await addPlaceAsLead(action.dataset.placeId);
+  if (action.dataset.action === "retry-pending-search") await retryPendingSearch();
   if (action.dataset.action === "open-day") openDayDialog(action.dataset.date);
 }
 
