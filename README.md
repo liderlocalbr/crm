@@ -12,7 +12,7 @@ CRM de prospecção da **Agência Líder Local**, baseado na planilha de métric
 - Agenda de ligações, WhatsApp, reuniões, e-mails e tarefas com conexão OAuth, criação e leitura dos próximos eventos do Google Agenda
 - Registro diário por mês e resumo de receita
 - Metas mensais recalculadas automaticamente a partir das taxas de conversão
-- Dashboard ampliado com metas versus realizado, taxas reais e relógio/clima compactos ao lado da saudação
+- Dashboard ampliado com metas versus realizado e taxas reais
 - Interface responsiva para desktop e celular
 
 ## Projeção inicial

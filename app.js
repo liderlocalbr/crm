@@ -10,11 +10,8 @@ const SESSION_KEY = "agencia-lider-local.crm.session.v1";
 const GOOGLE_TOKEN_KEY = "agencia-lider-local.crm.google-token.v1";
 const GOOGLE_TOKEN_EXPIRY_KEY = "agencia-lider-local.crm.google-token-expiry.v1";
 const GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
-const WEATHER_URL = "https://api.open-meteo.com/v1/forecast?latitude=-23.5229&longitude=-46.1883&current=temperature_2m,apparent_temperature,weather_code,is_day&timezone=America%2FSao_Paulo";
 let draggedLeadId = null;
 let suppressLeadClick = false;
-let dashboardClockTimer = null;
-let weatherRefreshTimer = null;
 
 const DEFAULT_STAGES = [
   { value: "new", label: "Novo lead", color: "#63a9ff" },
@@ -35,8 +32,6 @@ const state = {
   leads: [],
   activities: [],
   stages: DEFAULT_STAGES.map((stage, position) => ({ ...stage, position })),
-  weather: null,
-  weatherLoading: true,
   calendarConnected: false,
   googleAccessToken: sessionStorage.getItem(GOOGLE_TOKEN_KEY),
   googleEvents: [],
@@ -367,9 +362,11 @@ const store = {
     if (lead.id) {
       const { id, ...payload } = lead;
       const rows = await rest("leads", { method: "PATCH", query: `id=eq.${id}&owner_id=eq.${state.user.id}`, body: payload });
+      if (!rows?.[0]) throw new Error("O Supabase não confirmou a atualização deste card. Recarregue a página e tente novamente.");
       return rows[0];
     }
     const rows = await rest("leads", { method: "POST", body: { owner_id: state.user.id, ...lead } });
+    if (!rows?.[0]) throw new Error("O Supabase não confirmou a criação deste card. Tente novamente.");
     return rows[0];
   },
   async deleteLead(id) {
@@ -549,7 +546,6 @@ async function enterApp() {
     state.loading = false;
     renderAll();
     populateStageOptions();
-    startDashboardWidgets();
     const oauthError = sessionStorage.getItem("agencia-lider-local.crm.oauth-error");
     const oauthSuccess = sessionStorage.getItem("agencia-lider-local.crm.oauth-success");
     sessionStorage.removeItem("agencia-lider-local.crm.oauth-error");
@@ -619,63 +615,11 @@ function metricRowsForFilter() {
   return state.metrics.filter((row) => weekOfMonth(row.metric_date) === Number(state.week));
 }
 
-function startDashboardWidgets() {
-  clearInterval(dashboardClockTimer);
-  clearInterval(weatherRefreshTimer);
-  updateDashboardWidgets();
-  dashboardClockTimer = setInterval(updateDashboardWidgets, 1000);
-  loadWeather();
-  weatherRefreshTimer = setInterval(loadWeather, 15 * 60 * 1000);
-}
-
-function updateDashboardWidgets() {
-  const time = $("#dashboard-clock-time");
-  const date = $("#dashboard-clock-date");
-  if (time) time.textContent = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }).format(new Date());
-  if (date) date.textContent = "Brasília";
-  const weatherTemp = $("#weather-temperature");
-  const weatherSummary = $("#weather-summary");
-  const weatherFeels = $("#weather-feels");
-  if (weatherTemp) weatherTemp.textContent = state.weather ? `${Math.round(state.weather.temperature_2m)}°C` : "--°C";
-  if (weatherSummary) weatherSummary.textContent = state.weather ? weatherCodeLabel(state.weather.weather_code) : state.weatherLoading ? "Atualizando clima…" : "Clima indisponível";
-  if (weatherFeels) weatherFeels.textContent = state.weather ? `Sensação de ${Math.round(state.weather.apparent_temperature)}°C` : "CEP 08771-264";
-}
-
-async function loadWeather() {
-  state.weatherLoading = true;
-  updateDashboardWidgets();
-  try {
-    const response = await fetch(WEATHER_URL);
-    if (!response.ok) throw new Error("Falha ao consultar o clima.");
-    const payload = await response.json();
-    state.weather = payload.current || null;
-  } catch {
-    state.weather = null;
-  } finally {
-    state.weatherLoading = false;
-    updateDashboardWidgets();
-  }
-}
-
-function weatherCodeLabel(code) {
-  if (code === 0) return "Céu limpo";
-  if ([1, 2].includes(code)) return "Poucas nuvens";
-  if (code === 3) return "Nublado";
-  if ([45, 48].includes(code)) return "Neblina";
-  if ([51, 53, 55, 56, 57].includes(code)) return "Garoa";
-  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "Chuva";
-  if ([71, 73, 75, 77, 85, 86].includes(code)) return "Neve";
-  if ([95, 96, 99].includes(code)) return "Tempestade";
-  return "Tempo variável";
-}
-
 function renderDashboard() {
   const rows = metricRowsForFilter();
   const totals = aggregateMetrics(rows, state.settings.deal_value);
   const goals = deriveGoals(state.settings);
   const salesProgress = progress(totals.sales, goals.sales);
-  const greeting = new Date().getHours() < 12 ? "Bom dia" : new Date().getHours() < 18 ? "Boa tarde" : "Boa noite";
-  const name = (state.user?.user_metadata?.full_name || state.user?.email?.split("@")[0] || "").split(" ")[0];
   const allStages = [
     ["Leads", totals.leads, goals.leads], ["Mensagens", totals.messages, goals.messages],
     ["Reuniões agendadas", totals.meetingsScheduled, goals.meetingsScheduled], ["Reuniões realizadas", totals.meetingsCompleted, goals.meetingsCompleted],
@@ -683,16 +627,11 @@ function renderDashboard() {
   ];
   const maxGoal = Math.max(1, ...allStages.map((item) => item[2]));
   const recentLeads = state.leads.slice(0, 5);
-  const monthLabel = formatDate(`${state.month}-01`, { month: "long", year: "numeric" });
-
   $("#view-dashboard").innerHTML = `
-    ${pageHead("PAINEL DE ÓRBITA", `${greeting}, ${escapeHtml(name)}.`, `Acompanhe o ritmo comercial de ${monthLabel}.`, `
+    <header class="page-head dashboard-controls"><span class="eyebrow">PAINEL DE ÓRBITA</span><div class="head-actions">
       <div class="filters">${monthInput("dashboard-month")}<select id="dashboard-week" class="compact-select"><option value="all">Todas as semanas</option>${[1,2,3,4,5,6].map((w) => `<option value="${w}" ${state.week === String(w) ? "selected" : ""}>Semana ${w}</option>`).join("")}</select></div>
-      <button class="button primary" data-action="open-lead">+ Novo lead</button>`, `
-      <div class="dashboard-inline-status" aria-label="Horário e clima em Mogi das Cruzes">
-        <article class="quick-status" title="Horário de Brasília"><span>◷</span><div><strong id="dashboard-clock-time">--:--</strong><small id="dashboard-clock-date">Brasília</small></div></article>
-        <article class="quick-status" title="Clima em Mogi das Cruzes, SP"><span>☼</span><div><strong id="weather-temperature">--°C</strong><small id="weather-summary">Atualizando…</small></div></article>
-      </div>`)}
+      <button class="button primary" data-action="open-lead">+ Novo lead</button>
+    </div></header>
     <div class="kpi-grid">
       ${kpi("Leads no período", totals.leads, goals.leads, "◎", progress(totals.leads, goals.leads))}
       ${kpi("Reuniões realizadas", totals.meetingsCompleted, goals.meetingsCompleted, "◷", progress(totals.meetingsCompleted, goals.meetingsCompleted))}
@@ -1099,6 +1038,10 @@ function openLeadDialog(lead = null) {
 
 async function saveLeadFromDialog(event) {
   event.preventDefault();
+  const submit = event.submitter || event.target.querySelector('[type="submit"]');
+  const originalLabel = submit.textContent;
+  submit.disabled = true;
+  submit.textContent = "Salvando…";
   const id = $("#lead-id").value;
   const payload = {
     ...(id ? { id } : {}), name: $("#lead-name").value.trim(), clinic_name: $("#lead-clinic").value.trim() || null,
@@ -1107,12 +1050,19 @@ async function saveLeadFromDialog(event) {
     deal_value: Number($("#lead-value").value) || null, next_follow_up: $("#lead-follow-up").value || null, notes: $("#lead-notes").value.trim() || null,
   };
   try {
-    await store.saveLead(payload);
-    state.leads = await store.getLeads();
+    const saved = await store.saveLead(payload);
+    state.leads = id
+      ? state.leads.map((lead) => lead.id === saved.id ? saved : lead)
+      : [saved, ...state.leads.filter((lead) => lead.id !== saved.id)];
     $("#lead-dialog").close();
     renderDashboard(); renderLeads(); renderAgenda();
     toast(id ? "Lead atualizado." : "Lead adicionado ao pipeline.");
-  } catch (error) { toast(error.message, "error"); }
+  } catch (error) {
+    toast(error.message, "error");
+  } finally {
+    submit.disabled = false;
+    submit.textContent = originalLabel;
+  }
 }
 
 async function deleteCurrentLead() {
