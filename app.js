@@ -493,6 +493,11 @@ function setupStaticEvents() {
   $$(".activity-close").forEach((button) => button.addEventListener("click", () => $("#activity-dialog").close()));
   $$(".stage-close").forEach((button) => button.addEventListener("click", () => $("#stage-dialog").close()));
   $("#lead-form").addEventListener("submit", saveLeadFromDialog);
+  $("#lead-activity-button").addEventListener("click", () => {
+    const leadId = $("#lead-id").value;
+    $("#lead-dialog").close();
+    openActivityDialog(null, leadId);
+  });
   $("#delete-lead").addEventListener("click", deleteCurrentLead);
   $("#activity-form").addEventListener("submit", saveActivityFromDialog);
   $("#stage-add-form").addEventListener("submit", addPipelineStage);
@@ -1840,6 +1845,7 @@ function openLeadDialog(lead = null) {
   $("#lead-id").value = lead?.id || "";
   $("#lead-dialog-title").textContent = lead ? "Editar lead" : "Novo lead";
   $("#delete-lead").classList.toggle("hidden", !lead);
+  $("#lead-activity-button").classList.toggle("hidden", !lead);
   $("#lead-name").value = lead?.name || "";
   $("#lead-clinic").value = lead?.clinic_name || "";
   $("#lead-specialty").value = lead?.specialty || "";
@@ -1900,9 +1906,10 @@ async function deleteCurrentLead() {
   } catch (error) { toast(error.message, "error"); }
 }
 
-function openActivityDialog(presetDate = null) {
+function openActivityDialog(presetDate = null, leadId = null) {
   $("#activity-form").reset();
   $("#activity-lead").innerHTML = `<option value="">Atividade geral</option>${state.leads.map((item) => `<option value="${item.id}">${escapeHtml(item.name)}</option>`).join("")}`;
+  $("#activity-lead").value = leadId || "";
   $("#activity-due").value = `${presetDate || todayIso()}T09:00`;
   $("#activity-google").checked = state.calendarConnected;
   $("#activity-google").disabled = !state.calendarConnected;
