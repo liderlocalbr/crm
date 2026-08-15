@@ -140,6 +140,17 @@
       </form>
     </dialog>
 
+    <dialog id="day-dialog" class="modal">
+      <div class="modal-card compact">
+        <div class="modal-head">
+          <div><span class="eyebrow">AGENDA DO DIA</span><h2 id="day-dialog-title">Dia</h2></div>
+          <button class="icon-button day-close" type="button" aria-label="Fechar">×</button>
+        </div>
+        <div id="day-dialog-body" class="agenda-group"></div>
+        <div class="modal-actions"><span class="spacer"></span><button class="button ghost day-close" type="button">Fechar</button><button id="day-dialog-add" class="button primary" type="button" data-action="add-activity-day">+ Nova atividade neste dia</button></div>
+      </div>
+    </dialog>
+
     <dialog id="stage-dialog" class="modal">
       <div class="modal-card compact">
         <div class="modal-head">

@@ -38,6 +38,7 @@ const state = {
   googleEventsLoading: false,
   googleEventsError: "",
   month: currentMonth(),
+  agendaMonth: currentMonth(),
   week: "all",
   view: "dashboard",
   loading: false,
@@ -470,6 +471,8 @@ function setupStaticEvents() {
   $("#activity-form").addEventListener("submit", saveActivityFromDialog);
   $("#stage-add-form").addEventListener("submit", addPipelineStage);
   $("#stage-dialog").addEventListener("click", handleStageDialogClick);
+  $("#day-dialog").addEventListener("click", handleDayDialogClick);
+  $("#day-dialog").addEventListener("close", () => { openDayIso = null; });
   $(".main-content").addEventListener("click", handleMainClick);
   $(".main-content").addEventListener("change", handleMainChange);
   $(".main-content").addEventListener("input", handleMainInput);
@@ -619,8 +622,16 @@ function pageHead(eyebrow, title, subtitle, actions = "", inlineStatus = "") {
   return `<header class="page-head ${inlineStatus ? "dashboard-head" : ""}"><div class="page-title"><span class="eyebrow">${eyebrow}</span><div class="page-title-row"><h1>${title}</h1>${inlineStatus}</div><p>${subtitle}</p></div><div class="head-actions">${actions}</div></header>`;
 }
 
-function monthInput(id) {
-  return `<input id="${id}" class="compact-input" type="month" value="${state.month}" aria-label="Escolher mês" />`;
+function monthInput(id, value = state.month) {
+  return `<input id="${id}" class="compact-input" type="month" value="${value}" aria-label="Escolher mês" />`;
+}
+
+function pad2(value) {
+  return String(value).padStart(2, "0");
+}
+
+function isoDate(year, month, day) {
+  return `${year}-${pad2(month)}-${pad2(day)}`;
 }
 
 function metricRowsForFilter() {
@@ -904,28 +915,100 @@ function metricTableRow(row) {
   return `<tr data-metric-date="${row.metric_date}"><td class="metric-date">${formatDate(row.metric_date, { day: "2-digit", month: "2-digit", weekday: "short" })}</td><td><span class="week-tag">S${weekOfMonth(row.metric_date)}</span></td>${fields.map((field) => `<td><input class="metric-input" data-field="${field}" type="number" min="0" value="${Number(row[field]) || 0}" aria-label="${field}" /></td>`).join("")}<td data-revenue>${formatCurrency((Number(row.sales) || 0) * state.settings.deal_value)}</td><td><button class="button small save-row" data-action="save-metric">Salvar</button></td></tr>`;
 }
 
+const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+let openDayIso = null;
+
+function activitiesByDay() {
+  const map = new Map();
+  state.activities.forEach((activity) => {
+    if (!activity.due_at) return;
+    const key = activity.due_at.slice(0, 10);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(activity);
+  });
+  return map;
+}
+
+function googleEventsByDay() {
+  const map = new Map();
+  state.googleEvents.forEach((event) => {
+    const key = event.start?.slice(0, 10);
+    if (!key) return;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(event);
+  });
+  return map;
+}
+
+function calendarCells(monthStr) {
+  const [year, month] = monthStr.split("-").map(Number);
+  const firstWeekday = new Date(year, month - 1, 1).getDay();
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const totalCells = Math.ceil((firstWeekday + daysInMonth) / 7) * 7;
+  const cells = [];
+  for (let i = 0; i < totalCells; i++) {
+    const dayNumber = i - firstWeekday + 1;
+    const date = new Date(year, month - 1, dayNumber);
+    cells.push({ iso: isoDate(date.getFullYear(), date.getMonth() + 1, date.getDate()), day: date.getDate(), inMonth: dayNumber >= 1 && dayNumber <= daysInMonth });
+  }
+  return cells;
+}
+
 function renderAgenda() {
-  const open = state.activities.filter((activity) => !activity.completed_at).sort((a, b) => String(a.due_at || "9999").localeCompare(String(b.due_at || "9999")));
-  const done = state.activities.filter((activity) => activity.completed_at).sort((a, b) => String(b.completed_at).localeCompare(String(a.completed_at)));
+  const open = state.activities.filter((activity) => !activity.completed_at);
   const overdue = open.filter(isOverdue).length;
-  const today = open.filter((activity) => activity.due_at?.slice(0,10) === todayIso()).length;
+  const today = open.filter((activity) => activity.due_at?.slice(0, 10) === todayIso()).length;
+  const byDay = activitiesByDay();
+  const googleByDay = googleEventsByDay();
   const googleActions = state.calendarConnected
     ? `<button class="button google-button connected" data-action="refresh-google-calendar" ${state.googleEventsLoading ? "disabled" : ""}>${state.googleEventsLoading ? "Atualizando…" : "↻ Atualizar Google"}</button>`
     : `<button class="button google-button" data-action="connect-google-calendar">G Conectar Google Agenda</button>`;
-  const googleList = state.googleEventsLoading
-    ? `<div class="google-calendar-state">Buscando seus compromissos…</div>`
-    : state.googleEventsError
-      ? `<div class="google-calendar-state error">${escapeHtml(state.googleEventsError)} <button class="calendar-link calendar-action" data-action="refresh-google-calendar">Tentar novamente</button></div>`
-      : state.googleEvents.length
-        ? state.googleEvents.map(googleEventRow).join("")
-        : `<div class="google-calendar-state">Nenhum evento encontrado nos próximos 90 dias.</div>`;
+  const cells = calendarCells(state.agendaMonth);
   $("#view-agenda").innerHTML = `
-    ${pageHead("AGENDA COMERCIAL", "Próximos passos", "Follow-ups, reuniões e contatos organizados por prazo.", `${googleActions}<button class="button primary" data-action="open-activity">+ Nova atividade</button>`)}
+    ${pageHead("AGENDA COMERCIAL", "Calendário de atividades", "Clique em um dia para ver os agendamentos.", `${monthInput("agenda-month", state.agendaMonth)}${googleActions}<button class="button primary" data-action="open-activity">+ Nova atividade</button>`)}
     <div class="agenda-layout"><section class="panel">
-      <div class="agenda-group"><h2 class="agenda-group-title">PENDENTES · ${open.length}</h2>${open.length ? open.map(activityRow).join("") : emptyState("✓", "Nenhuma pendência", "Sua agenda está limpa. Crie uma atividade quando definir o próximo passo.", "")}</div>
-      ${done.length ? `<div class="agenda-group"><h2 class="agenda-group-title">CONCLUÍDAS · ${done.length}</h2>${done.slice(0,8).map(activityRow).join("")}</div>` : ""}
-      ${state.calendarConnected ? `<div class="agenda-group google-agenda-group"><div class="google-group-head"><h2 class="agenda-group-title">GOOGLE AGENDA · ${state.googleEvents.length}</h2><span>Próximos 90 dias</span></div>${googleList}</div>` : ""}
-    </section><aside class="panel"><div class="panel-head"><div><h2>Resumo da agenda</h2><span>Prioridades atuais</span></div></div><div class="agenda-summary"><div class="summary-tile"><span>Para hoje</span><b>${today}</b></div><div class="summary-tile"><span>Em atraso</span><b style="color:${overdue ? "var(--red)" : "var(--green)"}">${overdue}</b></div><div class="summary-tile"><span>Eventos Google</span><b>${state.googleEvents.length}</b></div><div class="summary-tile"><span>Concluídas</span><b>${done.length}</b></div></div></aside></div>`;
+      <div class="calendar-weekdays">${WEEKDAY_LABELS.map((label) => `<span>${label}</span>`).join("")}</div>
+      <div class="calendar-grid">${cells.map((cell) => calendarCell(cell, byDay.get(cell.iso) || [], googleByDay.get(cell.iso) || [])).join("")}</div>
+    </section><aside class="panel"><div class="panel-head"><div><h2>Resumo da agenda</h2><span>Prioridades atuais</span></div></div><div class="agenda-summary"><div class="summary-tile"><span>Para hoje</span><b>${today}</b></div><div class="summary-tile"><span>Em atraso</span><b style="color:${overdue ? "var(--red)" : "var(--green)"}">${overdue}</b></div><div class="summary-tile"><span>Eventos Google</span><b>${state.googleEvents.length}</b></div><div class="summary-tile"><span>Total no mês</span><b>${state.activities.filter((activity) => activity.due_at?.slice(0, 7) === state.agendaMonth).length}</b></div></div></aside></div>`;
+  if (openDayIso) renderDayDialog(openDayIso);
+}
+
+function calendarCell(cell, activities, googleEvents) {
+  const pending = activities.filter((activity) => !activity.completed_at);
+  const hasOverdue = pending.some(isOverdue);
+  const isToday = cell.iso === todayIso();
+  const badges = [
+    pending.length ? `<span class="day-badge ${hasOverdue ? "overdue" : ""}">${pending.length}</span>` : "",
+    googleEvents.length ? `<span class="day-badge google">G·${googleEvents.length}</span>` : "",
+  ].filter(Boolean).join("");
+  return `<button type="button" class="calendar-day ${cell.inMonth ? "" : "out-month"} ${isToday ? "today" : ""}" data-action="open-day" data-date="${cell.iso}"><span class="calendar-day-number">${cell.day}</span><span class="calendar-day-badges">${badges}</span></button>`;
+}
+
+function renderDayDialog(iso) {
+  openDayIso = iso;
+  const dayActivities = (activitiesByDay().get(iso) || []).sort((a, b) => String(a.due_at).localeCompare(String(b.due_at)));
+  const dayGoogleEvents = (googleEventsByDay().get(iso) || []);
+  const label = formatDate(iso, { weekday: "long", day: "2-digit", month: "long" });
+  const empty = !dayActivities.length && !dayGoogleEvents.length;
+  $("#day-dialog-title").textContent = label.charAt(0).toUpperCase() + label.slice(1);
+  $("#day-dialog-body").innerHTML = empty
+    ? emptyState("◷", "Nenhum agendamento", "Não há atividades nem eventos do Google Agenda neste dia.", "")
+    : `${dayActivities.map(activityRow).join("")}${dayGoogleEvents.map(googleEventRow).join("")}`;
+  $("#day-dialog-add").dataset.date = iso;
+}
+
+function openDayDialog(iso) {
+  renderDayDialog(iso);
+  $("#day-dialog").showModal();
+}
+
+async function handleDayDialogClick(event) {
+  if (event.target.closest(".day-close")) { $("#day-dialog").close(); return; }
+  const action = event.target.closest("[data-action]");
+  if (!action) return;
+  if (action.dataset.action === "add-activity-day") { $("#day-dialog").close(); openActivityDialog(action.dataset.date); }
+  if (action.dataset.action === "toggle-activity") await toggleActivity(action.dataset.id);
+  if (action.dataset.action === "sync-google-activity") await syncActivityToGoogle(action.dataset.id);
 }
 
 function isOverdue(activity) {
@@ -1093,6 +1176,7 @@ async function handleMainClick(event) {
   if (action.dataset.action === "save-metric") await saveMetricRow(action.closest("tr"));
   if (action.dataset.action === "toggle-activity") await toggleActivity(action.dataset.id);
   if (action.dataset.action === "add-place-lead") await addPlaceAsLead(action.dataset.placeId);
+  if (action.dataset.action === "open-day") openDayDialog(action.dataset.date);
 }
 
 async function handleMainChange(event) {
@@ -1100,6 +1184,10 @@ async function handleMainChange(event) {
     state.month = event.target.value;
     state.week = "all";
     try { await reloadPeriod(); } catch (error) { toast(error.message, "error"); }
+  }
+  if (event.target.id === "agenda-month") {
+    state.agendaMonth = event.target.value;
+    renderAgenda();
   }
   if (event.target.id === "dashboard-week") {
     state.week = event.target.value;
@@ -1179,10 +1267,10 @@ async function deleteCurrentLead() {
   } catch (error) { toast(error.message, "error"); }
 }
 
-function openActivityDialog() {
+function openActivityDialog(presetDate = null) {
   $("#activity-form").reset();
-  $("#activity-lead").innerHTML = `<option value="">Atividade geral</option>${state.leads.map((lead) => `<option value="${lead.id}">${escapeHtml(lead.name)}</option>`).join("")}`;
-  $("#activity-due").value = `${todayIso()}T09:00`;
+  $("#activity-lead").innerHTML = `<option value="">Atividade geral</option>${state.leads.map((item) => `<option value="${item.id}">${escapeHtml(item.name)}</option>`).join("")}`;
+  $("#activity-due").value = `${presetDate || todayIso()}T09:00`;
   $("#activity-google").checked = state.calendarConnected;
   $("#activity-google").disabled = !state.calendarConnected;
   $("#activity-google").closest("label").title = state.calendarConnected ? "Criar também no Google Agenda" : "Conecte o Google Agenda primeiro";
