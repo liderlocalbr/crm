@@ -813,7 +813,7 @@ function upcomingActivities(limit) {
 
 function renderLeads() {
   $("#view-leads").innerHTML = `
-    ${pageHead("PIPELINE COMERCIAL", "Oportunidades em movimento", "", `<span class="date-chip">${state.leads.length} leads</span><button class="button ghost" data-action="manage-stages">⚙ Etapas</button><button class="button primary" data-action="open-lead">+ Novo lead</button>`)}
+    ${pageHead("PIPELINE COMERCIAL", "", "", `<span class="date-chip">${state.leads.length} leads</span><button class="button ghost" data-action="manage-stages">⚙ Etapas</button><button class="button primary" data-action="open-lead">+ Novo lead</button>`)}
     <div class="kanban">${state.stages.map((stage) => {
       const leads = state.leads.filter((lead) => lead.stage === stage.value);
       return `<section class="kanban-column" data-drop-stage="${stage.value}"><div class="kanban-head"><span><i style="--column-color:${stage.color}"></i>${escapeHtml(stage.label)}</span><b class="kanban-count">${leads.length}</b></div><div class="kanban-cards">${leads.length ? leads.map(leadCard).join("") : `<div class="empty-column">Solte um lead nesta etapa</div>`}</div></section>`;
