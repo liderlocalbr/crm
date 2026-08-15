@@ -117,3 +117,19 @@ export function googleCalendarEvent({ title, dueAt, details = "", durationMinute
     end: { dateTime: end.toISOString(), timeZone: "America/Sao_Paulo" },
   };
 }
+
+export function normalizeGoogleEvents(items = []) {
+  return items
+    .filter((item) => item && item.status !== "cancelled" && (item.start?.dateTime || item.start?.date))
+    .map((item) => ({
+      id: item.id,
+      title: item.summary || "Evento sem título",
+      start: item.start.dateTime || `${item.start.date}T00:00:00`,
+      end: item.end?.dateTime || (item.end?.date ? `${item.end.date}T00:00:00` : null),
+      allDay: Boolean(item.start.date && !item.start.dateTime),
+      location: item.location || "",
+      htmlLink: item.htmlLink || "",
+      status: item.status || "confirmed",
+    }))
+    .sort((a, b) => String(a.start).localeCompare(String(b.start)));
+}

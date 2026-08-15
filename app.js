@@ -1,5 +1,5 @@
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./config.js";
-import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarEvent, monthBounds, moveLeadToStage, progress, reassignStage, weekOfMonth } from "./calculations.js";
+import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarEvent, monthBounds, moveLeadToStage, normalizeGoogleEvents, progress, reassignStage, weekOfMonth } from "./calculations.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -39,6 +39,9 @@ const state = {
   weatherLoading: true,
   calendarConnected: false,
   googleAccessToken: sessionStorage.getItem(GOOGLE_TOKEN_KEY),
+  googleEvents: [],
+  googleEventsLoading: false,
+  googleEventsError: "",
   month: currentMonth(),
   week: "all",
   view: "dashboard",
@@ -187,6 +190,9 @@ function clearSession() {
 function clearGoogleConnection() {
   state.calendarConnected = false;
   state.googleAccessToken = null;
+  state.googleEvents = [];
+  state.googleEventsError = "";
+  state.googleEventsLoading = false;
   sessionStorage.removeItem(GOOGLE_TOKEN_KEY);
   sessionStorage.removeItem(GOOGLE_TOKEN_EXPIRY_KEY);
 }
@@ -228,6 +234,44 @@ function hasValidGoogleToken() {
 function syncGoogleConnection() {
   const hasGoogleIdentity = Boolean(state.user?.identities?.some((identity) => identity.provider === "google"));
   state.calendarConnected = hasGoogleIdentity && hasValidGoogleToken();
+}
+
+async function loadGoogleEvents({ notify = false } = {}) {
+  if (!state.calendarConnected || !hasValidGoogleToken()) return;
+  state.googleEventsLoading = true;
+  state.googleEventsError = "";
+  renderAgenda();
+  try {
+    const timeMin = new Date();
+    timeMin.setHours(0, 0, 0, 0);
+    const timeMax = new Date(timeMin);
+    timeMax.setDate(timeMax.getDate() + 90);
+    const params = new URLSearchParams({
+      timeMin: timeMin.toISOString(),
+      timeMax: timeMax.toISOString(),
+      singleEvents: "true",
+      orderBy: "startTime",
+      maxResults: "100",
+      timeZone: "America/Sao_Paulo",
+    });
+    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`, {
+      headers: { Authorization: `Bearer ${state.googleAccessToken}` },
+    });
+    const payload = await response.json().catch(() => null);
+    if (response.status === 401) {
+      clearGoogleConnection();
+      throw new Error("A autorização do Google expirou. Conecte novamente para atualizar os eventos.");
+    }
+    if (!response.ok) throw new Error(payload?.error?.message || "Não foi possível ler os eventos do Google Agenda.");
+    state.googleEvents = normalizeGoogleEvents(payload.items || []);
+    if (notify) toast(`${state.googleEvents.length} evento(s) atualizado(s) do Google Agenda.`);
+  } catch (error) {
+    state.googleEventsError = error.message;
+    if (notify) toast(error.message, "error");
+  } finally {
+    state.googleEventsLoading = false;
+    renderAgenda();
+  }
 }
 
 const store = {
@@ -512,6 +556,7 @@ async function enterApp() {
     sessionStorage.removeItem("agencia-lider-local.crm.oauth-success");
     if (oauthError) toast(oauthError, "error");
     if (oauthSuccess && state.calendarConnected) toast("Google Agenda conectado de verdade.");
+    if (state.calendarConnected) await loadGoogleEvents();
   }
 }
 
@@ -897,12 +942,23 @@ function renderAgenda() {
   const done = state.activities.filter((activity) => activity.completed_at).sort((a, b) => String(b.completed_at).localeCompare(String(a.completed_at)));
   const overdue = open.filter(isOverdue).length;
   const today = open.filter((activity) => activity.due_at?.slice(0,10) === todayIso()).length;
+  const googleActions = state.calendarConnected
+    ? `<button class="button google-button connected" data-action="refresh-google-calendar" ${state.googleEventsLoading ? "disabled" : ""}>${state.googleEventsLoading ? "Atualizando…" : "↻ Atualizar Google"}</button>`
+    : `<button class="button google-button" data-action="connect-google-calendar">G Conectar Google Agenda</button>`;
+  const googleList = state.googleEventsLoading
+    ? `<div class="google-calendar-state">Buscando seus compromissos…</div>`
+    : state.googleEventsError
+      ? `<div class="google-calendar-state error">${escapeHtml(state.googleEventsError)} <button class="calendar-link calendar-action" data-action="refresh-google-calendar">Tentar novamente</button></div>`
+      : state.googleEvents.length
+        ? state.googleEvents.map(googleEventRow).join("")
+        : `<div class="google-calendar-state">Nenhum evento encontrado nos próximos 90 dias.</div>`;
   $("#view-agenda").innerHTML = `
-    ${pageHead("AGENDA COMERCIAL", "Próximos passos", "Follow-ups, reuniões e contatos organizados por prazo.", `<button class="button google-button ${state.calendarConnected ? "connected" : ""}" data-action="connect-google-calendar">${state.calendarConnected ? "✓ Google Agenda conectado" : "G Conectar Google Agenda"}</button><button class="button primary" data-action="open-activity">+ Nova atividade</button>`)}
+    ${pageHead("AGENDA COMERCIAL", "Próximos passos", "Follow-ups, reuniões e contatos organizados por prazo.", `${googleActions}<button class="button primary" data-action="open-activity">+ Nova atividade</button>`)}
     <div class="agenda-layout"><section class="panel">
       <div class="agenda-group"><h2 class="agenda-group-title">PENDENTES · ${open.length}</h2>${open.length ? open.map(activityRow).join("") : emptyState("✓", "Nenhuma pendência", "Sua agenda está limpa. Crie uma atividade quando definir o próximo passo.", "")}</div>
       ${done.length ? `<div class="agenda-group"><h2 class="agenda-group-title">CONCLUÍDAS · ${done.length}</h2>${done.slice(0,8).map(activityRow).join("")}</div>` : ""}
-    </section><aside class="panel"><div class="panel-head"><div><h2>Resumo da agenda</h2><span>Prioridades atuais</span></div></div><div class="agenda-summary"><div class="summary-tile"><span>Para hoje</span><b>${today}</b></div><div class="summary-tile"><span>Em atraso</span><b style="color:${overdue ? "var(--red)" : "var(--green)"}">${overdue}</b></div><div class="summary-tile"><span>Concluídas</span><b>${done.length}</b></div></div></aside></div>`;
+      ${state.calendarConnected ? `<div class="agenda-group google-agenda-group"><div class="google-group-head"><h2 class="agenda-group-title">GOOGLE AGENDA · ${state.googleEvents.length}</h2><span>Próximos 90 dias</span></div>${googleList}</div>` : ""}
+    </section><aside class="panel"><div class="panel-head"><div><h2>Resumo da agenda</h2><span>Prioridades atuais</span></div></div><div class="agenda-summary"><div class="summary-tile"><span>Para hoje</span><b>${today}</b></div><div class="summary-tile"><span>Em atraso</span><b style="color:${overdue ? "var(--red)" : "var(--green)"}">${overdue}</b></div><div class="summary-tile"><span>Eventos Google</span><b>${state.googleEvents.length}</b></div><div class="summary-tile"><span>Concluídas</span><b>${done.length}</b></div></div></aside></div>`;
 }
 
 function isOverdue(activity) {
@@ -917,6 +973,14 @@ function activityRow(activity) {
       : `<button class="calendar-link calendar-action" data-action="sync-google-activity" data-id="${activity.id}">Adicionar ao Google Agenda</button>`
     : "";
   return `<div class="activity-row"><button class="activity-check ${activity.completed_at ? "done" : ""}" data-action="toggle-activity" data-id="${activity.id}" aria-label="${activity.completed_at ? "Reabrir" : "Concluir"} atividade"></button><div class="activity-main"><b>${escapeHtml(activity.title)}</b><span>${escapeHtml(lead?.name || "Atividade geral")} · ${activityKindLabel(activity.kind)}</span>${calendarAction}</div><span class="activity-time ${isOverdue(activity) ? "overdue" : ""}">${activity.due_at ? formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Sem prazo"}</span></div>`;
+}
+
+function googleEventRow(event) {
+  const start = event.allDay
+    ? formatDate(event.start.slice(0, 10), { day: "2-digit", month: "short" })
+    : formatDate(event.start, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  const meta = [event.allDay ? "Dia inteiro" : "Google Agenda", event.location].filter(Boolean).join(" · ");
+  return `<a class="activity-row google-event-row" href="${escapeHtml(event.htmlLink || "https://calendar.google.com/calendar/u/0/r")}" target="_blank" rel="noopener"><span class="google-event-icon">G</span><span class="activity-main"><b>${escapeHtml(event.title)}</b><span>${escapeHtml(meta)}</span></span><span class="activity-time">${start}</span></a>`;
 }
 
 function activityKindLabel(value) {
@@ -967,6 +1031,7 @@ async function handleMainClick(event) {
   if (action.dataset.action === "open-activity") openActivityDialog();
   if (action.dataset.action === "manage-stages") openStageDialog();
   if (action.dataset.action === "connect-google-calendar") connectGoogleCalendar();
+  if (action.dataset.action === "refresh-google-calendar") await loadGoogleEvents({ notify: true });
   if (action.dataset.action === "sync-google-activity") await syncActivityToGoogle(action.dataset.id);
   if (action.dataset.action === "save-metric") await saveMetricRow(action.closest("tr"));
   if (action.dataset.action === "toggle-activity") await toggleActivity(action.dataset.id);
@@ -1117,7 +1182,7 @@ async function syncActivityToGoogle(id) {
   try {
     await createGoogleEvent(activity);
     state.activities = await store.getActivities();
-    renderAgenda();
+    await loadGoogleEvents();
     toast("Evento criado no seu Google Agenda.");
   } catch (error) { toast(error.message, "error"); }
 }
@@ -1138,6 +1203,7 @@ async function saveActivityFromDialog(event) {
     state.activities = await store.getActivities();
     $("#activity-dialog").close();
     renderDashboard(); renderAgenda();
+    if (openInGoogle && !googleError) await loadGoogleEvents();
     toast(googleError ? `Atividade criada no CRM, mas não no Google: ${googleError.message}` : openInGoogle ? "Atividade criada no CRM e no Google Agenda." : "Atividade criada.", googleError ? "error" : "success");
   } catch (error) {
     toast(error.message, "error");
