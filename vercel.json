@@ -2,7 +2,14 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "trailingSlash": false,
-  "rewrites": [{ "source": "/((?!api/|.*\\..*).*)", "destination": "/index.html" }],
+  "rewrites": [
+    { "source": "/dashboard", "destination": "/index.html" },
+    { "source": "/pipeline", "destination": "/index.html" },
+    { "source": "/registro-diario", "destination": "/index.html" },
+    { "source": "/agenda", "destination": "/index.html" },
+    { "source": "/buscar-no-maps", "destination": "/index.html" },
+    { "source": "/metas", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
