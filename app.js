@@ -809,9 +809,10 @@ async function toggleLeadContact(leadId) {
 
 function leadCard(lead) {
   const overdue = lead.next_follow_up && lead.next_follow_up < todayIso();
-  const leadActivities = state.activities.filter((activity) => activity.lead_id === lead.id && !activity.completed_at).sort((a, b) => String(a.due_at || "9999").localeCompare(String(b.due_at || "9999"))).slice(0, 2);
-  const activityMarkup = leadActivities.length ? `<div class="lead-card-activities">${leadActivities.map((activity) => `<span title="${escapeHtml(activity.title)}${activity.due_at ? ` · ${formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}"><i></i>${escapeHtml(activity.title)}</span>`).join("")}</div>` : "";
-  const activityAction = `<button type="button" draggable="false" class="lead-activity-quick" data-action="open-lead-activity" data-id="${lead.id}">+ Atividade</button>`;
+  const leadActivities = state.activities.filter((activity) => activity.lead_id === lead.id).sort((a, b) => String(a.completed_at || "").localeCompare(String(b.completed_at || "")) || String(a.due_at || "9999").localeCompare(String(b.due_at || "9999")));
+  const previewActivities = leadActivities.filter((activity) => !activity.completed_at).slice(0, 2);
+  const activityMarkup = previewActivities.length ? `<div class="lead-card-activities">${previewActivities.map((activity) => `<span title="${escapeHtml(activity.title)}${activity.due_at ? ` · ${formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}"><i></i>${escapeHtml(activity.title)}</span>`).join("")}</div>` : "";
+  const activityAction = `<button type="button" draggable="false" class="lead-activity-quick icon-only" data-action="open-lead-activity" data-id="${lead.id}" aria-label="Nova atividade para ${escapeHtml(lead.name)}" title="Nova atividade"><span aria-hidden="true">＋</span></button>`;
   const followUpIndicator = lead.next_follow_up ? `<span class="lead-follow-up-dot ${overdue ? "overdue" : ""}" title="Follow-up em ${formatDate(lead.next_follow_up)}" aria-label="Follow-up em ${formatDate(lead.next_follow_up)}"></span>` : "";
   const whatsappAction = lead.whatsapp ? `<button type="button" draggable="false" class="whatsapp-button icon-only" data-action="open-whatsapp" data-id="${lead.id}" aria-label="Abrir WhatsApp de ${escapeHtml(lead.name)}" title="WhatsApp de ${escapeHtml(lead.name)}"><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M12 3.2a8.8 8.8 0 0 0-7.58 13.27L3.2 20.8l4.48-1.18A8.8 8.8 0 1 0 12 3.2Zm0 1.7a7.1 7.1 0 0 1 5.03 12.13 7.1 7.1 0 0 1-8.36 1.27l-.48-.25-2.65.7.71-2.58-.28-.49A7.1 7.1 0 0 1 12 4.9Zm-2.25 2.28c-.2 0-.52.08-.79.38-.27.3-1.03 1.01-1.03 2.47s1.05 2.86 1.2 3.05c.15.2 2.03 3.25 5.02 4.42 2.48.97 2.99.78 3.53.73.54-.05 1.75-.71 2-1.4.25-.69.25-1.28.17-1.4-.07-.12-.27-.2-.57-.35-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.5h-.52Z"/></svg></button>` : "";
   const contactTag = lead.contacted_at ? `<span class="contacted-tag">Em contato</span>` : "";
@@ -1170,7 +1171,7 @@ function activityRow(activity) {
       ? `<a class="calendar-link" href="${escapeHtml(activity.google_event_url || "https://calendar.google.com/calendar/u/0/r")}" target="_blank" rel="noopener">Abrir no Google Agenda ↗</a>`
       : `<button class="calendar-link calendar-action" data-action="sync-google-activity" data-id="${activity.id}">Adicionar ao Google Agenda</button>`
     : "";
-  return `<div class="activity-row"><button class="activity-check ${activity.completed_at ? "done" : ""}" data-action="toggle-activity" data-id="${activity.id}" aria-label="${activity.completed_at ? "Reabrir" : "Concluir"} atividade"></button><div class="activity-main"><b>${escapeHtml(activity.title)}</b><span>${escapeHtml(lead?.name || "Atividade geral")} · ${activityKindLabel(activity.kind)}</span>${calendarAction}</div><span class="activity-time ${isOverdue(activity) ? "overdue" : ""}">${activity.due_at ? formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Sem prazo"}</span></div>`;
+  return `<div class="activity-row ${activity.completed_at ? "done" : ""}"><button class="activity-check ${activity.completed_at ? "done" : ""}" data-action="toggle-activity" data-id="${activity.id}" aria-label="${activity.completed_at ? "Reabrir" : "Concluir"} atividade"></button><div class="activity-main"><b>${escapeHtml(activity.title)}</b><span>${escapeHtml(lead?.name || "Atividade geral")} · ${activityKindLabel(activity.kind)}</span>${calendarAction}</div><span class="activity-time ${isOverdue(activity) ? "overdue" : ""}">${activity.due_at ? formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Sem prazo"}</span></div>`;
 }
 
 function mapsSavedTabsMarkup() {
@@ -1933,6 +1934,20 @@ function handleMainInput(event) {
   if (event.target.classList.contains("metric-input")) event.target.closest("tr").querySelector(".save-row").classList.add("changed");
 }
 
+function leadActivitiesMarkup(lead) {
+  if (!lead) return "";
+  const activities = state.activities.filter((activity) => activity.lead_id === lead.id).sort((a, b) => String(a.completed_at || "").localeCompare(String(b.completed_at || "")) || String(a.due_at || "9999").localeCompare(String(b.due_at || "9999")));
+  if (!activities.length) return `<div class="lead-activities-empty">Nenhuma atividade cadastrada para este lead.</div>`;
+  return `<div class="lead-activities-head"><div><span class="eyebrow">HISTÓRICO</span><h3>Atividades do lead</h3></div><span class="date-chip">${activities.length}</span></div><div class="lead-activities-list">${activities.map((activity) => `<div class="lead-activity-row ${activity.completed_at ? "done" : ""}"><button type="button" class="activity-check ${activity.completed_at ? "done" : ""}" data-action="toggle-activity" data-id="${activity.id}" aria-label="${activity.completed_at ? "Reabrir" : "Concluir"} atividade"></button><div><b>${escapeHtml(activity.title)}</b><span>${activity.due_at ? formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Sem prazo"} · ${activityKindLabel(activity.kind)}</span></div></div>`).join("")}</div>`;
+}
+
+function renderLeadActivitiesPanel(lead) {
+  const panel = $("#lead-activities-panel");
+  if (!panel) return;
+  panel.classList.toggle("hidden", !lead);
+  panel.innerHTML = lead ? leadActivitiesMarkup(lead) : "";
+}
+
 function openLeadDialog(lead = null) {
   $("#lead-form").reset();
   $("#lead-id").value = lead?.id || "";
@@ -1949,6 +1964,7 @@ function openLeadDialog(lead = null) {
   $("#lead-value").value = lead?.deal_value ?? state.settings.deal_value;
   $("#lead-follow-up").value = lead?.next_follow_up || "";
   $("#lead-notes").value = lead?.notes || "";
+  renderLeadActivitiesPanel(lead);
   $("#lead-dialog").showModal();
 }
 
@@ -2121,7 +2137,9 @@ async function toggleActivity(id) {
   try {
     await store.toggleActivity(id, !current.completed_at);
     state.activities = await store.getActivities();
-    renderDashboard(); renderAgenda();
+    const lead = state.leads.find((item) => item.id === current.lead_id);
+    renderDashboard(); renderLeads(); renderAgenda();
+    if ($("#lead-dialog")?.open && lead) renderLeadActivitiesPanel(lead);
     toast(current.completed_at ? "Atividade reaberta." : "Atividade concluída.");
   } catch (error) { toast(error.message, "error"); }
 }
