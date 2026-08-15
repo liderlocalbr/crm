@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarEvent, googleCalendarUrl, monthBounds, moveLeadToStage, reassignStage, weekOfMonth } from "../calculations.js";
+import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarEvent, googleCalendarUrl, monthBounds, moveLeadToStage, normalizeGoogleEvents, reassignStage, weekOfMonth } from "../calculations.js";
 
 test("reproduz a projeção da planilha Métricas", () => {
   assert.deepEqual(deriveGoals(DEFAULT_SETTINGS), {
@@ -83,4 +83,16 @@ test("gera evento para inserir pela API do Google Agenda", () => {
     start: { dateTime: "2026-08-20T13:00:00.000Z", timeZone: "America/Sao_Paulo" },
     end: { dateTime: "2026-08-20T13:45:00.000Z", timeZone: "America/Sao_Paulo" },
   });
+});
+
+test("normaliza e ordena eventos recebidos do Google Agenda", () => {
+  const events = normalizeGoogleEvents([
+    { id: "2", summary: "Reunião", status: "confirmed", start: { dateTime: "2026-08-20T14:00:00-03:00" }, end: { dateTime: "2026-08-20T15:00:00-03:00" }, htmlLink: "https://calendar.google.com/event?eid=2" },
+    { id: "cancelled", status: "cancelled", start: { date: "2026-08-19" } },
+    { id: "1", summary: "Dia inteiro", start: { date: "2026-08-19" }, end: { date: "2026-08-20" } },
+  ]);
+
+  assert.deepEqual(events.map((event) => event.id), ["1", "2"]);
+  assert.equal(events[0].allDay, true);
+  assert.equal(events[1].allDay, false);
 });
