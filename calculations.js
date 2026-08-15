@@ -19,6 +19,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   negotiation_to_sale: 35,
   whatsapp_templates: DEFAULT_WHATSAPP_TEMPLATES,
   whatsapp_default_template: 0,
+  whatsapp_randomize_templates: false,
   whatsapp_daily_limit: 150,
 });
 
