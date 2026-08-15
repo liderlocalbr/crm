@@ -209,8 +209,14 @@ export default async function handler(req, res) {
     }
 
     if (statusPayload.status === "faulted" || statusPayload.status === "failed") {
-      console.log("oxylabs_job_faulted", jobId, safeStringify({ status: statusPayload.status, message: statusPayload.message, error: statusPayload.error, details: statusPayload.details }, 1200));
-      res.status(200).json({ status: "error", message: statusPayload.message || "A Oxylabs não conseguiu concluir essa busca. Tente de novo." });
+      const faultDetails = safeStringify({ status: statusPayload.status, message: statusPayload.message, error: statusPayload.error, details: statusPayload.details }, 1200);
+      console.log("oxylabs_job_faulted", jobId, faultDetails);
+      const rawFaultMessage = [statusPayload.message, statusPayload.error, statusPayload.details].filter(Boolean).join(" ");
+      const isQuotaError = /too many requests|render dynamic|quota|rate limit/i.test(rawFaultMessage);
+      const message = isQuotaError
+        ? "A quota de Render Dynamic da Oxylabs foi atingida. A busca foi interrompida para não gerar novas cobranças; aguarde a renovação da quota ou desative Render Dynamic no plano da Oxylabs."
+        : (statusPayload.message || "A Oxylabs não conseguiu concluir essa busca. Tente de novo.");
+      res.status(200).json({ status: isQuotaError ? "quota" : "error", message });
       return;
     }
     if (statusPayload.status !== "done") {

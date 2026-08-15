@@ -85,3 +85,11 @@ A documentação oficial de Push-Pull confirma que o endpoint assíncrono aceita
 A implementação publicada que falhou criou o job `7494446531257346049` com `source: "google"` e uma URL do Maps; o status posterior retornou `faulted`, mas o endpoint escondia a mensagem original. Isso não confirma que a URL genérica seja aceita pelo alvo Google; a documentação específica recomenda `source: "google_maps"` com `query`.
 
 Fontes: https://developers.oxylabs.io/api-targets/search-engines/google/search/local-search ; https://developers.oxylabs.io/api-targets/search-engines/google ; https://developers.oxylabs.io/products/web-scraper-api/integration-methods/push-pull
+
+## Terceira investigação — quota Render Dynamic
+
+O erro real informado pelo usuário foi `Too many requests. (Total Render Dynamic)`. A documentação oficial confirma que `render: "html"` ativa JavaScript Rendering, que jobs renderizados consomem mais tráfego e que determinados tipos de página podem ter rendering forçado automaticamente mesmo sem `render` explícito. A captura XHR também depende de `render: "html"`, portanto `render + xhr + pages:5` multiplica o consumo dinâmico.
+
+A documentação oficial de Local Search recomenda `source: "google_maps"`, `query`, `pages` e `limit`; a consulta dinâmica da documentação recomenda 5 páginas × 10 resultados para até 50 empresas quando usando HTML. Porém, essa abordagem é incompatível com a quota atual da conta porque exige Render Dynamic. A correção econômica precisa separar: buscar via fluxo não renderizado/parsed quando possível, usar no máximo uma renderização por pesquisa como fallback, e cachear o resultado no Supabase antes de novas chamadas.
+
+Fontes: https://developers.oxylabs.io/products/web-scraper-api/features/js-rendering-and-browser-control ; https://developers.oxylabs.io/api-targets/search-engines/google/search/local-search.md ; https://developers.oxylabs.io/products/web-scraper-api/features/result-processing-and-storage/output-types/capturing-network-requests-fetch-xhr.md

@@ -81,8 +81,8 @@ export default async function handler(req, res) {
         query,
         geo_location: geoLocation,
         locale: "pt-BR",
-        render: "html",
-        xhr: true,
+        // Sem renderização dinâmica: evita consumir a quota Render Dynamic.
+        render: "",
         pages: 5,
         limit: 10,
       }),

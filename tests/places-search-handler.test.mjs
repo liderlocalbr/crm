@@ -48,8 +48,7 @@ test("submete busca local com parser estruturado do Google Search", async () => 
       query: "Dentista em Mogi das Cruzes SP",
       geo_location: "Mogi das Cruzes,São Paulo,Brazil",
       locale: "pt-BR",
-      render: "html",
-      xhr: true,
+      render: "",
       pages: 5,
       limit: 10,
     });
