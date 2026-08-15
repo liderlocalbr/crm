@@ -1083,7 +1083,7 @@ async function handleMapsSearch(event) {
     if (isLocalDemo) throw new Error("A busca no Maps não está disponível no modo demonstração.");
     const params = new URLSearchParams({ keyword, locality });
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
+    const timeout = setTimeout(() => controller.abort(), 45000);
     let response;
     try {
       response = await fetch(`/api/places-search?${params}`, {

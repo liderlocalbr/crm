@@ -5,13 +5,7 @@ import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "../config.js";
 // reais do Google Maps. As credenciais (OXYLABS_USERNAME / OXYLABS_PASSWORD) ficam
 // só aqui no servidor, nunca são enviadas ao navegador.
 
-export const config = { maxDuration: 30 };
-
-function buildGeoLocation(locality) {
-  const parts = locality.split(/\s*-\s*/).map((part) => part.trim()).filter(Boolean);
-  if (parts.length >= 2) return `${parts[0]},${parts[1]},Brazil`;
-  return `${locality},Brazil`;
-}
+export const config = { maxDuration: 45 };
 
 function safeStringify(value, limit = 1500) {
   try {
@@ -96,7 +90,7 @@ export default async function handler(req, res) {
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000);
+    const timeout = setTimeout(() => controller.abort(), 40000);
     let oxylabsResponse;
     try {
       oxylabsResponse = await fetch("https://realtime.oxylabs.io/v1/queries", {
@@ -107,8 +101,7 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({
           source: "google_maps",
-          query: `${keyword} em ${locality}`,
-          geo_location: buildGeoLocation(locality),
+          query: `${keyword} em ${locality}, Brasil`,
         }),
         signal: controller.signal,
       });
