@@ -129,7 +129,7 @@
     <dialog id="activity-dialog" class="modal">
       <form id="activity-form" method="dialog" class="modal-card compact">
         <div class="modal-head">
-          <div><span class="eyebrow">PRÓXIMO PASSO</span><h2>Nova atividade</h2></div>
+          <div><span class="eyebrow">PRÓXIMO PASSO</span><h2 id="activity-dialog-title">Nova atividade</h2></div>
           <button class="icon-button activity-close" type="button" aria-label="Fechar">×</button>
         </div>
         <div class="form-stack">
@@ -141,7 +141,7 @@
           </div>
           <label class="check-field"><input id="activity-google" type="checkbox" /><span>Depois de criar, abrir o evento no Google Agenda</span></label>
         </div>
-        <div class="modal-actions"><span class="spacer"></span><button class="button ghost activity-close" type="button">Cancelar</button><button class="button primary" type="submit">Criar atividade</button></div>
+        <div class="modal-actions"><span class="spacer"></span><button class="button ghost activity-close" type="button">Cancelar</button><button id="activity-submit" class="button primary" type="submit">Criar atividade</button></div>
       </form>
     </dialog>
 

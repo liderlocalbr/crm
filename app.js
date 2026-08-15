@@ -51,6 +51,7 @@ const state = {
   googleEvents: [],
   googleEventsLoading: false,
   googleEventsError: "",
+  editingActivityId: null,
   sidebarPinned: localStorage.getItem(SIDEBAR_PIN_KEY) !== "0",
   month: currentMonth(),
   agendaMonth: currentMonth(),
@@ -426,6 +427,17 @@ const store = {
       return created;
     }
     const rows = await rest("activities", { method: "POST", body: { owner_id: state.user.id, ...activity } });
+    return rows[0];
+  },
+  async updateActivity(id, activity) {
+    if (isLocalDemo) {
+      const item = mock.activities.find((entry) => entry.id === id);
+      if (!item) throw new Error("Atividade não encontrada.");
+      Object.assign(item, activity);
+      return item;
+    }
+    const rows = await rest("activities", { method: "PATCH", query: `id=eq.${id}&owner_id=eq.${state.user.id}`, body: activity });
+    if (!rows?.[0]) throw new Error("O Supabase não confirmou a atualização da atividade.");
     return rows[0];
   },
   async saveActivityGoogleEvent(id, googleEvent) {
@@ -1873,6 +1885,7 @@ async function handleMainClick(event) {
   if (action.dataset.action === "edit-lead") openLeadDialog(state.leads.find((lead) => lead.id === action.dataset.id));
   if (action.dataset.action === "open-whatsapp") openLeadWhatsApp(action.dataset.id);
   if (action.dataset.action === "open-lead-activity") { openActivityDialog(null, action.dataset.id); return; }
+  if (action.dataset.action === "edit-activity") { openEditActivityDialog(action.dataset.id); return; }
   if (action.dataset.action === "toggle-lead-contact") await toggleLeadContact(action.dataset.id);
   if (action.dataset.action === "open-activity") openActivityDialog();
   if (action.dataset.action === "manage-stages") openStageDialog();
@@ -1938,7 +1951,7 @@ function leadActivitiesMarkup(lead) {
   if (!lead) return "";
   const activities = state.activities.filter((activity) => activity.lead_id === lead.id).sort((a, b) => String(a.completed_at || "").localeCompare(String(b.completed_at || "")) || String(a.due_at || "9999").localeCompare(String(b.due_at || "9999")));
   if (!activities.length) return `<div class="lead-activities-empty">Nenhuma atividade cadastrada para este lead.</div>`;
-  return `<div class="lead-activities-head"><div><span class="eyebrow">HISTÓRICO</span><h3>Atividades do lead</h3></div><span class="date-chip">${activities.length}</span></div><div class="lead-activities-list">${activities.map((activity) => `<div class="lead-activity-row ${activity.completed_at ? "done" : ""}"><button type="button" class="activity-check ${activity.completed_at ? "done" : ""}" data-action="toggle-activity" data-id="${activity.id}" aria-label="${activity.completed_at ? "Reabrir" : "Concluir"} atividade"></button><div><b>${escapeHtml(activity.title)}</b><span>${activity.due_at ? formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Sem prazo"} · ${activityKindLabel(activity.kind)}</span></div></div>`).join("")}</div>`;
+  return `<div class="lead-activities-head"><div><span class="eyebrow">ATIVIDADES</span><h3>Atividades do lead</h3></div><span class="date-chip">${activities.length}</span></div><div class="lead-activities-list">${activities.map((activity) => `<div class="lead-activity-row ${activity.completed_at ? "done" : ""}"><button type="button" class="activity-check ${activity.completed_at ? "done" : ""}" data-action="toggle-activity" data-id="${activity.id}" aria-label="${activity.completed_at ? "Desconcluir" : "Concluir"} atividade"></button><div><b>${escapeHtml(activity.title)}</b><span>${activity.due_at ? formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Sem prazo"} · ${activityKindLabel(activity.kind)}</span></div><button type="button" class="lead-activity-edit" data-action="edit-activity" data-id="${activity.id}" aria-label="Editar atividade" title="Editar atividade">✎</button></div>`).join("")}</div>`;
 }
 
 function renderLeadActivitiesPanel(lead) {
@@ -2016,6 +2029,9 @@ async function deleteCurrentLead() {
 }
 
 function openActivityDialog(presetDate = null, leadId = null) {
+  state.editingActivityId = null;
+  $("#activity-dialog-title").textContent = "Nova atividade";
+  $("#activity-submit").textContent = "Criar atividade";
   $("#activity-form").reset();
   $("#activity-lead").innerHTML = `<option value="">Atividade geral</option>${state.leads.map((item) => `<option value="${item.id}">${escapeHtml(item.name)}</option>`).join("")}`;
   $("#activity-lead").value = leadId || "";
@@ -2026,6 +2042,20 @@ function openActivityDialog(presetDate = null, leadId = null) {
   $("#activity-google").disabled = !state.calendarConnected;
   $("#activity-google").closest("label").title = state.calendarConnected ? "Criar também no Google Agenda" : "Conecte o Google Agenda primeiro";
   $("#activity-dialog").showModal();
+}
+
+function openEditActivityDialog(activityId) {
+  const activity = state.activities.find((entry) => entry.id === activityId);
+  if (!activity) return toast("Atividade não encontrada.", "error");
+  openActivityDialog(null, activity.lead_id);
+  state.editingActivityId = activity.id;
+  $("#activity-dialog-title").textContent = "Editar atividade";
+  $("#activity-submit").textContent = "Salvar alterações";
+  $("#activity-title").value = activity.title || "";
+  $("#activity-kind").value = activity.kind || "follow_up";
+  $("#activity-due").value = activity.due_at ? new Date(activity.due_at).toISOString().slice(0, 16) : "";
+  $("#activity-google").checked = false;
+  $("#activity-google").disabled = true;
 }
 
 async function connectGoogleCalendar() {
@@ -2103,7 +2133,10 @@ async function saveActivityFromDialog(event) {
     kind: $("#activity-kind").value, due_at: $("#activity-due").value ? new Date($("#activity-due").value).toISOString() : null,
   };
   try {
-    const created = await store.saveActivity(payload);
+    const savedActivity = state.editingActivityId
+      ? await store.updateActivity(state.editingActivityId, payload)
+      : await store.saveActivity(payload);
+    const created = savedActivity;
     let googleError = null;
     let syncedGoogleActivity = null;
     const googleWindow = openInGoogle ? window.open("about:blank", "_blank") : null;
@@ -2125,7 +2158,8 @@ async function saveActivityFromDialog(event) {
       if (googleUrl && googleWindow && !googleWindow.closed) googleWindow.location.href = googleUrl;
       else if (googleUrl && !googleWindow) window.open(googleUrl, "_blank");
     }
-    toast(googleError ? `Atividade criada no CRM, mas não no Google: ${googleError.message}` : openInGoogle ? "Atividade criada no CRM e o evento foi aberto no Google Agenda." : "Atividade criada.", googleError ? "error" : "success");
+    toast(googleError ? `Atividade salva no CRM, mas não no Google: ${googleError.message}` : state.editingActivityId ? "Atividade atualizada." : openInGoogle ? "Atividade criada no CRM e o evento foi aberto no Google Agenda." : "Atividade criada.", googleError ? "error" : "success");
+    state.editingActivityId = null;
   } catch (error) {
     toast(error.message, "error");
   }

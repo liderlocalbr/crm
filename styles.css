@@ -570,6 +570,8 @@ button { color: inherit; }
 .lead-activity-row b, .lead-activity-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lead-activity-row b { font-size: 12px; }
 .lead-activity-row span { color: var(--muted); font-size: 10px; }
+.lead-activity-edit { width: 28px; height: 28px; flex: 0 0 28px; border: 1px solid var(--line); border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; }
+.lead-activity-edit:hover { color: var(--green); border-color: rgba(43,220,175,.42); background: var(--green-soft); }
 .lead-activities-empty { color: var(--muted); font-size: 12px; }
 
 /* Atividades vinculadas exibidas no card do Pipeline */
