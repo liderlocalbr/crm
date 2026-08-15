@@ -10,6 +10,16 @@ const SESSION_KEY = "agencia-lider-local.crm.session.v1";
 const GOOGLE_TOKEN_KEY = "agencia-lider-local.crm.google-token.v1";
 const GOOGLE_TOKEN_EXPIRY_KEY = "agencia-lider-local.crm.google-token-expiry.v1";
 const GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
+const CITY_GUIDE_STATES = [
+  ["AC", "Acre"], ["AL", "Alagoas"], ["AP", "Amapá"], ["AM", "Amazonas"], ["BA", "Bahia"],
+  ["CE", "Ceará"], ["DF", "Distrito Federal"], ["ES", "Espírito Santo"], ["GO", "Goiás"], ["MA", "Maranhão"],
+  ["MT", "Mato Grosso"], ["MS", "Mato Grosso do Sul"], ["MG", "Minas Gerais"], ["PA", "Pará"], ["PB", "Paraíba"],
+  ["PR", "Paraná"], ["PE", "Pernambuco"], ["PI", "Piauí"], ["RJ", "Rio de Janeiro"], ["RN", "Rio Grande do Norte"],
+  ["RS", "Rio Grande do Sul"], ["RO", "Rondônia"], ["RR", "Roraima"], ["SC", "Santa Catarina"], ["SP", "São Paulo"],
+  ["SE", "Sergipe"], ["TO", "Tocantins"],
+];
+let cityGuideData = null;
+let cityGuidePromise = null;
 let draggedLeadId = null;
 let suppressLeadClick = false;
 
@@ -50,6 +60,8 @@ const state = {
   mapsStatusMessage: "",
   mapsSearched: false,
   mapsPendingJobId: null,
+  mapsGuideState: "",
+  mapsGuideCity: "",
 };
 
 const mock = createMockData();
@@ -1037,15 +1049,70 @@ function renderMapsSearch() {
   if (!section) return;
   section.innerHTML = `
     ${pageHead("PROSPECÇÃO", "Buscar leads no Maps", "Encontre clínicas e profissionais por palavra-chave e cidade usando o Google Maps.")}
-    <section class="panel">
-      <form id="maps-search-form" class="form-grid">
-        <label class="field"><span>Palavra-chave</span><input id="maps-keyword" required minlength="2" placeholder="Ex.: dentista" value="${escapeHtml(state.mapsKeyword)}" /></label>
-        <label class="field"><span>Cidade</span><input id="maps-locality" required minlength="2" placeholder="Ex.: Mogi das Cruzes - SP" value="${escapeHtml(state.mapsLocality)}" /></label>
-        <button class="button primary" type="submit" ${state.mapsLoading ? "disabled" : ""}>${state.mapsLoading ? "Buscando…" : "Buscar no Maps"}</button>
-      </form>
+    <section class="maps-search-layout">
+      <section class="panel">
+        <form id="maps-search-form" class="form-grid">
+          <label class="field"><span>Palavra-chave</span><input id="maps-keyword" required minlength="2" placeholder="Ex.: dentista" value="${escapeHtml(state.mapsKeyword)}" /></label>
+          <label class="field"><span>Cidade – região</span><input id="maps-locality" required minlength="2" placeholder="Ex.: Mogi das Cruzes - SP" value="${escapeHtml(state.mapsLocality)}" /></label>
+          <button class="button primary" type="submit" ${state.mapsLoading ? "disabled" : ""}>${state.mapsLoading ? "Buscando…" : "Buscar no Maps"}</button>
+        </form>
+      </section>
+      ${cityGuideMarkup()}
     </section>
     <section class="panel">${mapsResultsMarkup()}</section>`;
   $("#maps-search-form").addEventListener("submit", handleMapsSearch);
+  bindCityGuide();
+}
+
+function cityGuideMarkup() {
+  const stateOptions = CITY_GUIDE_STATES.map(([code, name]) => `<option value="${code}" ${state.mapsGuideState === code ? "selected" : ""}>${name}</option>`).join("");
+  const cities = cityGuideData?.states?.[state.mapsGuideState] || [];
+  const cityOptions = cities.map((city) => `<option value="${escapeHtml(city.ibgeCode)}" ${state.mapsGuideCity === city.name ? "selected" : ""}>${escapeHtml(city.name)} — ${city.population.toLocaleString("pt-BR")} hab.</option>`).join("");
+  return `<aside class="panel maps-city-guide">
+    <div class="maps-guide-head"><span class="eyebrow">GUIA TERRITORIAL</span><h2>Cidades por população</h2><p>Dados oficiais do IBGE (estimativa 2025). Mostrando municípios com mais de 70 mil habitantes.</p></div>
+    <label class="field"><span>Estado</span><select id="maps-guide-state"><option value="">Selecione um estado</option>${stateOptions}</select></label>
+    <label class="field"><span>Cidade acima de 70 mil habitantes</span><select id="maps-guide-city" ${state.mapsGuideState && !cityGuideData ? "disabled" : ""}><option value="">${state.mapsGuideState ? (cityGuideData ? "Selecione uma cidade" : "Carregando cidades…") : "Selecione primeiro o estado"}</option>${cityOptions}</select></label>
+    <small class="maps-guide-note">Ao escolher uma cidade, ela será preenchida no campo Cidade – região da busca.</small>
+  </aside>`;
+}
+
+async function ensureCityGuideData() {
+  if (cityGuideData) return cityGuideData;
+  if (!cityGuidePromise) {
+    cityGuidePromise = fetch("/data/cities-by-state.json", { cache: "force-cache" }).then((response) => {
+      if (!response.ok) throw new Error("Não foi possível carregar o guia de cidades.");
+      return response.json();
+    }).then((data) => {
+      cityGuideData = data;
+      return data;
+    });
+  }
+  return cityGuidePromise;
+}
+
+function bindCityGuide() {
+  const stateSelect = $("#maps-guide-state");
+  const citySelect = $("#maps-guide-city");
+  if (!stateSelect || !citySelect) return;
+  stateSelect.addEventListener("change", async (event) => {
+    state.mapsGuideState = event.target.value;
+    state.mapsGuideCity = "";
+    renderMapsSearch();
+    if (!state.mapsGuideState) return;
+    try {
+      await ensureCityGuideData();
+    } catch (error) {
+      toast(error.message, "error");
+    }
+    renderMapsSearch();
+  });
+  citySelect.addEventListener("change", (event) => {
+    const city = cityGuideData?.states?.[state.mapsGuideState]?.find((item) => item.ibgeCode === event.target.value);
+    if (!city) return;
+    state.mapsGuideCity = city.name;
+    state.mapsLocality = `${city.name} - ${city.state}`;
+    renderMapsSearch();
+  });
 }
 
 function mapsResultsMarkup() {

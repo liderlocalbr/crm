@@ -1,0 +1,3484 @@
+{
+  "source": "IBGE SIDRA tabela 6579",
+  "year": 2025,
+  "threshold": 70000,
+  "states": {
+    "AC": [
+      {
+        "ibgeCode": "1200401",
+        "name": "Rio Branco",
+        "state": "AC",
+        "population": 389001,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1200203",
+        "name": "Cruzeiro do Sul",
+        "state": "AC",
+        "population": 98916,
+        "year": 2025
+      }
+    ],
+    "AL": [
+      {
+        "ibgeCode": "2704302",
+        "name": "Maceió",
+        "state": "AL",
+        "population": 994952,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2700300",
+        "name": "Arapiraca",
+        "state": "AL",
+        "population": 243906,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2707701",
+        "name": "Rio Largo",
+        "state": "AL",
+        "population": 97658,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2706307",
+        "name": "Palmeira dos Índios",
+        "state": "AL",
+        "population": 73621,
+        "year": 2025
+      }
+    ],
+    "AM": [
+      {
+        "ibgeCode": "1302603",
+        "name": "Manaus",
+        "state": "AM",
+        "population": 2303732,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1301902",
+        "name": "Itacoatiara",
+        "state": "AM",
+        "population": 113917,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1302504",
+        "name": "Manacapuru",
+        "state": "AM",
+        "population": 111751,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1303403",
+        "name": "Parintins",
+        "state": "AM",
+        "population": 101855,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1304203",
+        "name": "Tefé",
+        "state": "AM",
+        "population": 80137,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1301209",
+        "name": "Coari",
+        "state": "AM",
+        "population": 73576,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1304062",
+        "name": "Tabatinga",
+        "state": "AM",
+        "population": 73348,
+        "year": 2025
+      }
+    ],
+    "AP": [
+      {
+        "ibgeCode": "1600303",
+        "name": "Macapá",
+        "state": "AP",
+        "population": 489676,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1600600",
+        "name": "Santana",
+        "state": "AP",
+        "population": 118803,
+        "year": 2025
+      }
+    ],
+    "BA": [
+      {
+        "ibgeCode": "2927408",
+        "name": "Salvador",
+        "state": "BA",
+        "population": 2564204,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2910800",
+        "name": "Feira de Santana",
+        "state": "BA",
+        "population": 660806,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2933307",
+        "name": "Vitória da Conquista",
+        "state": "BA",
+        "population": 396613,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2905701",
+        "name": "Camaçari",
+        "state": "BA",
+        "population": 321636,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2918407",
+        "name": "Juazeiro",
+        "state": "BA",
+        "population": 256122,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2919207",
+        "name": "Lauro de Freitas",
+        "state": "BA",
+        "population": 219564,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2914802",
+        "name": "Itabuna",
+        "state": "BA",
+        "population": 196344,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2913606",
+        "name": "Ilhéus",
+        "state": "BA",
+        "population": 189149,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2925303",
+        "name": "Porto Seguro",
+        "state": "BA",
+        "population": 182630,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2903201",
+        "name": "Barreiras",
+        "state": "BA",
+        "population": 171634,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2918001",
+        "name": "Jequié",
+        "state": "BA",
+        "population": 169201,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2900702",
+        "name": "Alagoinhas",
+        "state": "BA",
+        "population": 161196,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2931350",
+        "name": "Teixeira de Freitas",
+        "state": "BA",
+        "population": 153738,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2910727",
+        "name": "Eunápolis",
+        "state": "BA",
+        "population": 121067,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2930709",
+        "name": "Simões Filho",
+        "state": "BA",
+        "population": 120419,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2924009",
+        "name": "Paulo Afonso",
+        "state": "BA",
+        "population": 119418,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2919553",
+        "name": "Luís Eduardo Magalhães",
+        "state": "BA",
+        "population": 118382,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2928703",
+        "name": "Santo Antônio de Jesus",
+        "state": "BA",
+        "population": 109791,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2911709",
+        "name": "Guanambi",
+        "state": "BA",
+        "population": 93488,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2932903",
+        "name": "Valença",
+        "state": "BA",
+        "population": 90053,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2917508",
+        "name": "Jacobina",
+        "state": "BA",
+        "population": 86896,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2930501",
+        "name": "Serrinha",
+        "state": "BA",
+        "population": 84690,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2914604",
+        "name": "Irecê",
+        "state": "BA",
+        "population": 78781,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2930105",
+        "name": "Senhor do Bonfim",
+        "state": "BA",
+        "population": 78090,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2907202",
+        "name": "Casa Nova",
+        "state": "BA",
+        "population": 76131,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2910057",
+        "name": "Dias d'Ávila",
+        "state": "BA",
+        "population": 75296,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2906006",
+        "name": "Campo Formoso",
+        "state": "BA",
+        "population": 75112,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2906501",
+        "name": "Candeias",
+        "state": "BA",
+        "population": 74854,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2904605",
+        "name": "Brumado",
+        "state": "BA",
+        "population": 74368,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2908408",
+        "name": "Conceição do Coité",
+        "state": "BA",
+        "population": 71601,
+        "year": 2025
+      }
+    ],
+    "CE": [
+      {
+        "ibgeCode": "2304400",
+        "name": "Fortaleza",
+        "state": "CE",
+        "population": 2578483,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2303709",
+        "name": "Caucaia",
+        "state": "CE",
+        "population": 378406,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2307304",
+        "name": "Juazeiro do Norte",
+        "state": "CE",
+        "population": 305531,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2307650",
+        "name": "Maracanaú",
+        "state": "CE",
+        "population": 251613,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2312908",
+        "name": "Sobral",
+        "state": "CE",
+        "population": 216519,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2304202",
+        "name": "Crato",
+        "state": "CE",
+        "population": 139027,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2306405",
+        "name": "Itapipoca",
+        "state": "CE",
+        "population": 138978,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2307700",
+        "name": "Maranguape",
+        "state": "CE",
+        "population": 108622,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2305506",
+        "name": "Iguatu",
+        "state": "CE",
+        "population": 102588,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2311306",
+        "name": "Quixadá",
+        "state": "CE",
+        "population": 88846,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2313401",
+        "name": "Tianguá",
+        "state": "CE",
+        "population": 86968,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2309706",
+        "name": "Pacatuba",
+        "state": "CE",
+        "population": 86564,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2311405",
+        "name": "Quixeramobim",
+        "state": "CE",
+        "population": 86431,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2301000",
+        "name": "Aquiraz",
+        "state": "CE",
+        "population": 85316,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2304285",
+        "name": "Eusébio",
+        "state": "CE",
+        "population": 82016,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2301901",
+        "name": "Barbalha",
+        "state": "CE",
+        "population": 81441,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2305233",
+        "name": "Horizonte",
+        "state": "CE",
+        "population": 81161,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2304103",
+        "name": "Crateús",
+        "state": "CE",
+        "population": 80130,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2301109",
+        "name": "Aracati",
+        "state": "CE",
+        "population": 79205,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2302800",
+        "name": "Canindé",
+        "state": "CE",
+        "population": 77376,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2303501",
+        "name": "Cascavel",
+        "state": "CE",
+        "population": 76866,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2309607",
+        "name": "Pacajus",
+        "state": "CE",
+        "population": 75454,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2311801",
+        "name": "Russas",
+        "state": "CE",
+        "population": 74834,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2306256",
+        "name": "Itaitinga",
+        "state": "CE",
+        "population": 72512,
+        "year": 2025
+      }
+    ],
+    "DF": [
+      {
+        "ibgeCode": "5300108",
+        "name": "Brasília",
+        "state": "DF",
+        "population": 2996899,
+        "year": 2025
+      }
+    ],
+    "ES": [
+      {
+        "ibgeCode": "3205002",
+        "name": "Serra",
+        "state": "ES",
+        "population": 579720,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3205200",
+        "name": "Vila Velha",
+        "state": "ES",
+        "population": 506779,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3201308",
+        "name": "Cariacica",
+        "state": "ES",
+        "population": 376200,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3205309",
+        "name": "Vitória",
+        "state": "ES",
+        "population": 343378,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3201209",
+        "name": "Cachoeiro de Itapemirim",
+        "state": "ES",
+        "population": 198342,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3203205",
+        "name": "Linhares",
+        "state": "ES",
+        "population": 183797,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3202405",
+        "name": "Guarapari",
+        "state": "ES",
+        "population": 136311,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3204906",
+        "name": "São Mateus",
+        "state": "ES",
+        "population": 134423,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3201506",
+        "name": "Colatina",
+        "state": "ES",
+        "population": 129301,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3200607",
+        "name": "Aracruz",
+        "state": "ES",
+        "population": 103363,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3205101",
+        "name": "Viana",
+        "state": "ES",
+        "population": 79043,
+        "year": 2025
+      }
+    ],
+    "GO": [
+      {
+        "ibgeCode": "5208707",
+        "name": "Goiânia",
+        "state": "GO",
+        "population": 1503256,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5201405",
+        "name": "Aparecida de Goiânia",
+        "state": "GO",
+        "population": 556021,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5201108",
+        "name": "Anápolis",
+        "state": "GO",
+        "population": 420300,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5200258",
+        "name": "Águas Lindas de Goiás",
+        "state": "GO",
+        "population": 245352,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5218805",
+        "name": "Rio Verde",
+        "state": "GO",
+        "population": 241494,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5212501",
+        "name": "Luziânia",
+        "state": "GO",
+        "population": 221262,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5221858",
+        "name": "Valparaíso de Goiás",
+        "state": "GO",
+        "population": 218416,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5220454",
+        "name": "Senador Canedo",
+        "state": "GO",
+        "population": 175042,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5221403",
+        "name": "Trindade",
+        "state": "GO",
+        "population": 153560,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5205109",
+        "name": "Catalão",
+        "state": "GO",
+        "population": 122760,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5208004",
+        "name": "Formosa",
+        "state": "GO",
+        "population": 121559,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5211503",
+        "name": "Itumbiara",
+        "state": "GO",
+        "population": 113322,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5217609",
+        "name": "Planaltina",
+        "state": "GO",
+        "population": 112304,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5211909",
+        "name": "Jataí",
+        "state": "GO",
+        "population": 111634,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5215231",
+        "name": "Novo Gama",
+        "state": "GO",
+        "population": 107663,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5204508",
+        "name": "Caldas Novas",
+        "state": "GO",
+        "population": 106820,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5205497",
+        "name": "Cidade Ocidental",
+        "state": "GO",
+        "population": 101570,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5208806",
+        "name": "Goianira",
+        "state": "GO",
+        "population": 81495,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5208608",
+        "name": "Goianésia",
+        "state": "GO",
+        "population": 78009,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5219753",
+        "name": "Santo Antônio do Descoberto",
+        "state": "GO",
+        "population": 75221,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5213103",
+        "name": "Mineiros",
+        "state": "GO",
+        "population": 74999,
+        "year": 2025
+      }
+    ],
+    "MA": [
+      {
+        "ibgeCode": "2111300",
+        "name": "São Luís",
+        "state": "MA",
+        "population": 1089215,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2105302",
+        "name": "Imperatriz",
+        "state": "MA",
+        "population": 285806,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2111201",
+        "name": "São José de Ribamar",
+        "state": "MA",
+        "population": 259164,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2112209",
+        "name": "Timon",
+        "state": "MA",
+        "population": 182711,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2103000",
+        "name": "Caxias",
+        "state": "MA",
+        "population": 163546,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2107506",
+        "name": "Paço do Lumiar",
+        "state": "MA",
+        "population": 153158,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2103307",
+        "name": "Codó",
+        "state": "MA",
+        "population": 118283,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2100055",
+        "name": "Açailândia",
+        "state": "MA",
+        "population": 110611,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2101202",
+        "name": "Bacabal",
+        "state": "MA",
+        "population": 107755,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2101400",
+        "name": "Balsas",
+        "state": "MA",
+        "population": 105974,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2109908",
+        "name": "Santa Inês",
+        "state": "MA",
+        "population": 88249,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2108603",
+        "name": "Pinheiro",
+        "state": "MA",
+        "population": 88091,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2101608",
+        "name": "Barra do Corda",
+        "state": "MA",
+        "population": 87757,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2103208",
+        "name": "Chapadinha",
+        "state": "MA",
+        "population": 84395,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2104800",
+        "name": "Grajaú",
+        "state": "MA",
+        "population": 76837,
+        "year": 2025
+      }
+    ],
+    "MG": [
+      {
+        "ibgeCode": "3106200",
+        "name": "Belo Horizonte",
+        "state": "MG",
+        "population": 2415872,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3170206",
+        "name": "Uberlândia",
+        "state": "MG",
+        "population": 761835,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3118601",
+        "name": "Contagem",
+        "state": "MG",
+        "population": 651718,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3136702",
+        "name": "Juiz de Fora",
+        "state": "MG",
+        "population": 567730,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3143302",
+        "name": "Montes Claros",
+        "state": "MG",
+        "population": 437601,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3106705",
+        "name": "Betim",
+        "state": "MG",
+        "population": 431433,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3170107",
+        "name": "Uberaba",
+        "state": "MG",
+        "population": 356781,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3154606",
+        "name": "Ribeirão das Neves",
+        "state": "MG",
+        "population": 346971,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3127701",
+        "name": "Governador Valadares",
+        "state": "MG",
+        "population": 266561,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3122306",
+        "name": "Divinópolis",
+        "state": "MG",
+        "population": 243583,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3167202",
+        "name": "Sete Lagoas",
+        "state": "MG",
+        "population": 238909,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3131307",
+        "name": "Ipatinga",
+        "state": "MG",
+        "population": 235311,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3157807",
+        "name": "Santa Luzia",
+        "state": "MG",
+        "population": 230382,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3129806",
+        "name": "Ibirité",
+        "state": "MG",
+        "population": 179582,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3151800",
+        "name": "Poços de Caldas",
+        "state": "MG",
+        "population": 172339,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3148004",
+        "name": "Patos de Minas",
+        "state": "MG",
+        "population": 169173,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3152501",
+        "name": "Pouso Alegre",
+        "state": "MG",
+        "population": 162133,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3170701",
+        "name": "Varginha",
+        "state": "MG",
+        "population": 143676,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3168606",
+        "name": "Teófilo Otoni",
+        "state": "MG",
+        "population": 142851,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3118304",
+        "name": "Conselheiro Lafaiete",
+        "state": "MG",
+        "population": 138946,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3171204",
+        "name": "Vespasiano",
+        "state": "MG",
+        "population": 138583,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3156700",
+        "name": "Sabará",
+        "state": "MG",
+        "population": 134576,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3105608",
+        "name": "Barbacena",
+        "state": "MG",
+        "population": 129695,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3103504",
+        "name": "Araguari",
+        "state": "MG",
+        "population": 123432,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3144805",
+        "name": "Nova Lima",
+        "state": "MG",
+        "population": 120959,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3104007",
+        "name": "Araxá",
+        "state": "MG",
+        "population": 118786,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3131703",
+        "name": "Itabira",
+        "state": "MG",
+        "population": 118053,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3147907",
+        "name": "Passos",
+        "state": "MG",
+        "population": 116951,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3145208",
+        "name": "Nova Serrana",
+        "state": "MG",
+        "population": 114791,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3138203",
+        "name": "Lavras",
+        "state": "MG",
+        "population": 110682,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3119401",
+        "name": "Coronel Fabriciano",
+        "state": "MG",
+        "population": 108708,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3143906",
+        "name": "Muriaé",
+        "state": "MG",
+        "population": 108447,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3169901",
+        "name": "Ubá",
+        "state": "MG",
+        "population": 107423,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3134202",
+        "name": "Ituiutaba",
+        "state": "MG",
+        "population": 106775,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3133808",
+        "name": "Itaúna",
+        "state": "MG",
+        "population": 103272,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3147105",
+        "name": "Pará de Minas",
+        "state": "MG",
+        "population": 102844,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3147006",
+        "name": "Paracatu",
+        "state": "MG",
+        "population": 99005,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3139409",
+        "name": "Manhuaçu",
+        "state": "MG",
+        "population": 97328,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3132404",
+        "name": "Itajubá",
+        "state": "MG",
+        "population": 96855,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3162500",
+        "name": "São João del Rei",
+        "state": "MG",
+        "population": 94468,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3148103",
+        "name": "Patrocínio",
+        "state": "MG",
+        "population": 94357,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3124104",
+        "name": "Esmeraldas",
+        "state": "MG",
+        "population": 93103,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3170404",
+        "name": "Unaí",
+        "state": "MG",
+        "population": 91320,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3113404",
+        "name": "Caratinga",
+        "state": "MG",
+        "population": 90890,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3120904",
+        "name": "Curvelo",
+        "state": "MG",
+        "population": 84297,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3168705",
+        "name": "Timóteo",
+        "state": "MG",
+        "population": 84172,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3136207",
+        "name": "João Monlevade",
+        "state": "MG",
+        "population": 83791,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3101607",
+        "name": "Alfenas",
+        "state": "MG",
+        "population": 82303,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3137601",
+        "name": "Lagoa Santa",
+        "state": "MG",
+        "population": 81299,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3171303",
+        "name": "Viçosa",
+        "state": "MG",
+        "population": 79517,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3169307",
+        "name": "Três Corações",
+        "state": "MG",
+        "population": 78291,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3146107",
+        "name": "Ouro Preto",
+        "state": "MG",
+        "population": 77914,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3164704",
+        "name": "São Sebastião do Paraíso",
+        "state": "MG",
+        "population": 75179,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3135100",
+        "name": "Janaúba",
+        "state": "MG",
+        "population": 73555,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3126109",
+        "name": "Formiga",
+        "state": "MG",
+        "population": 70897,
+        "year": 2025
+      }
+    ],
+    "MS": [
+      {
+        "ibgeCode": "5002704",
+        "name": "Campo Grande",
+        "state": "MS",
+        "population": 962883,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5003702",
+        "name": "Dourados",
+        "state": "MS",
+        "population": 264017,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5008305",
+        "name": "Três Lagoas",
+        "state": "MS",
+        "population": 143523,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5003207",
+        "name": "Corumbá",
+        "state": "MS",
+        "population": 98751,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5006606",
+        "name": "Ponta Porã",
+        "state": "MS",
+        "population": 98598,
+        "year": 2025
+      }
+    ],
+    "MT": [
+      {
+        "ibgeCode": "5103403",
+        "name": "Cuiabá",
+        "state": "MT",
+        "population": 691875,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5108402",
+        "name": "Várzea Grande",
+        "state": "MT",
+        "population": 318922,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5107602",
+        "name": "Rondonópolis",
+        "state": "MT",
+        "population": 263708,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5107909",
+        "name": "Sinop",
+        "state": "MT",
+        "population": 223780,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5107925",
+        "name": "Sorriso",
+        "state": "MT",
+        "population": 124665,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5107958",
+        "name": "Tangará da Serra",
+        "state": "MT",
+        "population": 114603,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5107040",
+        "name": "Primavera do Leste",
+        "state": "MT",
+        "population": 96006,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5105259",
+        "name": "Lucas do Rio Verde",
+        "state": "MT",
+        "population": 95792,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5102504",
+        "name": "Cáceres",
+        "state": "MT",
+        "population": 91767,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "5101803",
+        "name": "Barra do Garças",
+        "state": "MT",
+        "population": 73878,
+        "year": 2025
+      }
+    ],
+    "PA": [
+      {
+        "ibgeCode": "1501402",
+        "name": "Belém",
+        "state": "PA",
+        "population": 1397315,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1500800",
+        "name": "Ananindeua",
+        "state": "PA",
+        "population": 509227,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1506807",
+        "name": "Santarém",
+        "state": "PA",
+        "population": 360871,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1505536",
+        "name": "Parauapebas",
+        "state": "PA",
+        "population": 305771,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1504208",
+        "name": "Marabá",
+        "state": "PA",
+        "population": 290975,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1502400",
+        "name": "Castanhal",
+        "state": "PA",
+        "population": 209126,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1500107",
+        "name": "Abaetetuba",
+        "state": "PA",
+        "population": 172344,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1502103",
+        "name": "Cametá",
+        "state": "PA",
+        "population": 144859,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1501303",
+        "name": "Barcarena",
+        "state": "PA",
+        "population": 139076,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1500602",
+        "name": "Altamira",
+        "state": "PA",
+        "population": 138749,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1503606",
+        "name": "Itaituba",
+        "state": "PA",
+        "population": 135369,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1501709",
+        "name": "Bragança",
+        "state": "PA",
+        "population": 132489,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1504422",
+        "name": "Marituba",
+        "state": "PA",
+        "population": 119437,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1501808",
+        "name": "Breves",
+        "state": "PA",
+        "population": 116058,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1505502",
+        "name": "Paragominas",
+        "state": "PA",
+        "population": 113498,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1508100",
+        "name": "Tucuruí",
+        "state": "PA",
+        "population": 96119,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1506138",
+        "name": "Redenção",
+        "state": "PA",
+        "population": 92694,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1504703",
+        "name": "Moju",
+        "state": "PA",
+        "population": 91760,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1502152",
+        "name": "Canaã dos Carajás",
+        "state": "PA",
+        "population": 89524,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1506500",
+        "name": "Santa Izabel do Pará",
+        "state": "PA",
+        "population": 79195,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1500404",
+        "name": "Alenquer",
+        "state": "PA",
+        "population": 75882,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1502202",
+        "name": "Capanema",
+        "state": "PA",
+        "population": 75309,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1507953",
+        "name": "Tailândia",
+        "state": "PA",
+        "population": 75290,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1508001",
+        "name": "Tomé-Açu",
+        "state": "PA",
+        "population": 73058,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1505304",
+        "name": "Oriximiná",
+        "state": "PA",
+        "population": 72889,
+        "year": 2025
+      }
+    ],
+    "PB": [
+      {
+        "ibgeCode": "2507507",
+        "name": "João Pessoa",
+        "state": "PB",
+        "population": 897633,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2504009",
+        "name": "Campina Grande",
+        "state": "PB",
+        "population": 443911,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2513703",
+        "name": "Santa Rita",
+        "state": "PB",
+        "population": 160852,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2510808",
+        "name": "Patos",
+        "state": "PB",
+        "population": 108104,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2501807",
+        "name": "Bayeux",
+        "state": "PB",
+        "population": 83862,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2503209",
+        "name": "Cabedelo",
+        "state": "PB",
+        "population": 70734,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2516201",
+        "name": "Sousa",
+        "state": "PB",
+        "population": 70066,
+        "year": 2025
+      }
+    ],
+    "PE": [
+      {
+        "ibgeCode": "2611606",
+        "name": "Recife",
+        "state": "PE",
+        "population": 1588376,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2607901",
+        "name": "Jaboatão dos Guararapes",
+        "state": "PE",
+        "population": 684293,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2611101",
+        "name": "Petrolina",
+        "state": "PE",
+        "population": 418444,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2604106",
+        "name": "Caruaru",
+        "state": "PE",
+        "population": 405408,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2610707",
+        "name": "Paulista",
+        "state": "PE",
+        "population": 365144,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2609600",
+        "name": "Olinda",
+        "state": "PE",
+        "population": 364717,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2602902",
+        "name": "Cabo de Santo Agostinho",
+        "state": "PE",
+        "population": 218049,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2603454",
+        "name": "Camaragibe",
+        "state": "PE",
+        "population": 156112,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2606002",
+        "name": "Garanhuns",
+        "state": "PE",
+        "population": 151803,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2616407",
+        "name": "Vitória de Santo Antão",
+        "state": "PE",
+        "population": 144243,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2606804",
+        "name": "Igarassu",
+        "state": "PE",
+        "population": 123017,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2613701",
+        "name": "São Lourenço da Mata",
+        "state": "PE",
+        "population": 118258,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2607208",
+        "name": "Ipojuca",
+        "state": "PE",
+        "population": 106539,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2612505",
+        "name": "Santa Cruz do Capibaribe",
+        "state": "PE",
+        "population": 104854,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2600054",
+        "name": "Abreu e Lima",
+        "state": "PE",
+        "population": 104248,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2613909",
+        "name": "Serra Talhada",
+        "state": "PE",
+        "population": 98816,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2606408",
+        "name": "Gravatá",
+        "state": "PE",
+        "population": 92429,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2601102",
+        "name": "Araripina",
+        "state": "PE",
+        "population": 90504,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2606200",
+        "name": "Goiana",
+        "state": "PE",
+        "population": 85497,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2601706",
+        "name": "Belo Jardim",
+        "state": "PE",
+        "population": 84033,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2604007",
+        "name": "Carpina",
+        "state": "PE",
+        "population": 83482,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2601201",
+        "name": "Arcoverde",
+        "state": "PE",
+        "population": 82487,
+        "year": 2025
+      }
+    ],
+    "PI": [
+      {
+        "ibgeCode": "2211001",
+        "name": "Teresina",
+        "state": "PI",
+        "population": 905692,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2207702",
+        "name": "Parnaíba",
+        "state": "PI",
+        "population": 170491,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2208007",
+        "name": "Picos",
+        "state": "PI",
+        "population": 86701,
+        "year": 2025
+      }
+    ],
+    "PR": [
+      {
+        "ibgeCode": "4106902",
+        "name": "Curitiba",
+        "state": "PR",
+        "population": 1830795,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4113700",
+        "name": "Londrina",
+        "state": "PR",
+        "population": 581382,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4115200",
+        "name": "Maringá",
+        "state": "PR",
+        "population": 429660,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4119905",
+        "name": "Ponta Grossa",
+        "state": "PR",
+        "population": 375632,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4104808",
+        "name": "Cascavel",
+        "state": "PR",
+        "population": 368195,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4125506",
+        "name": "São José dos Pinhais",
+        "state": "PR",
+        "population": 349880,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4108304",
+        "name": "Foz do Iguaçu",
+        "state": "PR",
+        "population": 297352,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4105805",
+        "name": "Colombo",
+        "state": "PR",
+        "population": 241672,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4109401",
+        "name": "Guarapuava",
+        "state": "PR",
+        "population": 189630,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4107652",
+        "name": "Fazenda Rio Grande",
+        "state": "PR",
+        "population": 165943,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4101804",
+        "name": "Araucária",
+        "state": "PR",
+        "population": 162247,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4127700",
+        "name": "Toledo",
+        "state": "PR",
+        "population": 160701,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4118204",
+        "name": "Paranaguá",
+        "state": "PR",
+        "population": 150104,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4104204",
+        "name": "Campo Largo",
+        "state": "PR",
+        "population": 144504,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4101408",
+        "name": "Apucarana",
+        "state": "PR",
+        "population": 134910,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4119152",
+        "name": "Pinhais",
+        "state": "PR",
+        "population": 131255,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4126256",
+        "name": "Sarandi",
+        "state": "PR",
+        "population": 128106,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4119509",
+        "name": "Piraquara",
+        "state": "PR",
+        "population": 127433,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4100400",
+        "name": "Almirante Tamandaré",
+        "state": "PR",
+        "population": 125861,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4101507",
+        "name": "Arapongas",
+        "state": "PR",
+        "population": 124838,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4128104",
+        "name": "Umuarama",
+        "state": "PR",
+        "population": 123059,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4103701",
+        "name": "Cambé",
+        "state": "PR",
+        "population": 110923,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4104303",
+        "name": "Campo Mourão",
+        "state": "PR",
+        "population": 104122,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4108403",
+        "name": "Francisco Beltrão",
+        "state": "PR",
+        "population": 102312,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4118501",
+        "name": "Pato Branco",
+        "state": "PR",
+        "population": 97821,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4118402",
+        "name": "Paranavaí",
+        "state": "PR",
+        "population": 96209,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4105508",
+        "name": "Cianorte",
+        "state": "PR",
+        "population": 82988,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4127106",
+        "name": "Telêmaco Borba",
+        "state": "PR",
+        "population": 77479,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4122404",
+        "name": "Rolândia",
+        "state": "PR",
+        "population": 75818,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4104907",
+        "name": "Castro",
+        "state": "PR",
+        "population": 75644,
+        "year": 2025
+      }
+    ],
+    "RJ": [
+      {
+        "ibgeCode": "3304557",
+        "name": "Rio de Janeiro",
+        "state": "RJ",
+        "population": 6730729,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3304904",
+        "name": "São Gonçalo",
+        "state": "RJ",
+        "population": 960196,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3301702",
+        "name": "Duque de Caxias",
+        "state": "RJ",
+        "population": 866225,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3303500",
+        "name": "Nova Iguaçu",
+        "state": "RJ",
+        "population": 843220,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3301009",
+        "name": "Campos dos Goytacazes",
+        "state": "RJ",
+        "population": 519259,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3300456",
+        "name": "Belford Roxo",
+        "state": "RJ",
+        "population": 518384,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3303302",
+        "name": "Niterói",
+        "state": "RJ",
+        "population": 516787,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3305109",
+        "name": "São João de Meriti",
+        "state": "RJ",
+        "population": 466503,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3303906",
+        "name": "Petrópolis",
+        "state": "RJ",
+        "population": 294926,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3306305",
+        "name": "Volta Redonda",
+        "state": "RJ",
+        "population": 279971,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3302403",
+        "name": "Macaé",
+        "state": "RJ",
+        "population": 264439,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3302502",
+        "name": "Magé",
+        "state": "RJ",
+        "population": 244142,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3301900",
+        "name": "Itaboraí",
+        "state": "RJ",
+        "population": 240127,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3300704",
+        "name": "Cabo Frio",
+        "state": "RJ",
+        "population": 238438,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3302700",
+        "name": "Maricá",
+        "state": "RJ",
+        "population": 212470,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3303401",
+        "name": "Nova Friburgo",
+        "state": "RJ",
+        "population": 203417,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3300407",
+        "name": "Barra Mansa",
+        "state": "RJ",
+        "population": 181679,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3300100",
+        "name": "Angra dos Reis",
+        "state": "RJ",
+        "population": 179142,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3302858",
+        "name": "Mesquita",
+        "state": "RJ",
+        "population": 178830,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3305802",
+        "name": "Teresópolis",
+        "state": "RJ",
+        "population": 176735,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3304524",
+        "name": "Rio das Ostras",
+        "state": "RJ",
+        "population": 168455,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3303203",
+        "name": "Nilópolis",
+        "state": "RJ",
+        "population": 155500,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3304144",
+        "name": "Queimados",
+        "state": "RJ",
+        "population": 149135,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3300209",
+        "name": "Araruama",
+        "state": "RJ",
+        "population": 137906,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3304201",
+        "name": "Resende",
+        "state": "RJ",
+        "population": 137697,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3302007",
+        "name": "Itaguaí",
+        "state": "RJ",
+        "population": 124021,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3305208",
+        "name": "São Pedro da Aldeia",
+        "state": "RJ",
+        "population": 110677,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3302205",
+        "name": "Itaperuna",
+        "state": "RJ",
+        "population": 107297,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3302270",
+        "name": "Japeri",
+        "state": "RJ",
+        "population": 102171,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3300308",
+        "name": "Barra do Piraí",
+        "state": "RJ",
+        "population": 98506,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3305505",
+        "name": "Saquarema",
+        "state": "RJ",
+        "population": 95315,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3305554",
+        "name": "Seropédica",
+        "state": "RJ",
+        "population": 84794,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3306008",
+        "name": "Três Rios",
+        "state": "RJ",
+        "population": 82319,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3306107",
+        "name": "Valença",
+        "state": "RJ",
+        "population": 71449,
+        "year": 2025
+      }
+    ],
+    "RN": [
+      {
+        "ibgeCode": "2408102",
+        "name": "Natal",
+        "state": "RN",
+        "population": 784249,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2408003",
+        "name": "Mossoró",
+        "state": "RN",
+        "population": 278587,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2403251",
+        "name": "Parnamirim",
+        "state": "RN",
+        "population": 271713,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2412005",
+        "name": "São Gonçalo do Amarante",
+        "state": "RN",
+        "population": 124495,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2407104",
+        "name": "Macaíba",
+        "state": "RN",
+        "population": 87056,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2402600",
+        "name": "Ceará-Mirim",
+        "state": "RN",
+        "population": 83543,
+        "year": 2025
+      }
+    ],
+    "RO": [
+      {
+        "ibgeCode": "1100205",
+        "name": "Porto Velho",
+        "state": "RO",
+        "population": 517709,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1100122",
+        "name": "Ji-Paraná",
+        "state": "RO",
+        "population": 140101,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1100304",
+        "name": "Vilhena",
+        "state": "RO",
+        "population": 109651,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1100023",
+        "name": "Ariquemes",
+        "state": "RO",
+        "population": 109170,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1100049",
+        "name": "Cacoal",
+        "state": "RO",
+        "population": 98280,
+        "year": 2025
+      }
+    ],
+    "RR": [
+      {
+        "ibgeCode": "1400100",
+        "name": "Boa Vista",
+        "state": "RR",
+        "population": 485477,
+        "year": 2025
+      }
+    ],
+    "RS": [
+      {
+        "ibgeCode": "4314902",
+        "name": "Porto Alegre",
+        "state": "RS",
+        "population": 1388794,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4305108",
+        "name": "Caxias do Sul",
+        "state": "RS",
+        "population": 479599,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4304606",
+        "name": "Canoas",
+        "state": "RS",
+        "population": 359840,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4314407",
+        "name": "Pelotas",
+        "state": "RS",
+        "population": 336150,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4316907",
+        "name": "Santa Maria",
+        "state": "RS",
+        "population": 282395,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4309209",
+        "name": "Gravataí",
+        "state": "RS",
+        "population": 275430,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4313409",
+        "name": "Novo Hamburgo",
+        "state": "RS",
+        "population": 235802,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4323002",
+        "name": "Viamão",
+        "state": "RS",
+        "population": 231996,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4318705",
+        "name": "São Leopoldo",
+        "state": "RS",
+        "population": 225737,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4314100",
+        "name": "Passo Fundo",
+        "state": "RS",
+        "population": 214811,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4315602",
+        "name": "Rio Grande",
+        "state": "RS",
+        "population": 198935,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4300604",
+        "name": "Alvorada",
+        "state": "RS",
+        "population": 194062,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4303103",
+        "name": "Cachoeirinha",
+        "state": "RS",
+        "population": 141503,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4316808",
+        "name": "Santa Cruz do Sul",
+        "state": "RS",
+        "population": 138270,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4320008",
+        "name": "Sapucaia do Sul",
+        "state": "RS",
+        "population": 136572,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4302105",
+        "name": "Bento Gonçalves",
+        "state": "RS",
+        "population": 127977,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4301602",
+        "name": "Bagé",
+        "state": "RS",
+        "population": 121928,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4322400",
+        "name": "Uruguaiana",
+        "state": "RS",
+        "population": 120819,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4307005",
+        "name": "Erechim",
+        "state": "RS",
+        "population": 109609,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4311403",
+        "name": "Lajeado",
+        "state": "RS",
+        "population": 96879,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4309308",
+        "name": "Guaíba",
+        "state": "RS",
+        "population": 95946,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4310207",
+        "name": "Ijuí",
+        "state": "RS",
+        "population": 87848,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4317103",
+        "name": "Sant'Ana do Livramento",
+        "state": "RS",
+        "population": 87329,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4303004",
+        "name": "Cachoeira do Sul",
+        "state": "RS",
+        "population": 82222,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4317202",
+        "name": "Santa Rosa",
+        "state": "RS",
+        "population": 79488,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4317509",
+        "name": "Santo Ângelo",
+        "state": "RS",
+        "population": 79146,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4307708",
+        "name": "Esteio",
+        "state": "RS",
+        "population": 78144,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4319901",
+        "name": "Sapiranga",
+        "state": "RS",
+        "population": 77935,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4300406",
+        "name": "Alegrete",
+        "state": "RS",
+        "population": 74285,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4307906",
+        "name": "Farroupilha",
+        "state": "RS",
+        "population": 72552,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4322608",
+        "name": "Venâncio Aires",
+        "state": "RS",
+        "population": 70842,
+        "year": 2025
+      }
+    ],
+    "SC": [
+      {
+        "ibgeCode": "4209102",
+        "name": "Joinville",
+        "state": "SC",
+        "population": 664541,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4205407",
+        "name": "Florianópolis",
+        "state": "SC",
+        "population": 587486,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4202404",
+        "name": "Blumenau",
+        "state": "SC",
+        "population": 385558,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4216602",
+        "name": "São José",
+        "state": "SC",
+        "population": 295658,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4208203",
+        "name": "Itajaí",
+        "state": "SC",
+        "population": 294850,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4204202",
+        "name": "Chapecó",
+        "state": "SC",
+        "population": 282648,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4211900",
+        "name": "Palhoça",
+        "state": "SC",
+        "population": 253469,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4204608",
+        "name": "Criciúma",
+        "state": "SC",
+        "population": 227438,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4208906",
+        "name": "Jaraguá do Sul",
+        "state": "SC",
+        "population": 199519,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4209300",
+        "name": "Lages",
+        "state": "SC",
+        "population": 172458,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4202909",
+        "name": "Brusque",
+        "state": "SC",
+        "population": 155307,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4202008",
+        "name": "Balneário Camboriú",
+        "state": "SC",
+        "population": 151674,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4203204",
+        "name": "Camboriú",
+        "state": "SC",
+        "population": 117324,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4218707",
+        "name": "Tubarão",
+        "state": "SC",
+        "population": 116725,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4211306",
+        "name": "Navegantes",
+        "state": "SC",
+        "population": 96046,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4215802",
+        "name": "São Bento do Sul",
+        "state": "SC",
+        "population": 87661,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4204301",
+        "name": "Concórdia",
+        "state": "SC",
+        "population": 87206,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4208302",
+        "name": "Itapema",
+        "state": "SC",
+        "population": 86116,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4202305",
+        "name": "Biguaçu",
+        "state": "SC",
+        "population": 83756,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4205902",
+        "name": "Gaspar",
+        "state": "SC",
+        "population": 78344,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4207502",
+        "name": "Indaial",
+        "state": "SC",
+        "population": 77888,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4214805",
+        "name": "Rio do Sul",
+        "state": "SC",
+        "population": 77451,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4201406",
+        "name": "Araranguá",
+        "state": "SC",
+        "population": 76611,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "4203006",
+        "name": "Caçador",
+        "state": "SC",
+        "population": 76298,
+        "year": 2025
+      }
+    ],
+    "SE": [
+      {
+        "ibgeCode": "2800308",
+        "name": "Aracaju",
+        "state": "SE",
+        "population": 630932,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2804805",
+        "name": "Nossa Senhora do Socorro",
+        "state": "SE",
+        "population": 204081,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2802908",
+        "name": "Itabaiana",
+        "state": "SE",
+        "population": 109250,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2803500",
+        "name": "Lagarto",
+        "state": "SE",
+        "population": 105957,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "2806701",
+        "name": "São Cristóvão",
+        "state": "SE",
+        "population": 101213,
+        "year": 2025
+      }
+    ],
+    "SP": [
+      {
+        "ibgeCode": "3550308",
+        "name": "São Paulo",
+        "state": "SP",
+        "population": 11904961,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3518800",
+        "name": "Guarulhos",
+        "state": "SP",
+        "population": 1349100,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3509502",
+        "name": "Campinas",
+        "state": "SP",
+        "population": 1187974,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3548708",
+        "name": "São Bernardo do Campo",
+        "state": "SP",
+        "population": 841154,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3547809",
+        "name": "Santo André",
+        "state": "SP",
+        "population": 782048,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3552205",
+        "name": "Sorocaba",
+        "state": "SP",
+        "population": 762172,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3534401",
+        "name": "Osasco",
+        "state": "SP",
+        "population": 759524,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3543402",
+        "name": "Ribeirão Preto",
+        "state": "SP",
+        "population": 731639,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3549904",
+        "name": "São José dos Campos",
+        "state": "SP",
+        "population": 727078,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3549805",
+        "name": "São José do Rio Preto",
+        "state": "SP",
+        "population": 504166,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3530607",
+        "name": "Mogi das Cruzes",
+        "state": "SP",
+        "population": 470302,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3525904",
+        "name": "Jundiaí",
+        "state": "SP",
+        "population": 463039,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3538709",
+        "name": "Piracicaba",
+        "state": "SP",
+        "population": 440835,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3548500",
+        "name": "Santos",
+        "state": "SP",
+        "population": 429547,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3529401",
+        "name": "Mauá",
+        "state": "SP",
+        "population": 429014,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3513801",
+        "name": "Diadema",
+        "state": "SP",
+        "population": 403579,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3510609",
+        "name": "Carapicuíba",
+        "state": "SP",
+        "population": 398236,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3506003",
+        "name": "Bauru",
+        "state": "SP",
+        "population": 392947,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3523107",
+        "name": "Itaquaquecetuba",
+        "state": "SP",
+        "population": 382983,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3541000",
+        "name": "Praia Grande",
+        "state": "SP",
+        "population": 368539,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3516200",
+        "name": "Franca",
+        "state": "SP",
+        "population": 365494,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3551009",
+        "name": "São Vicente",
+        "state": "SP",
+        "population": 338326,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3505708",
+        "name": "Barueri",
+        "state": "SP",
+        "population": 333737,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3554102",
+        "name": "Taubaté",
+        "state": "SP",
+        "population": 322397,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3552502",
+        "name": "Suzano",
+        "state": "SP",
+        "population": 320261,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3526902",
+        "name": "Limeira",
+        "state": "SP",
+        "population": 301292,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3518701",
+        "name": "Guarujá",
+        "state": "SP",
+        "population": 294871,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3552403",
+        "name": "Sumaré",
+        "state": "SP",
+        "population": 291116,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3513009",
+        "name": "Cotia",
+        "state": "SP",
+        "population": 289493,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3552809",
+        "name": "Taboão da Serra",
+        "state": "SP",
+        "population": 285307,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3520509",
+        "name": "Indaiatuba",
+        "state": "SP",
+        "population": 269657,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3548906",
+        "name": "São Carlos",
+        "state": "SP",
+        "population": 266427,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3515004",
+        "name": "Embu das Artes",
+        "state": "SP",
+        "population": 259788,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3503208",
+        "name": "Araraquara",
+        "state": "SP",
+        "population": 253474,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3524402",
+        "name": "Jacareí",
+        "state": "SP",
+        "population": 250952,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3519071",
+        "name": "Hortolândia",
+        "state": "SP",
+        "population": 248842,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3501608",
+        "name": "Americana",
+        "state": "SP",
+        "population": 247571,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3529005",
+        "name": "Marília",
+        "state": "SP",
+        "population": 247348,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3522505",
+        "name": "Itapevi",
+        "state": "SP",
+        "population": 242995,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3541406",
+        "name": "Presidente Prudente",
+        "state": "SP",
+        "population": 234706,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3543907",
+        "name": "Rio Claro",
+        "state": "SP",
+        "population": 210323,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3502804",
+        "name": "Araçatuba",
+        "state": "SP",
+        "population": 208415,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3545803",
+        "name": "Santa Bárbara d'Oeste",
+        "state": "SP",
+        "population": 189456,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3515707",
+        "name": "Ferraz de Vasconcelos",
+        "state": "SP",
+        "population": 186479,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3507605",
+        "name": "Bragança Paulista",
+        "state": "SP",
+        "population": 185688,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3523909",
+        "name": "Itu",
+        "state": "SP",
+        "population": 175047,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3548807",
+        "name": "São Caetano do Sul",
+        "state": "SP",
+        "population": 172693,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3538006",
+        "name": "Pindamonhangaba",
+        "state": "SP",
+        "population": 172681,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3516309",
+        "name": "Francisco Morato",
+        "state": "SP",
+        "population": 171476,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3504107",
+        "name": "Atibaia",
+        "state": "SP",
+        "population": 167161,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3522307",
+        "name": "Itapetininga",
+        "state": "SP",
+        "population": 164256,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3547304",
+        "name": "Santana de Parnaíba",
+        "state": "SP",
+        "population": 163787,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3522208",
+        "name": "Itapecerica da Serra",
+        "state": "SP",
+        "population": 163003,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3530706",
+        "name": "Mogi Guaçu",
+        "state": "SP",
+        "population": 160318,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3507506",
+        "name": "Botucatu",
+        "state": "SP",
+        "population": 151053,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3516408",
+        "name": "Franco da Rocha",
+        "state": "SP",
+        "population": 150241,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3510500",
+        "name": "Caraguatatuba",
+        "state": "SP",
+        "population": 142248,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3545209",
+        "name": "Salto",
+        "state": "SP",
+        "population": 141111,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3525300",
+        "name": "Jaú",
+        "state": "SP",
+        "population": 137409,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3503307",
+        "name": "Araras",
+        "state": "SP",
+        "population": 135744,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3557006",
+        "name": "Votorantim",
+        "state": "SP",
+        "population": 133510,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3556206",
+        "name": "Valinhos",
+        "state": "SP",
+        "population": 132258,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3551702",
+        "name": "Sertãozinho",
+        "state": "SP",
+        "population": 132176,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3554003",
+        "name": "Tatuí",
+        "state": "SP",
+        "population": 129130,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3523404",
+        "name": "Itatiba",
+        "state": "SP",
+        "population": 127112,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3505500",
+        "name": "Barretos",
+        "state": "SP",
+        "population": 126957,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3506508",
+        "name": "Birigui",
+        "state": "SP",
+        "population": 123340,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3518404",
+        "name": "Guaratinguetá",
+        "state": "SP",
+        "population": 121916,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3525003",
+        "name": "Jandira",
+        "state": "SP",
+        "population": 121550,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3556503",
+        "name": "Várzea Paulista",
+        "state": "SP",
+        "population": 119655,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3511102",
+        "name": "Catanduva",
+        "state": "SP",
+        "population": 119275,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3543303",
+        "name": "Ribeirão Pires",
+        "state": "SP",
+        "population": 118954,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3522109",
+        "name": "Itanhaém",
+        "state": "SP",
+        "population": 118495,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3536505",
+        "name": "Paulínia",
+        "state": "SP",
+        "population": 116674,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3513504",
+        "name": "Cubatão",
+        "state": "SP",
+        "population": 114870,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3534708",
+        "name": "Ourinhos",
+        "state": "SP",
+        "population": 106911,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3539806",
+        "name": "Poá",
+        "state": "SP",
+        "population": 106355,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3504008",
+        "name": "Assis",
+        "state": "SP",
+        "population": 104858,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3526704",
+        "name": "Leme",
+        "state": "SP",
+        "population": 101537,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3557105",
+        "name": "Votuporanga",
+        "state": "SP",
+        "population": 100568,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3508504",
+        "name": "Caçapava",
+        "state": "SP",
+        "population": 100071,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3509007",
+        "name": "Caieiras",
+        "state": "SP",
+        "population": 98549,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3509205",
+        "name": "Cajamar",
+        "state": "SP",
+        "population": 98365,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3528502",
+        "name": "Mairiporã",
+        "state": "SP",
+        "population": 97835,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3555406",
+        "name": "Ubatuba",
+        "state": "SP",
+        "population": 97096,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3504503",
+        "name": "Avaré",
+        "state": "SP",
+        "population": 96450,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3549102",
+        "name": "São João da Boa Vista",
+        "state": "SP",
+        "population": 96080,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3530805",
+        "name": "Mogi Mirim",
+        "state": "SP",
+        "population": 95742,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3522406",
+        "name": "Itapeva",
+        "state": "SP",
+        "population": 92393,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3503901",
+        "name": "Arujá",
+        "state": "SP",
+        "population": 90273,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3527207",
+        "name": "Lorena",
+        "state": "SP",
+        "population": 87468,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3550704",
+        "name": "São Sebastião",
+        "state": "SP",
+        "population": 84280,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3550605",
+        "name": "São Roque",
+        "state": "SP",
+        "population": 81366,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3529302",
+        "name": "Matão",
+        "state": "SP",
+        "population": 81075,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3509601",
+        "name": "Campo Limpo Paulista",
+        "state": "SP",
+        "population": 79781,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3556701",
+        "name": "Vinhedo",
+        "state": "SP",
+        "population": 79089,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3506102",
+        "name": "Bebedouro",
+        "state": "SP",
+        "population": 78257,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3519709",
+        "name": "Ibiúna",
+        "state": "SP",
+        "population": 77801,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3527108",
+        "name": "Lins",
+        "state": "SP",
+        "population": 76844,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3513405",
+        "name": "Cruzeiro",
+        "state": "SP",
+        "population": 76444,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3539301",
+        "name": "Pirassununga",
+        "state": "SP",
+        "population": 75594,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3524006",
+        "name": "Itupeva",
+        "state": "SP",
+        "population": 74994,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3522604",
+        "name": "Itapira",
+        "state": "SP",
+        "population": 74038,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3515509",
+        "name": "Fernandópolis",
+        "state": "SP",
+        "population": 73508,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3524303",
+        "name": "Jaboticabal",
+        "state": "SP",
+        "population": 73473,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "3537602",
+        "name": "Peruíbe",
+        "state": "SP",
+        "population": 70629,
+        "year": 2025
+      }
+    ],
+    "TO": [
+      {
+        "ibgeCode": "1721000",
+        "name": "Palmas",
+        "state": "TO",
+        "population": 328499,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1702109",
+        "name": "Araguaína",
+        "state": "TO",
+        "population": 183024,
+        "year": 2025
+      },
+      {
+        "ibgeCode": "1709500",
+        "name": "Gurupi",
+        "state": "TO",
+        "population": 90209,
+        "year": 2025
+      }
+    ]
+  }
+}
