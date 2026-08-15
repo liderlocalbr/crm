@@ -1211,7 +1211,7 @@ async function loadCachedPlaces(keyword, locality) {
 
 async function loadSearchRun(keyword, locality) {
   if (isLocalDemo) return null;
-  const rows = await rest("place_search_runs", { query: `owner_id=eq.${state.user.id}&keyword=eq.${encodeURIComponent(mapsCacheValue(keyword))}&locality=eq.${encodeURIComponent(mapsCacheValue(locality))}&select=requested_count,returned_count,search_center,completed_at&limit=1` });
+  const rows = await rest("place_search_runs", { query: `owner_id=eq.${state.user.id}&keyword=eq.${encodeURIComponent(mapsCacheValue(keyword))}&locality=eq.${encodeURIComponent(mapsCacheValue(locality))}&select=requested_count,returned_count,search_center,completed_at,pagination_version&limit=1` });
   return rows?.[0] || null;
 }
 
@@ -1224,9 +1224,10 @@ async function saveSearchRun(keyword, locality, { returnedCount, center, complet
       owner_id: state.user.id,
       keyword: mapsCacheValue(keyword),
       locality: mapsCacheValue(locality),
-      requested_count: Math.min(150, Math.max(20, returnedCount || 20)),
+      requested_count: 150,
       returned_count: returnedCount || 0,
       search_center: center || null,
+      pagination_version: 2,
       ...(completed ? { completed_at: new Date().toISOString() } : { completed_at: null }),
     },
     prefer: "resolution=merge-duplicates,return=minimal",
@@ -1265,6 +1266,11 @@ async function savePlacesCache(keyword, locality, places) {
     position,
     is_complete: true,
   }));
+  await rest("place_search_cache", {
+    method: "DELETE",
+    query: `owner_id=eq.${state.user.id}&keyword=eq.${encodeURIComponent(normalizedKeyword)}&locality=eq.${encodeURIComponent(normalizedLocality)}`,
+    prefer: "return=minimal",
+  });
   await rest("place_search_cache", {
     method: "POST",
     query: "on_conflict=owner_id,keyword,locality,place_id",
@@ -1320,9 +1326,9 @@ async function handleMapsSearch(event) {
     renderMapsSearch();
     try {
       const cachedPlaces = await loadCachedPlaces(keyword, locality);
-      if (cachedPlaces.length) {
+      const cachedRun = await loadSearchRun(keyword, locality).catch(() => null);
+      if (cachedPlaces.length && Number(cachedRun?.pagination_version || 0) >= 2) {
         state.mapsResults = dedupePlaces(cachedPlaces);
-        const cachedRun = await loadSearchRun(keyword, locality).catch(() => null);
         state.mapsSearchCenter = cachedRun?.search_center || "";
         state.mapsSearchBatch = Math.max(0, Math.ceil(state.mapsResults.length / 20) - 1);
         state.mapsHasMore = state.mapsResults.length < 150 && !cachedRun?.completed_at;
