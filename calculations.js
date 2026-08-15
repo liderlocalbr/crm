@@ -104,3 +104,16 @@ export function googleCalendarUrl({ title, dueAt, details = "", durationMinutes 
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
+
+export function googleCalendarEvent({ title, dueAt, details = "", durationMinutes = 45 } = {}) {
+  if (!title || !dueAt) return null;
+  const start = new Date(dueAt);
+  if (Number.isNaN(start.getTime())) return null;
+  const end = new Date(start.getTime() + Math.max(1, Number(durationMinutes) || 45) * 60_000);
+  return {
+    summary: title,
+    description: details,
+    start: { dateTime: start.toISOString(), timeZone: "America/Sao_Paulo" },
+    end: { dateTime: end.toISOString(), timeZone: "America/Sao_Paulo" },
+  };
+}

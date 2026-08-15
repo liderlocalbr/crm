@@ -1,5 +1,5 @@
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./config.js";
-import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarUrl, monthBounds, moveLeadToStage, progress, reassignStage, weekOfMonth } from "./calculations.js";
+import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarEvent, monthBounds, moveLeadToStage, progress, reassignStage, weekOfMonth } from "./calculations.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -7,7 +7,9 @@ const todayIso = () => new Date().toISOString().slice(0, 10);
 const currentMonth = () => todayIso().slice(0, 7);
 const isLocalDemo = ["localhost", "127.0.0.1"].includes(location.hostname) && new URLSearchParams(location.search).get("demo") === "1";
 const SESSION_KEY = "agencia-lider-local.crm.session.v1";
-const CALENDAR_KEY = "agencia-lider-local.crm.google-calendar.v1";
+const GOOGLE_TOKEN_KEY = "agencia-lider-local.crm.google-token.v1";
+const GOOGLE_TOKEN_EXPIRY_KEY = "agencia-lider-local.crm.google-token-expiry.v1";
+const GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
 const WEATHER_URL = "https://api.open-meteo.com/v1/forecast?latitude=-23.5229&longitude=-46.1883&current=temperature_2m,apparent_temperature,weather_code,is_day&timezone=America%2FSao_Paulo";
 let draggedLeadId = null;
 let suppressLeadClick = false;
@@ -35,7 +37,8 @@ const state = {
   stages: DEFAULT_STAGES.map((stage, position) => ({ ...stage, position })),
   weather: null,
   weatherLoading: true,
-  calendarEnabled: localStorage.getItem(CALENDAR_KEY) === "1",
+  calendarConnected: false,
+  googleAccessToken: sessionStorage.getItem(GOOGLE_TOKEN_KEY),
   month: currentMonth(),
   week: "all",
   view: "dashboard",
@@ -178,6 +181,53 @@ function clearSession() {
   state.session = null;
   state.user = null;
   localStorage.removeItem(SESSION_KEY);
+  clearGoogleConnection();
+}
+
+function clearGoogleConnection() {
+  state.calendarConnected = false;
+  state.googleAccessToken = null;
+  sessionStorage.removeItem(GOOGLE_TOKEN_KEY);
+  sessionStorage.removeItem(GOOGLE_TOKEN_EXPIRY_KEY);
+}
+
+function consumeOAuthCallback() {
+  const params = new URLSearchParams(location.hash.replace(/^#/, ""));
+  if (!params.has("provider_token") && !params.has("access_token") && !params.has("error")) return;
+
+  if (params.get("error")) {
+    sessionStorage.setItem("agencia-lider-local.crm.oauth-error", params.get("error_description") || "A autorização do Google foi cancelada.");
+  } else {
+    const saved = JSON.parse(localStorage.getItem(SESSION_KEY) || "null") || {};
+    if (params.get("access_token")) {
+      saveSession({
+        ...saved,
+        access_token: params.get("access_token"),
+        refresh_token: params.get("refresh_token") || saved.refresh_token,
+        expires_in: Number(params.get("expires_in")) || saved.expires_in,
+        token_type: params.get("token_type") || saved.token_type,
+      });
+    }
+    const providerToken = params.get("provider_token");
+    if (providerToken) {
+      const expiresIn = Math.max(60, Number(params.get("expires_in")) || 3600);
+      state.googleAccessToken = providerToken;
+      sessionStorage.setItem(GOOGLE_TOKEN_KEY, providerToken);
+      sessionStorage.setItem(GOOGLE_TOKEN_EXPIRY_KEY, String(Date.now() + expiresIn * 1000));
+      sessionStorage.setItem("agencia-lider-local.crm.oauth-success", "1");
+    }
+  }
+  history.replaceState({}, document.title, `${location.pathname}${location.search}`);
+}
+
+function hasValidGoogleToken() {
+  const expiry = Number(sessionStorage.getItem(GOOGLE_TOKEN_EXPIRY_KEY)) || 0;
+  return Boolean(state.googleAccessToken && expiry > Date.now() + 30_000);
+}
+
+function syncGoogleConnection() {
+  const hasGoogleIdentity = Boolean(state.user?.identities?.some((identity) => identity.provider === "google"));
+  state.calendarConnected = hasGoogleIdentity && hasValidGoogleToken();
 }
 
 const store = {
@@ -299,6 +349,16 @@ const store = {
     const rows = await rest("activities", { method: "POST", body: { owner_id: state.user.id, ...activity } });
     return rows[0];
   },
+  async saveActivityGoogleEvent(id, googleEvent) {
+    const payload = { google_event_id: googleEvent.id, google_event_url: googleEvent.htmlLink || null };
+    if (isLocalDemo) {
+      const item = mock.activities.find((activity) => activity.id === id);
+      Object.assign(item, payload);
+      return item;
+    }
+    const rows = await rest("activities", { method: "PATCH", query: `id=eq.${id}&owner_id=eq.${state.user.id}`, body: payload });
+    return rows[0];
+  },
   async toggleActivity(id, completed) {
     const completed_at = completed ? new Date().toISOString() : null;
     if (isLocalDemo) {
@@ -320,6 +380,7 @@ async function bootstrap() {
     await enterApp();
     return;
   }
+  consumeOAuthCallback();
   try {
     const saved = JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
     if (saved?.access_token) {
@@ -433,6 +494,7 @@ async function enterApp() {
   $("#user-name").textContent = name;
   $("#user-email").textContent = state.user.email || "Modo demonstração";
   $("#user-avatar").textContent = initials(name);
+  syncGoogleConnection();
   state.loading = true;
   renderAll();
   try {
@@ -444,6 +506,12 @@ async function enterApp() {
     renderAll();
     populateStageOptions();
     startDashboardWidgets();
+    const oauthError = sessionStorage.getItem("agencia-lider-local.crm.oauth-error");
+    const oauthSuccess = sessionStorage.getItem("agencia-lider-local.crm.oauth-success");
+    sessionStorage.removeItem("agencia-lider-local.crm.oauth-error");
+    sessionStorage.removeItem("agencia-lider-local.crm.oauth-success");
+    if (oauthError) toast(oauthError, "error");
+    if (oauthSuccess && state.calendarConnected) toast("Google Agenda conectado de verdade.");
   }
 }
 
@@ -493,8 +561,8 @@ function renderAll() {
   renderGoals();
 }
 
-function pageHead(eyebrow, title, subtitle, actions = "") {
-  return `<header class="page-head"><div><span class="eyebrow">${eyebrow}</span><h1>${title}</h1><p>${subtitle}</p></div><div class="head-actions">${actions}</div></header>`;
+function pageHead(eyebrow, title, subtitle, actions = "", inlineStatus = "") {
+  return `<header class="page-head ${inlineStatus ? "dashboard-head" : ""}"><div class="page-title"><span class="eyebrow">${eyebrow}</span><div class="page-title-row"><h1>${title}</h1>${inlineStatus}</div><p>${subtitle}</p></div><div class="head-actions">${actions}</div></header>`;
 }
 
 function monthInput(id) {
@@ -518,8 +586,8 @@ function startDashboardWidgets() {
 function updateDashboardWidgets() {
   const time = $("#dashboard-clock-time");
   const date = $("#dashboard-clock-date");
-  if (time) time.textContent = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date());
-  if (date) date.textContent = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long", day: "2-digit", month: "long" }).format(new Date());
+  if (time) time.textContent = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }).format(new Date());
+  if (date) date.textContent = "Brasília";
   const weatherTemp = $("#weather-temperature");
   const weatherSummary = $("#weather-summary");
   const weatherFeels = $("#weather-feels");
@@ -575,11 +643,11 @@ function renderDashboard() {
   $("#view-dashboard").innerHTML = `
     ${pageHead("PAINEL DE ÓRBITA", `${greeting}, ${escapeHtml(name)}.`, `Acompanhe o ritmo comercial de ${monthLabel}.`, `
       <div class="filters">${monthInput("dashboard-month")}<select id="dashboard-week" class="compact-select"><option value="all">Todas as semanas</option>${[1,2,3,4,5,6].map((w) => `<option value="${w}" ${state.week === String(w) ? "selected" : ""}>Semana ${w}</option>`).join("")}</select></div>
-      <button class="button primary" data-action="open-lead">+ Novo lead</button>`)}
-    <div class="dashboard-status">
-      <article class="status-card clock-card"><span class="status-icon">◷</span><div><strong id="dashboard-clock-time">--:--:--</strong><span id="dashboard-clock-date">Horário de Brasília</span></div></article>
-      <article class="status-card weather-card"><span class="status-icon">☼</span><div><strong id="weather-temperature">--°C</strong><span><b id="weather-summary">Atualizando clima…</b> · <span id="weather-feels">CEP 08771-264</span></span></div><small>Mogi das Cruzes · SP</small></article>
-    </div>
+      <button class="button primary" data-action="open-lead">+ Novo lead</button>`, `
+      <div class="dashboard-inline-status" aria-label="Horário e clima em Mogi das Cruzes">
+        <article class="quick-status" title="Horário de Brasília"><span>◷</span><div><strong id="dashboard-clock-time">--:--</strong><small id="dashboard-clock-date">Brasília</small></div></article>
+        <article class="quick-status" title="Clima em Mogi das Cruzes, SP"><span>☼</span><div><strong id="weather-temperature">--°C</strong><small id="weather-summary">Atualizando…</small></div></article>
+      </div>`)}
     <div class="kpi-grid">
       ${kpi("Leads no período", totals.leads, goals.leads, "◎", progress(totals.leads, goals.leads))}
       ${kpi("Reuniões realizadas", totals.meetingsCompleted, goals.meetingsCompleted, "◷", progress(totals.meetingsCompleted, goals.meetingsCompleted))}
@@ -830,7 +898,7 @@ function renderAgenda() {
   const overdue = open.filter(isOverdue).length;
   const today = open.filter((activity) => activity.due_at?.slice(0,10) === todayIso()).length;
   $("#view-agenda").innerHTML = `
-    ${pageHead("AGENDA COMERCIAL", "Próximos passos", "Follow-ups, reuniões e contatos organizados por prazo.", `<button class="button google-button ${state.calendarEnabled ? "connected" : ""}" data-action="connect-google-calendar">${state.calendarEnabled ? "✓ Google Agenda ativo" : "G Conectar Google Agenda"}</button><button class="button primary" data-action="open-activity">+ Nova atividade</button>`)}
+    ${pageHead("AGENDA COMERCIAL", "Próximos passos", "Follow-ups, reuniões e contatos organizados por prazo.", `<button class="button google-button ${state.calendarConnected ? "connected" : ""}" data-action="connect-google-calendar">${state.calendarConnected ? "✓ Google Agenda conectado" : "G Conectar Google Agenda"}</button><button class="button primary" data-action="open-activity">+ Nova atividade</button>`)}
     <div class="agenda-layout"><section class="panel">
       <div class="agenda-group"><h2 class="agenda-group-title">PENDENTES · ${open.length}</h2>${open.length ? open.map(activityRow).join("") : emptyState("✓", "Nenhuma pendência", "Sua agenda está limpa. Crie uma atividade quando definir o próximo passo.", "")}</div>
       ${done.length ? `<div class="agenda-group"><h2 class="agenda-group-title">CONCLUÍDAS · ${done.length}</h2>${done.slice(0,8).map(activityRow).join("")}</div>` : ""}
@@ -843,8 +911,12 @@ function isOverdue(activity) {
 
 function activityRow(activity) {
   const lead = state.leads.find((item) => item.id === activity.lead_id);
-  const calendarUrl = googleCalendarUrl({ title: activity.title, dueAt: activity.due_at, details: `CRM Agência Líder Local\nLead: ${lead?.name || "Atividade geral"}\nTipo: ${activityKindLabel(activity.kind)}` });
-  return `<div class="activity-row"><button class="activity-check ${activity.completed_at ? "done" : ""}" data-action="toggle-activity" data-id="${activity.id}" aria-label="${activity.completed_at ? "Reabrir" : "Concluir"} atividade"></button><div class="activity-main"><b>${escapeHtml(activity.title)}</b><span>${escapeHtml(lead?.name || "Atividade geral")} · ${activityKindLabel(activity.kind)}</span>${state.calendarEnabled && calendarUrl ? `<a class="calendar-link" href="${calendarUrl}" target="_blank" rel="noopener">Adicionar ao Google Agenda ↗</a>` : ""}</div><span class="activity-time ${isOverdue(activity) ? "overdue" : ""}">${activity.due_at ? formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Sem prazo"}</span></div>`;
+  const calendarAction = state.calendarConnected && activity.due_at
+    ? activity.google_event_id
+      ? `<a class="calendar-link" href="${escapeHtml(activity.google_event_url || "https://calendar.google.com/calendar/u/0/r")}" target="_blank" rel="noopener">Abrir no Google Agenda ↗</a>`
+      : `<button class="calendar-link calendar-action" data-action="sync-google-activity" data-id="${activity.id}">Adicionar ao Google Agenda</button>`
+    : "";
+  return `<div class="activity-row"><button class="activity-check ${activity.completed_at ? "done" : ""}" data-action="toggle-activity" data-id="${activity.id}" aria-label="${activity.completed_at ? "Reabrir" : "Concluir"} atividade"></button><div class="activity-main"><b>${escapeHtml(activity.title)}</b><span>${escapeHtml(lead?.name || "Atividade geral")} · ${activityKindLabel(activity.kind)}</span>${calendarAction}</div><span class="activity-time ${isOverdue(activity) ? "overdue" : ""}">${activity.due_at ? formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Sem prazo"}</span></div>`;
 }
 
 function activityKindLabel(value) {
@@ -895,6 +967,7 @@ async function handleMainClick(event) {
   if (action.dataset.action === "open-activity") openActivityDialog();
   if (action.dataset.action === "manage-stages") openStageDialog();
   if (action.dataset.action === "connect-google-calendar") connectGoogleCalendar();
+  if (action.dataset.action === "sync-google-activity") await syncActivityToGoogle(action.dataset.id);
   if (action.dataset.action === "save-metric") await saveMetricRow(action.closest("tr"));
   if (action.dataset.action === "toggle-activity") await toggleActivity(action.dataset.id);
 }
@@ -976,41 +1049,97 @@ function openActivityDialog() {
   $("#activity-form").reset();
   $("#activity-lead").innerHTML = `<option value="">Atividade geral</option>${state.leads.map((lead) => `<option value="${lead.id}">${escapeHtml(lead.name)}</option>`).join("")}`;
   $("#activity-due").value = `${todayIso()}T09:00`;
-  $("#activity-google").checked = state.calendarEnabled;
+  $("#activity-google").checked = state.calendarConnected;
+  $("#activity-google").disabled = !state.calendarConnected;
+  $("#activity-google").closest("label").title = state.calendarConnected ? "Criar também no Google Agenda" : "Conecte o Google Agenda primeiro";
   $("#activity-dialog").showModal();
 }
 
-function connectGoogleCalendar() {
-  state.calendarEnabled = true;
-  localStorage.setItem(CALENDAR_KEY, "1");
-  renderAgenda();
-  window.open("https://calendar.google.com/calendar/u/0/r", "_blank", "noopener");
-  toast("Google Agenda ativado. Agora você pode enviar cada compromisso com um clique.");
+async function connectGoogleCalendar() {
+  if (state.calendarConnected) {
+    toast("O Google Agenda já está conectado.");
+    return;
+  }
+  try {
+    const params = new URLSearchParams({
+      provider: "google",
+      redirect_to: `${location.origin}${location.pathname}?calendar=connected`,
+      scopes: GOOGLE_CALENDAR_SCOPE,
+      access_type: "offline",
+      prompt: "consent",
+      skip_http_redirect: "true",
+    });
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/user/identities/authorize?${params}`, {
+      headers: { apikey: SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${state.session.access_token}` },
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok || !payload?.url) throw new Error(payload?.msg || payload?.message || "Não foi possível iniciar a conexão com o Google.");
+    location.assign(payload.url);
+  } catch (error) {
+    const message = /provider|enabled|unsupported/i.test(error.message)
+      ? "A conexão Google ainda precisa das credenciais OAuth do projeto. Ela não será marcada como ativa antes da autorização real."
+      : error.message;
+    toast(message, "error");
+  }
+}
+
+function activityGoogleEvent(activity) {
+  const lead = state.leads.find((item) => item.id === activity.lead_id);
+  return googleCalendarEvent({
+    title: activity.title,
+    dueAt: activity.due_at,
+    details: `CRM Agência Líder Local\nLead: ${lead?.name || "Atividade geral"}\nTipo: ${activityKindLabel(activity.kind)}`,
+  });
+}
+
+async function createGoogleEvent(activity) {
+  if (!state.calendarConnected || !hasValidGoogleToken()) throw new Error("Conecte novamente o Google Agenda para autorizar este envio.");
+  const event = activityGoogleEvent(activity);
+  if (!event) throw new Error("Informe data e horário antes de enviar ao Google Agenda.");
+  const response = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${state.googleAccessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify(event),
+  });
+  const payload = await response.json().catch(() => null);
+  if (response.status === 401) {
+    clearGoogleConnection();
+    renderAgenda();
+    throw new Error("A autorização do Google expirou. Conecte o Google Agenda novamente.");
+  }
+  if (!response.ok) throw new Error(payload?.error?.message || "O Google não aceitou a criação do evento.");
+  return store.saveActivityGoogleEvent(activity.id, payload);
+}
+
+async function syncActivityToGoogle(id) {
+  const activity = state.activities.find((item) => item.id === id);
+  if (!activity || activity.google_event_id) return;
+  try {
+    await createGoogleEvent(activity);
+    state.activities = await store.getActivities();
+    renderAgenda();
+    toast("Evento criado no seu Google Agenda.");
+  } catch (error) { toast(error.message, "error"); }
 }
 
 async function saveActivityFromDialog(event) {
   event.preventDefault();
   const openInGoogle = $("#activity-google").checked;
-  const googleWindow = openInGoogle ? window.open("about:blank", "_blank") : null;
   const payload = {
     title: $("#activity-title").value.trim(), lead_id: $("#activity-lead").value || null,
     kind: $("#activity-kind").value, due_at: $("#activity-due").value ? new Date($("#activity-due").value).toISOString() : null,
   };
   try {
     const created = await store.saveActivity(payload);
+    let googleError = null;
     if (openInGoogle) {
-      state.calendarEnabled = true;
-      localStorage.setItem(CALENDAR_KEY, "1");
-      const lead = state.leads.find((item) => item.id === created.lead_id);
-      const calendarUrl = googleCalendarUrl({ title: created.title, dueAt: created.due_at, details: `CRM Agência Líder Local\nLead: ${lead?.name || "Atividade geral"}\nTipo: ${activityKindLabel(created.kind)}` });
-      if (googleWindow && calendarUrl) googleWindow.location.href = calendarUrl;
+      try { await createGoogleEvent(created); } catch (error) { googleError = error; }
     }
     state.activities = await store.getActivities();
     $("#activity-dialog").close();
     renderDashboard(); renderAgenda();
-    toast("Atividade criada.");
+    toast(googleError ? `Atividade criada no CRM, mas não no Google: ${googleError.message}` : openInGoogle ? "Atividade criada no CRM e no Google Agenda." : "Atividade criada.", googleError ? "error" : "success");
   } catch (error) {
-    googleWindow?.close();
     toast(error.message, "error");
   }
 }
