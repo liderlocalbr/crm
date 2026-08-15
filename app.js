@@ -739,7 +739,7 @@ function leadListRow(lead) {
 
 function upcomingActivities(limit) {
   const rows = state.activities.filter((activity) => !activity.completed_at).slice().sort((a, b) => String(a.due_at || "9999").localeCompare(String(b.due_at || "9999"))).slice(0, limit);
-  if (!rows.length) return emptyState("◷", "Agenda em dia", "Crie uma atividade para não perder o próximo passo.", `<button class="button primary small" data-action="open-activity">Nova atividade</button>`);
+  if (!rows.length) return emptyState("◷", "Agenda em dia", "Crie uma atividade para não perder o próximo passo.", `<button class="button primary small" data-action="open-activity">Criar atividade</button>`);
   return `<div class="list">${rows.map((activity) => {
     const lead = state.leads.find((item) => item.id === activity.lead_id);
     return `<div class="list-row"><button class="activity-check" data-action="toggle-activity" data-id="${activity.id}" aria-label="Concluir atividade"></button><span class="list-main"><b>${escapeHtml(activity.title)}</b><span>${escapeHtml(lead?.name || "Atividade geral")}</span></span><span class="activity-time ${isOverdue(activity) ? "overdue" : ""}">${activity.due_at ? formatDate(activity.due_at) : "Sem prazo"}</span></div>`;
@@ -775,11 +775,14 @@ async function toggleLeadContact(leadId) {
 
 function leadCard(lead) {
   const overdue = lead.next_follow_up && lead.next_follow_up < todayIso();
+  const leadActivities = state.activities.filter((activity) => activity.lead_id === lead.id && !activity.completed_at).sort((a, b) => String(a.due_at || "9999").localeCompare(String(b.due_at || "9999"))).slice(0, 2);
+  const activityMarkup = leadActivities.length ? `<div class="lead-card-activities">${leadActivities.map((activity) => `<span title="${escapeHtml(activity.title)}${activity.due_at ? ` · ${formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}"><i></i>${escapeHtml(activity.title)}</span>`).join("")}</div>` : "";
+  const activityAction = `<button type="button" draggable="false" class="lead-activity-quick" data-action="open-lead-activity" data-id="${lead.id}">+ Atividade</button>`;
   const followUpIndicator = lead.next_follow_up ? `<span class="lead-follow-up-dot ${overdue ? "overdue" : ""}" title="Follow-up em ${formatDate(lead.next_follow_up)}" aria-label="Follow-up em ${formatDate(lead.next_follow_up)}"></span>` : "";
   const whatsappAction = lead.whatsapp ? `<button type="button" draggable="false" class="whatsapp-button" data-action="open-whatsapp" data-id="${lead.id}" aria-label="WhatsApp de ${escapeHtml(lead.name)}"><span aria-hidden="true">◉</span> WhatsApp</button>` : "";
   const contactTag = lead.contacted_at ? `<span class="contacted-tag">Em contato</span>` : "";
   const contactCheck = `<button type="button" draggable="false" class="lead-contact-toggle ${lead.contacted_at ? "checked" : ""}" data-action="toggle-lead-contact" data-id="${lead.id}" aria-pressed="${lead.contacted_at ? "true" : "false"}" aria-label="${lead.contacted_at ? "Desmarcar contatado" : "Marcar como contatado"}">${lead.contacted_at ? "✓" : ""}</button>`;
-  return `<article class="lead-card ${lead.contacted_at ? "lead-contacted" : ""}" draggable="true" data-action="edit-lead" data-id="${lead.id}" title="Arraste para mudar de etapa ou clique para editar"><div class="lead-card-top"><div><h3>${escapeHtml(lead.name)}</h3><div class="lead-card-subtitle">${contactTag}</div></div><span class="lead-card-value">${formatCurrency(lead.deal_value || state.settings.deal_value)}</span></div><div class="lead-meta">${followUpIndicator}</div><div class="lead-card-footer">${whatsappAction}<span class="contact-check-label">${contactCheck} ${lead.contacted_at ? "Em contato" : "Contatado"}</span></div></article>`;
+  return `<article class="lead-card ${lead.contacted_at ? "lead-contacted" : ""}" draggable="true" data-action="edit-lead" data-id="${lead.id}" title="Arraste para mudar de etapa ou clique para editar"><div class="lead-card-top"><div><h3>${escapeHtml(lead.name)}</h3><div class="lead-card-subtitle">${contactTag}</div></div><span class="lead-card-value">${formatCurrency(lead.deal_value || state.settings.deal_value)}</span></div><div class="lead-meta">${followUpIndicator}</div>${activityMarkup}<div class="lead-card-footer">${whatsappAction}${activityAction}<span class="contact-check-label">${contactCheck} ${lead.contacted_at ? "Em contato" : "Contatado"}</span></div></article>`;
 }
 
 function openLeadWhatsApp(leadId) {
@@ -1076,7 +1079,7 @@ function renderAgenda() {
     : `<button class="button google-button" data-action="connect-google-calendar">G Conectar Google Agenda</button>`;
   const cells = calendarCells(state.agendaMonth);
   $("#view-agenda").innerHTML = `
-    ${pageHead("AGENDA COMERCIAL", "Calendário de atividades", "Clique em um dia para ver os agendamentos.", `${monthInput("agenda-month", state.agendaMonth)}${googleActions}<button class="button primary" data-action="open-activity">+ Nova atividade</button>`)}
+    ${pageHead("AGENDA COMERCIAL", "Calendário de atividades", "Clique em um dia para ver os agendamentos.", `${monthInput("agenda-month", state.agendaMonth)}${googleActions}<button class="button primary" data-action="open-activity">+ Criar atividade</button>`)}
     <div class="agenda-layout"><section class="panel">
       <div class="calendar-weekdays">${WEEKDAY_LABELS.map((label) => `<span>${label}</span>`).join("")}</div>
       <div class="calendar-grid">${cells.map((cell) => calendarCell(cell, byDay.get(cell.iso) || [], googleByDay.get(cell.iso) || [])).join("")}</div>
@@ -1834,6 +1837,7 @@ async function handleMainClick(event) {
   if (action.dataset.action === "open-lead") openLeadDialog();
   if (action.dataset.action === "edit-lead") openLeadDialog(state.leads.find((lead) => lead.id === action.dataset.id));
   if (action.dataset.action === "open-whatsapp") openLeadWhatsApp(action.dataset.id);
+  if (action.dataset.action === "open-lead-activity") { openActivityDialog(null, action.dataset.id); return; }
   if (action.dataset.action === "toggle-lead-contact") await toggleLeadContact(action.dataset.id);
   if (action.dataset.action === "open-activity") openActivityDialog();
   if (action.dataset.action === "manage-stages") openStageDialog();
@@ -2054,7 +2058,7 @@ async function saveActivityFromDialog(event) {
     }
     state.activities = await store.getActivities();
     $("#activity-dialog").close();
-    renderDashboard(); renderAgenda();
+    renderDashboard(); renderLeads(); renderAgenda();
     if (openInGoogle && !googleError) await loadGoogleEvents();
     toast(googleError ? `Atividade criada no CRM, mas não no Google: ${googleError.message}` : openInGoogle ? "Atividade criada no CRM e no Google Agenda." : "Atividade criada.", googleError ? "error" : "success");
   } catch (error) {
