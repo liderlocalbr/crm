@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarUrl, monthBounds, moveLeadToStage, reassignStage, weekOfMonth } from "../calculations.js";
+import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarEvent, googleCalendarUrl, monthBounds, moveLeadToStage, reassignStage, weekOfMonth } from "../calculations.js";
 
 test("reproduz a projeção da planilha Métricas", () => {
   assert.deepEqual(deriveGoals(DEFAULT_SETTINGS), {
@@ -68,4 +68,19 @@ test("gera link de evento para o Google Agenda", () => {
   assert.match(url, /^https:\/\/calendar\.google\.com\/calendar\/render\?/);
   assert.match(url, /text=Reuni%C3%A3o\+de\+diagn%C3%B3stico/);
   assert.match(url, /dates=20260820T130000Z%2F20260820T134500Z/);
+});
+
+test("gera evento para inserir pela API do Google Agenda", () => {
+  const event = googleCalendarEvent({
+    title: "Reunião de diagnóstico",
+    dueAt: "2026-08-20T13:00:00.000Z",
+    details: "Lead: Clínica A",
+  });
+
+  assert.deepEqual(event, {
+    summary: "Reunião de diagnóstico",
+    description: "Lead: Clínica A",
+    start: { dateTime: "2026-08-20T13:00:00.000Z", timeZone: "America/Sao_Paulo" },
+    end: { dateTime: "2026-08-20T13:45:00.000Z", timeZone: "America/Sao_Paulo" },
+  });
 });
