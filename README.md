@@ -8,6 +8,7 @@ CRM de prospecção da **Agência Líder Local**, baseado na planilha de métric
 - Isolamento dos dados por usuário com Row Level Security (RLS)
 - Pipeline configurável: adicionar, renomear e excluir etapas, além de movimentar cards por arrastar e soltar
 - Cadastro e edição de leads, valor potencial e próximo follow-up
+- Acesso seguro ao WhatsApp Web pelo card do lead, com mensagem profissional preenchida e sem envio automático
 - Agenda de ligações, WhatsApp, reuniões, e-mails e tarefas com conexão OAuth, criação e leitura dos próximos eventos do Google Agenda
 - Registro diário por mês e resumo de receita
 - Metas mensais recalculadas automaticamente a partir das taxas de conversão

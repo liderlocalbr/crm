@@ -90,6 +90,23 @@ export function reassignStage(leads = [], fromStage, nextStage) {
   return { leads: updated, changed };
 }
 
+export function normalizeWhatsAppNumber(value, countryCode = "55") {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  if (!digits) return "";
+  const normalized = digits.startsWith("0") ? digits.slice(1) : digits;
+  if (normalized.startsWith(countryCode) && normalized.length >= 12) return normalized;
+  if (normalized.length === 10 || normalized.length === 11) return `${countryCode}${normalized}`;
+  return normalized.length >= 12 ? normalized : "";
+}
+
+export function whatsappWebUrl({ phone, message = "" } = {}) {
+  const normalized = normalizeWhatsAppNumber(phone);
+  if (!normalized) return "";
+  const params = new URLSearchParams({ phone: normalized });
+  if (message) params.set("text", message);
+  return `https://web.whatsapp.com/send?${params.toString()}`;
+}
+
 export function googleCalendarUrl({ title, dueAt, details = "", durationMinutes = 45 } = {}) {
   if (!title || !dueAt) return "";
   const start = new Date(dueAt);

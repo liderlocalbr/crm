@@ -1,5 +1,5 @@
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./config.js";
-import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarEvent, monthBounds, moveLeadToStage, normalizeGoogleEvents, progress, reassignStage, weekOfMonth } from "./calculations.js";
+import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarEvent, monthBounds, moveLeadToStage, normalizeGoogleEvents, progress, reassignStage, weekOfMonth, whatsappWebUrl } from "./calculations.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -757,7 +757,19 @@ function renderLeads() {
 
 function leadCard(lead) {
   const overdue = lead.next_follow_up && lead.next_follow_up < todayIso();
-  return `<article class="lead-card" draggable="true" data-action="edit-lead" data-id="${lead.id}" title="Arraste para mudar de etapa ou clique para editar"><div class="lead-card-top"><div><h3>${escapeHtml(lead.name)}</h3><p>${escapeHtml(lead.clinic_name || lead.specialty || "Sem clínica informada")}</p></div><span class="lead-card-value">${formatCurrency(lead.deal_value || state.settings.deal_value)}</span></div><div class="lead-meta"><span>${escapeHtml(lead.source || "Sem origem")}</span><span class="lead-follow-up ${overdue ? "overdue" : ""}">${lead.next_follow_up ? `Follow-up ${formatDate(lead.next_follow_up)}` : "Sem follow-up"}</span></div></article>`;
+  const whatsappAction = lead.whatsapp ? `<button type="button" draggable="false" class="whatsapp-button" data-action="open-whatsapp" data-id="${lead.id}" aria-label="Abrir conversa com ${escapeHtml(lead.name)} no WhatsApp Web"><span aria-hidden="true">◉</span> Abrir WhatsApp</button>` : "";
+  return `<article class="lead-card" draggable="true" data-action="edit-lead" data-id="${lead.id}" title="Arraste para mudar de etapa ou clique para editar"><div class="lead-card-top"><div><h3>${escapeHtml(lead.name)}</h3><p>${escapeHtml(lead.clinic_name || lead.specialty || "Sem clínica informada")}</p></div><span class="lead-card-value">${formatCurrency(lead.deal_value || state.settings.deal_value)}</span></div><div class="lead-meta"><span>${escapeHtml(lead.source || "Sem origem")}</span><span class="lead-follow-up ${overdue ? "overdue" : ""}">${lead.next_follow_up ? `Follow-up ${formatDate(lead.next_follow_up)}` : "Sem follow-up"}</span></div>${whatsappAction}</article>`;
+}
+
+function openLeadWhatsApp(leadId) {
+  const lead = state.leads.find((item) => item.id === leadId);
+  if (!lead) return toast("Lead não encontrado.", "error");
+  const firstName = String(lead.name || "").trim().split(/\s+/)[0] || "tudo bem";
+  const sender = String(state.user?.user_metadata?.full_name || "Damião").trim().split(/\s+/)[0] || "Damião";
+  const message = `Olá, ${firstName}! Tudo bem? Aqui é ${sender}, da Agência Líder Local. Estou entrando em contato para dar continuidade à nossa conversa.`;
+  const url = whatsappWebUrl({ phone: lead.whatsapp, message });
+  if (!url) return toast("Cadastre um WhatsApp válido para este lead.", "error");
+  window.open(url, "_blank", "noopener,noreferrer");
 }
 
 function openStageDialog() {
@@ -861,6 +873,10 @@ function clearLeadDragVisuals() {
 }
 
 function handleLeadDragStart(event) {
+  if (event.target.closest('[data-action="open-whatsapp"]')) {
+    event.preventDefault();
+    return;
+  }
   const card = event.target.closest(".lead-card[data-id]");
   if (!card) return;
   draggedLeadId = card.dataset.id;
@@ -1028,6 +1044,7 @@ async function handleMainClick(event) {
   if (suppressLeadClick && action.dataset.action === "edit-lead") return;
   if (action.dataset.action === "open-lead") openLeadDialog();
   if (action.dataset.action === "edit-lead") openLeadDialog(state.leads.find((lead) => lead.id === action.dataset.id));
+  if (action.dataset.action === "open-whatsapp") openLeadWhatsApp(action.dataset.id);
   if (action.dataset.action === "open-activity") openActivityDialog();
   if (action.dataset.action === "manage-stages") openStageDialog();
   if (action.dataset.action === "connect-google-calendar") connectGoogleCalendar();
