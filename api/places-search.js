@@ -120,3 +120,4 @@ export default async function handler(req, res) {
     res.status(502).json({ message: "Não foi possível se conectar à Oxylabs agora." });
   }
 }
+
