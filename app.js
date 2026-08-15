@@ -1108,9 +1108,10 @@ async function pollPlacesJob(jobId) {
     await new Promise((resolve) => setTimeout(resolve, 3000));
     state.mapsStatusMessage = `Buscando no Google Maps… (${attempt * 3}s)`;
     renderMapsSearch();
-    const params = new URLSearchParams({ jobId });
+    const params = new URLSearchParams({ jobId, _: String(Date.now()) });
     const response = await fetch(`/api/places-search-status?${params}`, {
       headers: { Authorization: `Bearer ${state.session.access_token}` },
+      cache: "no-store",
     });
     const payload = await response.json().catch(() => null);
     if (!response.ok) throw new Error(payload?.message || "Não foi possível checar o status da busca.");
