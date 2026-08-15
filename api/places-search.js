@@ -22,19 +22,21 @@ function safeStringify(value, limit = 1500) {
   }
 }
 
-// O local_pack (resultados de negócios locais) vem embutido no resultado parseado
-// da busca normal do Google. Tentamos os caminhos mais comuns dessa estrutura.
+// O local_pack vem como uma lista de "grupos", e cada grupo tem os negócios de
+// verdade dentro de "items" — por isso extraímos um nível mais fundo do que o óbvio.
 function extractListings(content) {
   if (!content || typeof content !== "object") {
     console.log("oxylabs_content_not_object", typeof content, safeStringify(content, 500));
     return [];
   }
-  const localPack = content?.results?.local_pack?.items || content?.results?.local_pack;
-  const candidates = [
-    Array.isArray(localPack) ? localPack : null,
-    content?.local_pack?.items,
-    content?.results?.organic,
-  ];
+  const localPack = content?.results?.local_pack;
+  if (Array.isArray(localPack)) {
+    const items = localPack.flatMap((group) => (Array.isArray(group?.items) ? group.items : []));
+    if (items.length) return items;
+  } else if (localPack && Array.isArray(localPack.items) && localPack.items.length) {
+    return localPack.items;
+  }
+  const candidates = [content?.local_pack?.items, content?.results?.organic];
   for (const candidate of candidates) {
     if (Array.isArray(candidate) && candidate.length) return candidate;
   }
@@ -45,16 +47,21 @@ function extractListings(content) {
 function normalizeListing(item) {
   const name = item.title || item.name || item.business_name;
   if (!name) return null;
-  const placeId = item.place_id || item.data_id || item.cid || null;
+  const links = Array.isArray(item.links) ? item.links : [];
+  const siteLink = links.find((link) => link.title === "Site" || (link.href && /^https?:\/\//.test(link.href) && !link.href.includes("/maps/")));
+  const routeLink = links.find((link) => link.title === "Rotas" || (link.href && link.href.startsWith("/maps/")));
+  const mapsUrl = routeLink?.href
+    ? (routeLink.href.startsWith("http") ? routeLink.href : `https://www.google.com${routeLink.href}`)
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} ${item.address || ""}`)}`;
   return {
-    id: placeId || name,
+    id: `${name}-${item.pos ?? ""}`,
     name,
     address: item.address || item.formatted_address || "",
     phone: item.phone || item.phone_number || "",
-    website: item.website || item.url || "",
+    website: siteLink?.href || item.website || "",
     rating: item.rating ?? null,
-    ratingCount: item.reviews_count ?? item.rating_count ?? item.reviews ?? null,
-    mapsUrl: item.link || item.url || (placeId ? `https://www.google.com/maps/place/?q=place_id:${placeId}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`),
+    ratingCount: item.rating_count ?? item.reviews_count ?? null,
+    mapsUrl,
   };
 }
 
@@ -119,7 +126,6 @@ export default async function handler(req, res) {
 
     const content = payload?.results?.[0]?.content;
     const listings = extractListings(content);
-    if (listings.length) console.log("oxylabs_first_listing_raw", safeStringify(listings[0], 1200));
     const seen = new Set();
     const places = [];
     for (const item of listings) {
