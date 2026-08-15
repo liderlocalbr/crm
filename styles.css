@@ -217,6 +217,11 @@ button { color: inherit; }
 .lead-card:active { cursor: grabbing; }
 .lead-card.dragging { opacity: .42; transform: scale(.98); border-color: rgba(43,220,175,.42); }
 .lead-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.lead-card-header-actions { display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto; }
+.lead-card-delete { width: 24px; height: 24px; display: inline-grid; place-items: center; padding: 0; border: 1px solid rgba(243,109,117,.24); border-radius: 7px; background: rgba(243,109,117,.05); color: #d8898f; cursor: pointer; transition: .16s ease; }
+.lead-card-delete svg { width: 13px; height: 13px; fill: currentColor; }
+.lead-card-delete:hover { color: #fff; border-color: rgba(243,109,117,.72); background: rgba(243,109,117,.2); box-shadow: 0 0 0 3px rgba(243,109,117,.1); }
+.lead-card-delete:focus-visible { outline: 2px solid #f36d75; outline-offset: 2px; }
 .lead-card h3 { font-size: 13px; line-height: 1.25; margin: 0; }
 .lead-card p { color: var(--muted); margin: 5px 0 0; font-size: 12px; }
 .lead-card-value { color: var(--amber); font: 700 12px monospace; white-space: nowrap; }
