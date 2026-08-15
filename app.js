@@ -566,11 +566,13 @@ function translateAuthError(message) {
 }
 
 function showAuth() {
+  document.body.classList.remove("booting");
   $("#auth-screen").classList.remove("hidden");
   $("#app-shell").classList.add("hidden");
 }
 
 async function enterApp() {
+  document.body.classList.remove("booting");
   $("#auth-screen").classList.add("hidden");
   $("#app-shell").classList.remove("hidden");
   const name = state.user.user_metadata?.full_name || state.user.email?.split("@")[0] || "Usuário";
@@ -582,6 +584,7 @@ async function enterApp() {
   renderAll();
   try {
     await loadData();
+    if (!isLocalDemo) await loadSavedSearches({ render: false });
   } catch (error) {
     toast(error.message, "error");
   } finally {
@@ -1090,16 +1093,16 @@ function savedSearchesMarkup() {
   </article>`).join("")}</div>`;
 }
 
-async function loadSavedSearches() {
+async function loadSavedSearches({ render = true } = {}) {
   if (isLocalDemo || !state.user) return [];
   state.mapsSavedSearchesLoading = true;
-  renderMapsSearch();
+  if (render) renderMapsSearch();
   try {
     state.mapsSavedSearches = await rest("saved_place_searches", { query: `owner_id=eq.${state.user.id}&select=id,name,keyword,locality,guide_state,guide_city,prospect_filter,result_count,is_complete,last_opened_at,created_at,updated_at&order=updated_at.desc&limit=100` }) || [];
     return state.mapsSavedSearches;
   } finally {
     state.mapsSavedSearchesLoading = false;
-    renderMapsSearch();
+    if (render) renderMapsSearch();
   }
 }
 

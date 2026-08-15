@@ -22,6 +22,9 @@
 }
 
 * { box-sizing: border-box; }
+body.booting { background: #071012; }
+body.booting #auth-screen, body.booting #app-shell { visibility: hidden; }
+body.booting::before { content: "Sincronizando sua sessão…"; position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; color: var(--muted); font-size: 13px; letter-spacing: .02em; }
 html { color-scheme: dark; }
 body {
   margin: 0;
