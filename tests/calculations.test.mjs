@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, monthBounds, weekOfMonth } from "../calculations.js";
+import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, monthBounds, moveLeadToStage, weekOfMonth } from "../calculations.js";
 
 test("reproduz a projeção da planilha Métricas", () => {
   assert.deepEqual(deriveGoals(DEFAULT_SETTINGS), {
@@ -29,4 +29,18 @@ test("calcula limites do mês e semana", () => {
   assert.deepEqual(monthBounds("2026-08"), { start: "2026-08-01", end: "2026-08-31" });
   assert.equal(weekOfMonth("2026-08-01"), 1);
   assert.equal(weekOfMonth("2026-08-31"), 6);
+});
+
+test("move somente o lead arrastado para a nova etapa", () => {
+  const original = [
+    { id: "lead-1", name: "Clínica A", stage: "new" },
+    { id: "lead-2", name: "Clínica B", stage: "contacted" },
+  ];
+  const result = moveLeadToStage(original, "lead-1", "scheduled");
+
+  assert.equal(result.changed, true);
+  assert.equal(result.previousStage, "new");
+  assert.equal(result.lead.stage, "scheduled");
+  assert.equal(result.leads[1], original[1]);
+  assert.equal(original[0].stage, "new");
 });
