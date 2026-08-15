@@ -1154,13 +1154,13 @@ async function handleMapsSearch(event) {
         state.mapsLoading = false;
         state.mapsStatusMessage = "";
         renderMapsSearch();
-        toast(`${cachedPlaces.length} resultado(s) carregado(s) do histórico, sem consumir a Oxylabs.`);
+        toast(`${cachedPlaces.length} resultado(s) carregado(s) do histórico, sem consumir a Serper.`);
         return;
       }
     } catch (cacheError) {
       console.warn("maps_cache_read_failed", cacheError?.message);
     }
-    state.mapsStatusMessage = "Iniciando busca na Oxylabs…";
+    state.mapsStatusMessage = "Buscando empresas na Serper…";
     renderMapsSearch();
     const submitParams = new URLSearchParams({ keyword, locality, _: String(Date.now()) });
     const submitResponse = await fetch(`/api/places-search?${submitParams}`, {
@@ -1168,9 +1168,11 @@ async function handleMapsSearch(event) {
       cache: "no-store",
     });
     const submitPayload = await submitResponse.json().catch(() => null);
-    if (!submitResponse.ok || !submitPayload?.jobId) throw new Error(submitPayload?.message || "Não foi possível iniciar a busca.");
+    if (!submitResponse.ok || !Array.isArray(submitPayload?.places)) {
+      throw new Error(submitPayload?.message || "Não foi possível concluir a busca.");
+    }
 
-    await pollAndApply(submitPayload.jobId, keyword, locality);
+    await applyPlacesResults(submitPayload.places, keyword, locality);
   } catch (error) {
     state.mapsError = error.message;
     state.mapsLoading = false;
@@ -1195,9 +1197,9 @@ async function retryPendingSearch() {
   }
 }
 
-async function pollAndApply(jobId, keyword, locality, logUsage = true) {
+async function applyPlacesResults(places, keyword, locality, logUsage = true) {
   try {
-    state.mapsResults = await pollPlacesJob(jobId);
+    state.mapsResults = Array.isArray(places) ? places.slice(0, 50) : [];
     state.mapsSearched = true;
     state.mapsPendingJobId = null;
     try {
@@ -1213,11 +1215,16 @@ async function pollAndApply(jobId, keyword, locality, logUsage = true) {
   }
 }
 
+async function pollAndApply(jobId, keyword, locality, logUsage = true) {
+  const places = await pollPlacesJob(jobId);
+  await applyPlacesResults(places, keyword, locality, logUsage);
+}
+
 async function pollPlacesJob(jobId) {
   const maxAttempts = 20;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     await new Promise((resolve) => setTimeout(resolve, 3000));
-    state.mapsStatusMessage = `Buscando no Google Maps… (${attempt * 3}s)`;
+    state.mapsStatusMessage = `Buscando empresas… (${attempt * 3}s)`;
     renderMapsSearch();
     const params = new URLSearchParams({ jobId, _: String(Date.now()) });
     const response = await fetch(`/api/places-search-status?${params}`, {
@@ -1230,7 +1237,7 @@ async function pollPlacesJob(jobId) {
     if (payload.status === "error") { state.mapsPendingJobId = null; throw new Error(payload.message || "A busca falhou."); }
   }
   state.mapsPendingJobId = jobId;
-  throw new Error("A Oxylabs ainda está processando. Clique em \"Verificar de novo\" em vez de buscar de novo (evita gastar outra busca do seu crédito).");
+  throw new Error("A busca ainda está processando. Clique em \"Verificar de novo\" em vez de buscar de novo.");
 }
 
 async function addPlaceAsLead(placeId) {

@@ -1,27 +1,36 @@
-import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "../config.js";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "../config.js";
 
 // Endpoint serverless da Vercel: GET /api/places-search?keyword=...&locality=...
-// Submete um job assíncrono (Push-Pull) à Oxylabs para Google Maps em HTML.
-// O endpoint de status extrai até 50 cards da página e devolve dados normalizados.
+// Consulta direta à Serper Maps API; o frontend mantém o cache no Supabase.
 
 export const config = { maxDuration: 20 };
 
-const BRAZILIAN_STATE_NAMES = {
-  AC: "Acre", AL: "Alagoas", AP: "Amapá", AM: "Amazonas", BA: "Bahia", CE: "Ceará",
-  DF: "Distrito Federal", ES: "Espírito Santo", GO: "Goiás", MA: "Maranhão", MT: "Mato Grosso",
-  MS: "Mato Grosso do Sul", MG: "Minas Gerais", PA: "Pará", PB: "Paraíba", PR: "Paraná",
-  PE: "Pernambuco", PI: "Piauí", RJ: "Rio de Janeiro", RN: "Rio Grande do Norte", RS: "Rio Grande do Sul",
-  RO: "Rondônia", RR: "Roraima", SC: "Santa Catarina", SP: "São Paulo", SE: "Sergipe", TO: "Tocantins",
-};
+function normalizePlace(place, position) {
+  if (!place || typeof place !== "object") return null;
+  const name = String(place.title || place.name || "").trim();
+  const address = String(place.address || place.fullAddress || place.full_address || "").trim();
+  if (!name) return null;
 
-function buildGeoLocation(locality) {
-  const parts = locality.split(/\s*(?:-|,)\s*/).map((part) => part.trim()).filter(Boolean);
-  if (parts.length >= 2) {
-    const city = parts[0];
-    const state = BRAZILIAN_STATE_NAMES[parts.at(-1).toUpperCase()] || parts.at(-1);
-    return `${city},${state},Brazil`;
-  }
-  return `${parts[0] || locality},Brazil`;
+  const rawId = place.placeId || place.place_id || place.dataId || place.data_id || place.cid || place.fid;
+  const id = String(rawId || `${name}-${address || position}`).trim();
+  const mapsUrl = place.placeUrl || place.locationLink || place.location_link || place.mapsUrl || (place.cid
+    ? `https://www.google.com/maps?cid=${encodeURIComponent(place.cid)}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} ${address}`)}`);
+
+  return {
+    id,
+    name,
+    address,
+    phone: String(place.phoneNumber || place.phone || "").trim(),
+    website: String(place.website || place.site || "").trim(),
+    rating: place.rating == null ? null : Number(place.rating),
+    ratingCount: Number(place.ratingCount ?? place.reviewsCount ?? place.reviews ?? 0) || 0,
+    mapsUrl,
+    category: String(place.category || place.type || "").trim(),
+    latitude: place.latitude ?? place.location?.latitude ?? null,
+    longitude: place.longitude ?? place.location?.longitude ?? null,
+    position,
+  };
 }
 
 export default async function handler(req, res) {
@@ -52,51 +61,36 @@ export default async function handler(req, res) {
     return;
   }
 
-  const username = process.env.OXYLABS_USERNAME;
-  const password = process.env.OXYLABS_PASSWORD;
-  if (!username || !password) {
-    res.status(500).json({ message: "OXYLABS_USERNAME/OXYLABS_PASSWORD não configuradas nas variáveis de ambiente do projeto na Vercel." });
+  const apiKey = process.env.SERPER_API_KEY;
+  if (!apiKey) {
+    res.status(500).json({ message: "SERPER_API_KEY não está configurada nas variáveis de ambiente da Vercel." });
     return;
   }
 
+  const query = `${keyword}, ${locality}`;
   try {
-    // Normaliza a query removendo caracteres especiais que causam erro na Oxylabs
-    // Formato esperado: "dentista em São Paulo" (sem hífen, sem vírgula)
-    const normalizedLocality = locality
-      .replace(/\s*-\s*/g, " ")  // Remove hífens: "Mogi das Cruzes - SP" → "Mogi das Cruzes SP"
-      .replace(/\s*,\s*/g, " "); // Remove vírgulas: "São Paulo, SP" → "São Paulo SP"
-    
-    const query = `${keyword} em ${normalizedLocality}`;
-    const geoLocation = buildGeoLocation(locality);
-
-    const submitResponse = await fetch("https://data.oxylabs.io/v1/queries", {
+    const response = await fetch("https://google.serper.dev/maps", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`,
-      },
-      body: JSON.stringify({
-        // Alvo oficial de Local Search; 5 páginas x 10 resultados = até 50 empresas.
-        source: "google_maps",
-        query,
-        geo_location: geoLocation,
-        locale: "pt-BR",
-        // Sem renderização dinâmica: evita consumir a quota Render Dynamic.
-        render: "",
-        pages: 5,
-        limit: 10,
-      }),
+      headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ q: query, gl: "br", hl: "pt-br", type: "search", num: 50 }),
     });
-    const payload = await submitResponse.json().catch(() => null);
-    if (!submitResponse.ok || !payload?.id) {
-      console.log("oxylabs_submit_error", submitResponse.status, payload?.message || payload?.status);
-      res.status(submitResponse.status || 502).json({ message: payload?.message || payload?.status || "Não foi possível iniciar a busca na Oxylabs." });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      console.log("serper_maps_error", response.status, payload?.message || payload?.error || "unknown");
+      res.status(response.status >= 400 && response.status < 500 ? response.status : 502).json({
+        message: payload?.message || payload?.error || "A Serper não conseguiu concluir essa busca.",
+      });
       return;
     }
-    console.log("oxylabs_job_submitted", payload.id, keyword, locality, "→", query, "geo:", geoLocation, "source: google_maps pages:5 limit:10");
-    res.status(200).json({ jobId: payload.id });
+
+    const places = (Array.isArray(payload?.places) ? payload.places : [])
+      .map((place, index) => normalizePlace(place, index + 1))
+      .filter(Boolean)
+      .slice(0, 50);
+    console.log("serper_maps_done", JSON.stringify({ query, count: places.length }));
+    res.status(200).json({ places, provider: "serper" });
   } catch (error) {
-    console.log("oxylabs_submit_exception", error.message);
-    res.status(502).json({ message: "Não foi possível se conectar à Oxylabs agora." });
+    console.log("serper_maps_exception", error.message);
+    res.status(502).json({ message: "Não foi possível se conectar à Serper agora." });
   }
 }
