@@ -364,6 +364,11 @@ button { color: inherit; }
 
 .stage-list { display: flex; flex-direction: column; gap: 9px; max-height: min(48vh, 480px); overflow-y: auto; padding-right: 4px; }
 .stage-editor { display: grid; grid-template-columns: 30px 40px minmax(150px,1fr) auto auto 36px; gap: 9px; align-items: end; padding: 11px; border: 1px solid var(--line); background: #0a1113; border-radius: 11px; }
+.stage-drag-handle { border: 0; background: transparent; color: var(--muted); cursor: grab; font-size: 17px; letter-spacing: -4px; padding: 4px 2px; }
+.stage-drag-handle:active { cursor: grabbing; }
+.stage-editor[draggable="true"] { cursor: grab; }
+.stage-editor.dragging { opacity: .45; }
+.stage-editor.stage-drop-target { border-color: var(--green); box-shadow: 0 0 0 2px rgba(43,220,175,.18); }
 .stage-order { align-self: center; color: var(--muted); font: 700 12px monospace; text-align: center; }
 .stage-color { width: 38px; height: 38px; padding: 3px; border: 1px solid var(--line); background: #0a1113; border-radius: 9px; cursor: pointer; }
 .stage-lead-count { align-self: center; color: var(--muted); font-size: 11px; white-space: nowrap; }

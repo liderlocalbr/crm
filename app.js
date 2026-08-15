@@ -502,6 +502,10 @@ function setupStaticEvents() {
   $("#activity-form").addEventListener("submit", saveActivityFromDialog);
   $("#stage-add-form").addEventListener("submit", addPipelineStage);
   $("#stage-dialog").addEventListener("click", handleStageDialogClick);
+  $("#stage-list").addEventListener("dragstart", handleStageReorderStart);
+  $("#stage-list").addEventListener("dragover", handleStageReorderOver);
+  $("#stage-list").addEventListener("drop", handleStageReorderDrop);
+  $("#stage-list").addEventListener("dragend", handleStageReorderEnd);
   $("#day-dialog").addEventListener("click", handleDayDialogClick);
   $("#day-dialog").addEventListener("close", () => { openDayIso = null; });
   $(".main-content").addEventListener("click", handleMainClick);
@@ -755,11 +759,15 @@ async function toggleLeadContact(leadId) {
   const lead = state.leads.find((item) => item.id === leadId);
   if (!lead) return;
   const contactedAt = lead.contacted_at ? null : new Date().toISOString();
+  const currentIndex = state.stages.findIndex((stage) => stage.value === lead.stage);
+  const nextStage = contactedAt && currentIndex >= 0 ? state.stages[currentIndex + 1] : null;
+  const previousStage = lead.stage;
   try {
-    const saved = await store.saveLead({ id: lead.id, contacted_at: contactedAt });
-    Object.assign(lead, saved || { contacted_at: contactedAt });
+    const saved = await store.saveLead({ id: lead.id, contacted_at: contactedAt, ...(nextStage ? { stage: nextStage.value } : {}) });
+    Object.assign(lead, saved || { contacted_at: contactedAt, ...(nextStage ? { stage: nextStage.value } : {}) });
+    renderDashboard();
     renderLeads();
-    toast(contactedAt ? `${lead.name} marcado como “Contatado”.` : `${lead.name} removido de “Contatado”.`);
+    toast(contactedAt ? `${lead.name} marcado como “Contatado”${nextStage ? ` e movido para ${nextStage.label}.` : "."}` : `${lead.name} removido de “Contatado”.`);
   } catch (error) {
     toast(error.message || "Não foi possível atualizar o contato.", "error");
   }
@@ -794,8 +802,8 @@ function openStageDialog() {
 function renderStageManager() {
   $("#stage-list").innerHTML = state.stages.map((stage, index) => {
     const leadCount = state.leads.filter((lead) => lead.stage === stage.value).length;
-    return `<div class="stage-editor" data-stage-id="${stage.id}">
-      <span class="stage-order">${index + 1}</span>
+    return `<div class="stage-editor" draggable="true" data-stage-id="${stage.id}">
+      <button class="stage-drag-handle" type="button" draggable="false" aria-label="Reordenar etapa" title="Arraste para reordenar">⋮⋮</button><span class="stage-order">${index + 1}</span>
       <input class="stage-color" data-stage-color type="color" value="${stage.color || "#2bdcaf"}" aria-label="Cor da etapa ${escapeHtml(stage.label)}" />
       <label class="field"><span>Nome da etapa</span><input data-stage-name maxlength="48" value="${escapeHtml(stage.label)}" /></label>
       <span class="stage-lead-count">${leadCount} ${leadCount === 1 ? "lead" : "leads"}</span>
@@ -803,6 +811,53 @@ function renderStageManager() {
       <button class="icon-button danger-icon" data-stage-action="delete" type="button" aria-label="Excluir ${escapeHtml(stage.label)}">×</button>
     </div>`;
   }).join("");
+}
+
+let draggedStageId = null;
+
+function handleStageReorderStart(event) {
+  const row = event.target.closest(".stage-editor");
+  if (!row || event.target.closest("input, button")) return;
+  draggedStageId = row.dataset.stageId;
+  row.classList.add("dragging");
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain", draggedStageId);
+}
+
+function handleStageReorderOver(event) {
+  const target = event.target.closest(".stage-editor");
+  if (!target || !draggedStageId || target.dataset.stageId === draggedStageId) return;
+  event.preventDefault();
+  $$(".stage-editor.stage-drop-target").forEach((item) => item.classList.remove("stage-drop-target"));
+  target.classList.add("stage-drop-target");
+}
+
+async function handleStageReorderDrop(event) {
+  const target = event.target.closest(".stage-editor");
+  if (!target || !draggedStageId) return;
+  event.preventDefault();
+  const sourceIndex = state.stages.findIndex((stage) => stage.id === draggedStageId);
+  const targetIndex = state.stages.findIndex((stage) => stage.id === target.dataset.stageId);
+  if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return handleStageReorderEnd();
+  const reordered = [...state.stages];
+  const [moved] = reordered.splice(sourceIndex, 1);
+  reordered.splice(targetIndex, 0, moved);
+  state.stages = reordered.map((stage, position) => ({ ...stage, position }));
+  renderLeads();
+  renderStageManager();
+  try {
+    await Promise.all(state.stages.map((stage) => store.saveStage({ id: stage.id, position: stage.position })));
+    populateStageOptions();
+    toast("Ordem do funil atualizada.");
+  } catch (error) {
+    toast(error.message || "Não foi possível salvar a ordem do funil.", "error");
+  }
+  handleStageReorderEnd();
+}
+
+function handleStageReorderEnd() {
+  draggedStageId = null;
+  $$(".stage-editor.dragging, .stage-editor.stage-drop-target").forEach((item) => item.classList.remove("dragging", "stage-drop-target"));
 }
 
 async function handleStageDialogClick(event) {
