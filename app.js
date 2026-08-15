@@ -699,7 +699,7 @@ function renderAll() {
 }
 
 function pageHead(eyebrow, title, subtitle, actions = "", inlineStatus = "") {
-  return `<header class="page-head ${inlineStatus ? "dashboard-head" : ""}"><div class="page-title"><span class="eyebrow">${eyebrow}</span><div class="page-title-row"><h1>${title}</h1>${inlineStatus}</div><p>${subtitle}</p></div><div class="head-actions">${actions}</div></header>`;
+  return `<header class="page-head ${inlineStatus ? "dashboard-head" : ""}"><div class="page-title"><span class="eyebrow">${eyebrow}</span><div class="page-title-row"><h1>${title}</h1>${inlineStatus}</div>${subtitle ? `<p>${subtitle}</p>` : ""}</div><div class="head-actions">${actions}</div></header>`;
 }
 
 function monthInput(id, value = state.month) {
@@ -790,7 +790,7 @@ function upcomingActivities(limit) {
 
 function renderLeads() {
   $("#view-leads").innerHTML = `
-    ${pageHead("PIPELINE COMERCIAL", "Oportunidades em movimento", "Arraste os cards e personalize as etapas de acordo com seu processo.", `<span class="date-chip">${state.leads.length} leads</span><button class="button ghost" data-action="manage-stages">⚙ Etapas</button><button class="button primary" data-action="open-lead">+ Novo lead</button>`)}
+    ${pageHead("PIPELINE COMERCIAL", "Oportunidades em movimento", "", `<span class="date-chip">${state.leads.length} leads</span><button class="button ghost" data-action="manage-stages">⚙ Etapas</button><button class="button primary" data-action="open-lead">+ Novo lead</button>`)}
     <div class="kanban">${state.stages.map((stage) => {
       const leads = state.leads.filter((lead) => lead.stage === stage.value);
       return `<section class="kanban-column" data-drop-stage="${stage.value}"><div class="kanban-head"><span><i style="--column-color:${stage.color}"></i>${escapeHtml(stage.label)}</span><b class="kanban-count">${leads.length}</b></div><div class="kanban-cards">${leads.length ? leads.map(leadCard).join("") : `<div class="empty-column">Solte um lead nesta etapa</div>`}</div></section>`;
@@ -2063,10 +2063,11 @@ function openActivityDialog(presetDate = null, leadId = null) {
   $("#activity-due").value = `${presetDate || todayIso()}T09:00`;
   const googleReady = state.calendarConnected || hasValidGoogleToken();
   $("#activity-google").checked = false;
-  $("#activity-google").disabled = !googleReady;
-  $("#activity-google-field").title = googleReady ? "Criar também no Google Agenda" : "Conecte o Google Agenda primeiro";
+  $("#activity-google").disabled = false;
+  $("#activity-google-field").title = googleReady ? "Criar também no Google Agenda" : "Conecte o Google Agenda antes de salvar para enviar o evento";
   $("#activity-meet").checked = false;
-  $("#activity-meet").disabled = !googleReady;
+  $("#activity-meet").disabled = false;
+  $("#activity-meet-field").title = googleReady ? "Gerar uma sala do Google Meet" : "Conecte o Google Agenda antes de gerar o Meet";
   updateActivityKindControls();
   $("#activity-dialog").showModal();
 }
