@@ -43,22 +43,32 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Normaliza a query removendo caracteres especiais que causam erro na Oxylabs
+    // Formato esperado: "dentista em São Paulo" (sem hífen, sem vírgula)
+    const normalizedLocality = locality
+      .replace(/\s*-\s*/g, " ")  // Remove hífens: "Mogi das Cruzes - SP" → "Mogi das Cruzes SP"
+      .replace(/\s*,\s*/g, " "); // Remove vírgulas: "São Paulo, SP" → "São Paulo SP"
+    
+    const query = `${keyword} em ${normalizedLocality}`;
+    
     const submitResponse = await fetch("https://data.oxylabs.io/v1/queries", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`,
       },
-      body: JSON.stringify({ source: "google_maps", query: `${keyword} em ${locality}, Brasil`, pages: 1 }),
+      body: JSON.stringify({ source: "google_maps", query, pages: 1 }),
     });
     const payload = await submitResponse.json().catch(() => null);
     if (!submitResponse.ok || !payload?.id) {
+      console.log("oxylabs_submit_error", submitResponse.status, payload?.message || payload?.status);
       res.status(submitResponse.status || 502).json({ message: payload?.message || payload?.status || "Não foi possível iniciar a busca na Oxylabs." });
       return;
     }
-    console.log("oxylabs_job_submitted", payload.id, keyword, locality);
+    console.log("oxylabs_job_submitted", payload.id, keyword, locality, "→", query);
     res.status(200).json({ jobId: payload.id });
   } catch (error) {
+    console.log("oxylabs_submit_exception", error.message);
     res.status(502).json({ message: "Não foi possível se conectar à Oxylabs agora." });
   }
 }
