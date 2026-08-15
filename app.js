@@ -47,6 +47,7 @@ const state = {
   activities: [],
   stages: DEFAULT_STAGES.map((stage, position) => ({ ...stage, position })),
   calendarConnected: false,
+  googleIdentityLinked: false,
   googleAccessToken: sessionStorage.getItem(GOOGLE_TOKEN_KEY),
   googleEvents: [],
   googleEventsLoading: false,
@@ -266,7 +267,17 @@ function hasValidGoogleToken() {
 }
 
 function hasGoogleIdentity() {
-  return Boolean(state.user?.identities?.some((identity) => identity.provider === "google"));
+  return state.googleIdentityLinked || Boolean(state.user?.identities?.some((identity) => identity.provider === "google"));
+}
+
+async function loadGoogleIdentity() {
+  try {
+    const identities = await authRequest("/user/identities");
+    state.googleIdentityLinked = Array.isArray(identities) && identities.some((identity) => identity.provider === "google");
+  } catch (error) {
+    state.googleIdentityLinked = Boolean(state.user?.identities?.some((identity) => identity.provider === "google"));
+  }
+  syncGoogleConnection();
 }
 
 function syncGoogleConnection() {
@@ -620,6 +631,7 @@ async function enterApp() {
   $("#user-email").textContent = state.user.email || "Modo demonstração";
   $("#user-avatar").textContent = initials(name);
   syncGoogleConnection();
+  if (!isLocalDemo) await loadGoogleIdentity();
   state.loading = true;
   renderAll();
   try {
