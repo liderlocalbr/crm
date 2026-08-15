@@ -754,7 +754,7 @@ async function toggleLeadContact(leadId) {
     const saved = await store.saveLead({ id: lead.id, contacted_at: contactedAt });
     Object.assign(lead, saved || { contacted_at: contactedAt });
     renderLeads();
-    toast(contactedAt ? `${lead.name} marcado como “Em contato”.` : `${lead.name} removido de “Em contato”.`);
+    toast(contactedAt ? `${lead.name} marcado como “Contatado”.` : `${lead.name} removido de “Contatado”.`);
   } catch (error) {
     toast(error.message || "Não foi possível atualizar o contato.", "error");
   }
@@ -762,10 +762,10 @@ async function toggleLeadContact(leadId) {
 
 function leadCard(lead) {
   const overdue = lead.next_follow_up && lead.next_follow_up < todayIso();
-  const whatsappAction = lead.whatsapp ? `<button type="button" draggable="false" class="whatsapp-button" data-action="open-whatsapp" data-id="${lead.id}" aria-label="Abrir conversa com ${escapeHtml(lead.name)} no WhatsApp Web"><span aria-hidden="true">◉</span> Abrir WhatsApp</button>` : "";
+  const whatsappAction = lead.whatsapp ? `<button type="button" draggable="false" class="whatsapp-button" data-action="open-whatsapp" data-id="${lead.id}" aria-label="WhatsApp de ${escapeHtml(lead.name)}"><span aria-hidden="true">◉</span> WhatsApp</button>` : "";
   const contactTag = lead.contacted_at ? `<span class="contacted-tag">Em contato</span>` : "";
-  const contactCheck = `<button type="button" draggable="false" class="lead-contact-toggle ${lead.contacted_at ? "checked" : ""}" data-action="toggle-lead-contact" data-id="${lead.id}" aria-pressed="${lead.contacted_at ? "true" : "false"}" aria-label="${lead.contacted_at ? "Desmarcar contato" : "Marcar como em contato"}">${lead.contacted_at ? "✓" : ""}</button>`;
-  return `<article class="lead-card ${lead.contacted_at ? "lead-contacted" : ""}" draggable="true" data-action="edit-lead" data-id="${lead.id}" title="Arraste para mudar de etapa ou clique para editar"><div class="lead-card-top"><div><h3>${escapeHtml(lead.name)}</h3><div class="lead-card-subtitle"><p>${escapeHtml(lead.clinic_name || lead.specialty || "Sem clínica informada")}</p>${contactTag}</div></div><span class="lead-card-value">${formatCurrency(lead.deal_value || state.settings.deal_value)}</span></div><div class="lead-meta"><span>${escapeHtml(lead.source || "Sem origem")}</span><span class="lead-follow-up ${overdue ? "overdue" : ""}">${lead.next_follow_up ? `Follow-up ${formatDate(lead.next_follow_up)}` : "Sem follow-up"}</span></div><div class="lead-card-footer">${whatsappAction}<span class="contact-check-label">${contactCheck} ${lead.contacted_at ? "Mensagem enviada" : "Marcar contato"}</span></div></article>`;
+  const contactCheck = `<button type="button" draggable="false" class="lead-contact-toggle ${lead.contacted_at ? "checked" : ""}" data-action="toggle-lead-contact" data-id="${lead.id}" aria-pressed="${lead.contacted_at ? "true" : "false"}" aria-label="${lead.contacted_at ? "Desmarcar contatado" : "Marcar como contatado"}">${lead.contacted_at ? "✓" : ""}</button>`;
+  return `<article class="lead-card ${lead.contacted_at ? "lead-contacted" : ""}" draggable="true" data-action="edit-lead" data-id="${lead.id}" title="Arraste para mudar de etapa ou clique para editar"><div class="lead-card-top"><div><h3>${escapeHtml(lead.name)}</h3><div class="lead-card-subtitle">${contactTag}</div></div><span class="lead-card-value">${formatCurrency(lead.deal_value || state.settings.deal_value)}</span></div><div class="lead-meta"><span class="lead-follow-up ${overdue ? "overdue" : ""}">${lead.next_follow_up ? `Follow-up ${formatDate(lead.next_follow_up)}` : "Sem follow-up"}</span></div><div class="lead-card-footer">${whatsappAction}<span class="contact-check-label">${contactCheck} ${lead.contacted_at ? "Em contato" : "Contatado"}</span></div></article>`;
 }
 
 function openLeadWhatsApp(leadId) {
