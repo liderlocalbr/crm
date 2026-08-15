@@ -16,7 +16,7 @@ function shiftedCenter(center, batch) {
   const latitude = Number(match[1]);
   const longitude = Number(match[2]);
   const zoom = Number(match[3] || 14);
-  const offsets = [[0, 0], [0.045, 0], [-0.045, 0], [0, 0.065], [0, -0.065], [0.045, 0.065], [0.045, -0.065], [-0.045, 0.065]];
+  const offsets = [[0, 0], [0.075, 0], [-0.075, 0], [0, 0.105], [0, -0.105], [0.075, 0.105], [0.075, -0.105], [-0.075, 0.105]];
   const [latOffset, lngOffset] = offsets[batch] || offsets[offsets.length - 1];
   return `@${(latitude + latOffset).toFixed(6)},${(longitude + lngOffset).toFixed(6)},${Math.min(16, Math.max(12, zoom))}z`;
 }
@@ -110,7 +110,7 @@ export default async function handler(req, res) {
       .filter(Boolean)
       .slice(0, BATCH_SIZE);
     const responseCenter = payload?.ll || payload?.searchParameters?.ll || payload?.searchParameters?.location || center || null;
-    console.log("serper_maps_done", JSON.stringify({ query, batch, count: places.length, center: responseCenter }));
+    console.log("serper_maps_done", JSON.stringify({ query, batch, count: places.length, requestedCenter: body.ll || null, responseCenter }));
     res.status(200).json({ places, provider: "serper", batch, center: responseCenter, hasMore: places.length === BATCH_SIZE && batch < MAX_BATCHES - 1 });
   } catch (error) {
     console.log("serper_maps_exception", error.message);

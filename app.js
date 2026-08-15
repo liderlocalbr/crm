@@ -1362,7 +1362,6 @@ async function loadMorePlaces() {
     const nextBatch = state.mapsSearchBatch + 1;
     const payload = await fetchSerperPlacesBatch(state.mapsKeyword, state.mapsLocality, nextBatch, state.mapsSearchCenter);
     state.mapsSearchBatch = nextBatch;
-    state.mapsSearchCenter = payload.center || state.mapsSearchCenter;
     state.mapsHasMore = Boolean(payload.hasMore) && state.mapsResults.length < 150;
     await applyPlacesResults(payload.places, state.mapsKeyword, state.mapsLocality, true, true);
     await saveSearchRun(state.mapsKeyword, state.mapsLocality, { returnedCount: state.mapsResults.length, center: state.mapsSearchCenter, completed: !state.mapsHasMore }).catch((runError) => console.warn("maps_run_write_failed", runError?.message));
