@@ -872,13 +872,47 @@ function leadCard(lead) {
   return `<article class="lead-card ${lead.contacted_at ? "lead-contacted" : ""}" draggable="true" data-action="edit-lead" data-id="${lead.id}" title="Arraste para mudar de etapa ou clique para editar"><div class="lead-card-top"><div><h3>${escapeHtml(lead.name)}</h3><div class="lead-card-subtitle">${contactTag}</div></div><div class="lead-card-header-actions"><span class="lead-card-value">${formatCurrency(lead.deal_value || state.settings.deal_value)}</span>${deleteAction}</div></div><div class="lead-meta">${followUpIndicator}</div>${activityMarkup}<div class="lead-card-footer">${whatsappAction}${activityAction}<span class="contact-check-label">${contactCheck} ${lead.contacted_at ? "Em contato" : "Contatado"}</span></div></article>`;
 }
 
+function whatsappTemplateUsageToday() {
+  const usage = state.settings.whatsapp_template_usage && typeof state.settings.whatsapp_template_usage === "object" ? state.settings.whatsapp_template_usage : {};
+  const today = todayIso();
+  return usage[today] && typeof usage[today] === "object" ? usage[today] : {};
+}
+function whatsappTemplateLimit(index) {
+  const limits = state.settings.whatsapp_template_limits && typeof state.settings.whatsapp_template_limits === "object" ? state.settings.whatsapp_template_limits : {};
+  return Math.max(0, Number(limits[String(index)]) || 0);
+}
+function chooseWhatsAppTemplateIndex(templates) {
+  const usageToday = whatsappTemplateUsageToday();
+  const eligible = templates.map((_, index) => index).filter((index) => {
+    const limit = whatsappTemplateLimit(index);
+    return !limit || Number(usageToday[String(index)] || 0) < limit;
+  });
+  if (state.settings.whatsapp_randomize_templates && eligible.length) return eligible[Math.floor(Math.random() * eligible.length)];
+  const configuredIndex = Math.min(Math.max(0, Number(state.settings.whatsapp_default_template) || 0), templates.length - 1);
+  return configuredIndex;
+}
+async function recordWhatsAppTemplateUsage(index) {
+  const today = todayIso();
+  const usage = state.settings.whatsapp_template_usage && typeof state.settings.whatsapp_template_usage === "object" ? structuredClone(state.settings.whatsapp_template_usage) : {};
+  const day = usage[today] && typeof usage[today] === "object" ? { ...usage[today] } : {};
+  day[String(index)] = Number(day[String(index)] || 0) + 1;
+  state.settings = { ...state.settings, whatsapp_template_usage: { [today]: day } };
+  try {
+    const saved = await store.saveSettings(state.month, { whatsapp_template_usage: state.settings.whatsapp_template_usage });
+    state.settings = { ...state.settings, ...saved, whatsapp_template_usage: state.settings.whatsapp_template_usage };
+  } catch (error) {
+    toast("WhatsApp aberto, mas não foi possível salvar o contador do modelo.", "error");
+  }
+}
 async function openLeadWhatsApp(leadId) {
   const lead = state.leads.find((item) => item.id === leadId);
   if (!lead) return toast("Lead não encontrado.", "error");
   const templates = normalizeWhatsAppTemplates(state.settings.whatsapp_templates);
-  const configuredIndex = Math.min(Math.max(0, Number(state.settings.whatsapp_default_template) || 0), templates.length - 1);
-  const templateIndex = state.settings.whatsapp_randomize_templates ? Math.floor(Math.random() * templates.length) : configuredIndex;
+  const templateIndex = chooseWhatsAppTemplateIndex(templates);
   const template = templates[templateIndex] || templates[0];
+  const templateLimit = whatsappTemplateLimit(templateIndex);
+  const templateUsedToday = Number(whatsappTemplateUsageToday()[String(templateIndex)] || 0);
+  if (templateLimit && templateUsedToday >= templateLimit) return toast(`O modelo “${template.label}” atingiu o limite diário de ${templateLimit}. Escolha outro modelo nas Configurações ou desative o sorteio.`, "error");
   const sender = String(state.user?.user_metadata?.full_name || "Damião").trim().split(/\s+/)[0] || "Damião";
   const message = renderWhatsAppMessage(template.body, lead, sender);
   const url = whatsappWebUrl({ phone: lead.whatsapp, message });
@@ -887,6 +921,7 @@ async function openLeadWhatsApp(leadId) {
   const contactsToday = state.leads.filter((item) => item.contacted_at?.slice(0, 10) === todayIso()).length;
   if (dailyLimit && contactsToday >= dailyLimit && !window.confirm(`Você já registrou ${contactsToday} contatos hoje, atingindo o limite de referência configurado. Deseja continuar manualmente?`)) return;
   window.open(url, "_blank", "noopener,noreferrer");
+  await recordWhatsAppTemplateUsage(templateIndex);
   if (!lead.contacted_at) await toggleLeadContact(leadId);
 }
 
@@ -1920,8 +1955,9 @@ function goalInput(name, label, value, step) {
 function renderSettings() {
   const templates = normalizeWhatsAppTemplates(state.settings.whatsapp_templates);
   const defaultIndex = Math.min(Math.max(0, Number(state.settings.whatsapp_default_template) || 0), templates.length - 1);
-  const templateRows = templates.map((template, index) => `<div class="message-template-row" data-template-row><div class="message-template-row-head"><label class="field"><span>Nome do modelo ${index + 1}</span><input data-message-template-label maxlength="80" value="${escapeHtml(template.label)}" placeholder="Ex.: Apresentação inicial" /></label><button type="button" class="icon-button message-template-remove" data-action="remove-message-template" data-index="${index}" aria-label="Remover modelo" title="Remover modelo">×</button></div><label class="field"><span>Mensagem</span><textarea data-message-template-body maxlength="800" rows="3" placeholder="Use {{nome}}, {{empresa}}, {{cidade}} e {{remetente}}.">${escapeHtml(template.body)}</textarea></label></div>`).join("");
-  $("#view-settings").innerHTML = `${pageHead("CONFIGURAÇÕES", "Mensagens do WhatsApp", "Escolha e edite modelos para abrir no WhatsApp. O envio continua sendo manual, em uma nova aba.", `<span class="date-chip">${templates.length} modelos</span>`)}<div class="settings-layout"><section class="panel"><div class="panel-head"><div><h2>Biblioteca de mensagens</h2><span>Personalize os textos sem automatizar o envio</span></div><button type="button" class="button ghost" data-action="add-message-template">+ Novo modelo</button></div><form id="message-settings-form" class="form-stack"><div class="settings-callout"><b>Campos disponíveis</b><span><code>{{nome}}</code> primeiro nome · <code>{{empresa}}</code> empresa · <code>{{cidade}}</code> cidade · <code>{{remetente}}</code> seu nome</span></div><div class="message-template-list">${templateRows}</div><div class="form-grid"><label class="field"><span>Modelo padrão ao clicar em WhatsApp</span><select data-message-default>${templates.map((template, index) => `<option value="${index}" ${index === defaultIndex ? "selected" : ""}>${escapeHtml(template.label)}</option>`).join("")}</select></label><label class="field"><span>Limite diário de referência</span><input data-message-daily-limit type="number" min="0" max="1000" step="1" value="${Math.max(0, Number(state.settings.whatsapp_daily_limit) || 0)}" /></label></div><label class="check-field"><input data-message-randomize type="checkbox" ${state.settings.whatsapp_randomize_templates ? "checked" : ""} /><span>Escolher aleatoriamente um modelo configurado ao abrir o WhatsApp</span></label><div class="modal-actions"><span class="spacer"></span><button class="button primary" type="submit">Salvar mensagens</button></div></form></section><section class="panel settings-help"><div class="panel-head"><div><h2>Como usar</h2><span>Fluxo manual e responsável</span></div></div><p>Ao clicar em WhatsApp no card, o modelo padrão — ou um dos modelos sorteado se a opção estiver ativada — será personalizado com os dados do lead e aberto no WhatsApp oficial. O CRM registra o lead como <b>Contatado</b>, mas nunca envia a mensagem sozinho.</p><p>Use modelos claros, identifique sua empresa e interrompa o contato quando a pessoa pedir. O limite diário é apenas um indicador de organização, não um mecanismo de disparo.</p></section></div>`;
+  const usageToday = whatsappTemplateUsageToday();
+  const templateRows = templates.map((template, index) => `<div class="message-template-row" data-template-row><div class="message-template-row-head"><label class="field"><span>Nome do modelo ${index + 1}</span><input data-message-template-label maxlength="80" value="${escapeHtml(template.label)}" placeholder="Ex.: Apresentação inicial" /></label><button type="button" class="icon-button message-template-remove" data-action="remove-message-template" data-index="${index}" aria-label="Remover modelo" title="Remover modelo">×</button></div><label class="field"><span>Mensagem</span><textarea data-message-template-body maxlength="800" rows="3" placeholder="Use {{nome}}, {{empresa}}, {{cidade}} e {{remetente}}.">${escapeHtml(template.body)}</textarea></label><div class="template-limit-grid"><label class="field"><span>Limite diário (0 = sem limite)</span><input data-message-template-limit type="number" min="0" max="1000" step="1" value="${whatsappTemplateLimit(index)}" /></label><div class="template-usage-note">Usados hoje: <b>${Number(usageToday[String(index)] || 0)}</b></div></div></div>`).join("");
+  $("#view-settings").innerHTML = `${pageHead("CONFIGURAÇÕES", "Mensagens do WhatsApp", "Escolha e edite modelos para abrir no WhatsApp. O envio continua sendo manual, em uma nova aba.", `<span class="date-chip">${templates.length} modelos</span>`)}<div class="settings-layout"><section class="panel"><div class="panel-head"><div><h2>Biblioteca de mensagens</h2><span>Personalize os textos sem automatizar o envio</span></div><button type="button" class="button ghost" data-action="add-message-template">+ Novo modelo</button></div><form id="message-settings-form" class="form-stack"><div class="settings-callout"><b>Campos disponíveis</b><span><code>{{nome}}</code> primeiro nome · <code>{{empresa}}</code> empresa · <code>{{cidade}}</code> cidade · <code>{{remetente}}</code> seu nome</span></div><div class="message-template-list">${templateRows}</div><div class="form-grid"><label class="field"><span>Modelo padrão ao clicar em WhatsApp</span><select data-message-default>${templates.map((template, index) => `<option value="${index}" ${index === defaultIndex ? "selected" : ""}>${escapeHtml(template.label)}</option>`).join("")}</select></label><label class="field"><span>Limite diário de referência</span><input data-message-daily-limit type="number" min="0" max="1000" step="1" value="${Math.max(0, Number(state.settings.whatsapp_daily_limit) || 0)}" /></label></div><label class="check-field"><input data-message-randomize type="checkbox" ${state.settings.whatsapp_randomize_templates ? "checked" : ""} /><span>Escolher aleatoriamente um modelo configurado ao abrir o WhatsApp</span></label><div class="modal-actions"><span class="spacer"></span><button class="button primary" type="submit">Salvar mensagens</button></div></form></section><section class="panel settings-help"><div class="panel-head"><div><h2>Como usar</h2><span>Fluxo manual e responsável</span></div></div><p>Ao clicar em WhatsApp no card, o modelo padrão — ou um dos modelos sorteado se a opção estiver ativada — será personalizado com os dados do lead e aberto no WhatsApp oficial. O CRM registra o lead como <b>Contatado</b>, mas nunca envia a mensagem sozinho.</p><p>Use modelos claros, identifique sua empresa e interrompa o contato quando a pessoa pedir. O limite por modelo é diário, reinicia automaticamente e serve apenas para organização manual; 0 significa sem limite.</p></section></div>`;
   $("#message-settings-form").addEventListener("submit", saveMessageSettings);
 }
 
@@ -1972,7 +2008,8 @@ async function saveMessageSettings(event) {
   submit.disabled = true;
   try {
     const defaultIndex = Math.min(Math.max(0, Number($('[data-message-default]')?.value) || 0), templates.length - 1);
-    const payload = { whatsapp_templates: templates, whatsapp_default_template: defaultIndex, whatsapp_randomize_templates: Boolean($('[data-message-randomize]')?.checked), whatsapp_daily_limit: Math.min(1000, Math.max(0, Number($('[data-message-daily-limit]')?.value) || 0)) };
+    const limits = Object.fromEntries([...document.querySelectorAll('[data-message-template-limit]')].map((input, index) => [String(index), Math.min(1000, Math.max(0, Number(input.value) || 0))]));
+    const payload = { whatsapp_templates: templates, whatsapp_default_template: defaultIndex, whatsapp_randomize_templates: Boolean($('[data-message-randomize]')?.checked), whatsapp_template_limits: limits, whatsapp_daily_limit: Math.min(1000, Math.max(0, Number($('[data-message-daily-limit]')?.value) || 0)) };
     state.settings = { ...state.settings, ...(await store.saveSettings(state.month, payload)), ...payload, whatsapp_templates: normalizeWhatsAppTemplates(payload.whatsapp_templates) };
     renderSettings();
     toast('Biblioteca de mensagens salva.');

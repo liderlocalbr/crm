@@ -20,6 +20,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   whatsapp_templates: DEFAULT_WHATSAPP_TEMPLATES,
   whatsapp_default_template: 0,
   whatsapp_randomize_templates: false,
+  whatsapp_template_limits: {},
+  whatsapp_template_usage: {},
   whatsapp_daily_limit: 150,
 });
 

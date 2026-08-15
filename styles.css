@@ -308,6 +308,9 @@ button { color: inherit; }
 .message-template-row { padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.018); }
 .message-template-row-head { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: end; }
 .message-template-row textarea { min-height: 72px; resize: vertical; }
+.template-limit-grid { display: grid; grid-template-columns: minmax(180px, 240px) minmax(0, 1fr); gap: 12px; align-items: end; margin-top: 4px; }
+.template-usage-note { align-self: center; color: var(--muted); font-size: 11px; padding-bottom: 8px; }
+.template-usage-note b { color: var(--mint); }
 .message-template-remove { color: var(--muted); align-self: end; margin-bottom: 2px; }
 .message-template-remove:hover { color: var(--red); border-color: rgba(243,109,117,.5); }
 .settings-callout { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; padding: 10px 12px; border: 1px solid rgba(43,220,175,.18); border-radius: 9px; background: rgba(43,220,175,.05); color: var(--muted); font-size: 11px; }
@@ -494,6 +497,7 @@ button { color: inherit; }
   .head-actions, .filters { width: 100%; }
   .filters > * { flex: 1; }
   .goals-layout, .settings-layout { grid-template-columns: 1fr; }
+  .template-limit-grid { grid-template-columns: 1fr; }
   .stage-editor { grid-template-columns: 26px 30px 34px minmax(0,1fr) auto 30px; gap: 6px; }
   .stage-lead-count { display: none; }
 }
