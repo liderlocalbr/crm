@@ -366,6 +366,9 @@ button { color: inherit; }
 .lead-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 7px; min-width: 0; margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--line); overflow: hidden; }
 .lead-card-footer > .whatsapp-button, .lead-card-footer > .lead-activity-quick { width: auto; min-width: 0; flex: 1 1 0; margin-top: 0; overflow: hidden; text-overflow: ellipsis; }
 .lead-card-footer > .whatsapp-button { padding-left: 7px; padding-right: 7px; }
+.lead-card-footer > .whatsapp-button.icon-only { width: 34px; height: 34px; flex: 0 0 34px; padding: 0; display: inline-grid; place-items: center; }
+.whatsapp-button.icon-only svg { width: 19px; height: 19px; fill: currentColor; }
+.whatsapp-button.icon-only:focus-visible { outline: 2px solid #25d366; outline-offset: 2px; }
 .lead-card-footer > .lead-activity-quick { max-width: 92px; }
 .contact-check-label { display: inline-flex; align-items: center; gap: 5px; min-width: 0; flex: 0 1 auto; color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .contact-check-label .lead-contact-toggle { flex: 0 0 auto; }
