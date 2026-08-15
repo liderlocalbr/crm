@@ -1,3 +1,14 @@
+export const DEFAULT_WHATSAPP_TEMPLATES = Object.freeze([
+  { label: "Apresentação inicial", body: "Olá, {{nome}}! Tudo bem? Aqui é {{remetente}}, da Agência Líder Local. Posso falar com você sobre uma oportunidade para {{empresa}}?" },
+  { label: "Mensagem objetiva", body: "Oi, {{nome}}! Tudo certo? Sou {{remetente}}, da Agência Líder Local. Gostaria de apresentar uma ideia para a {{empresa}}." },
+  { label: "Contato comercial", body: "Bom dia, {{nome}}! Aqui é {{remetente}}. Estou entrando em contato porque acredito que podemos ajudar a {{empresa}} a fortalecer sua presença digital." },
+  { label: "Primeiro contato", body: "Opa, {{nome}}! Tudo bem por aí? Meu nome é {{remetente}} e trabalho com soluções digitais para empresas como a {{empresa}}." },
+  { label: "Convite para conversa", body: "Olá, {{nome}}! Sou {{remetente}}, da Agência Líder Local. Posso te explicar rapidamente como ajudamos empresas a gerar mais oportunidades?" },
+  { label: "Abordagem consultiva", body: "Oi, {{nome}}! Tudo bem? Estou conhecendo melhor a {{empresa}} e identifiquei alguns pontos que talvez possamos melhorar juntos. Posso compartilhar?" },
+  { label: "Apresentação da agência", body: "Bom dia, {{nome}}! Aqui é {{remetente}}, da Agência Líder Local. Trabalhamos com presença local e aquisição de clientes para negócios da região." },
+  { label: "Mensagem cordial", body: "Olá, {{nome}}! Tudo certo? Gostaria de me apresentar: sou {{remetente}} e posso mostrar uma solução pensada para a {{empresa}}." },
+]);
+
 export const DEFAULT_SETTINGS = Object.freeze({
   deal_value: 3000,
   leads_goal: 1650,
@@ -6,7 +17,30 @@ export const DEFAULT_SETTINGS = Object.freeze({
   scheduled_to_completed: 40,
   completed_to_negotiation: 70,
   negotiation_to_sale: 35,
+  whatsapp_templates: DEFAULT_WHATSAPP_TEMPLATES,
+  whatsapp_default_template: 0,
+  whatsapp_daily_limit: 150,
 });
+
+export function normalizeWhatsAppTemplates(value) {
+  if (!Array.isArray(value)) return DEFAULT_WHATSAPP_TEMPLATES.map((item) => ({ ...item }));
+  const templates = value.map((item, index) => ({
+    label: String(item?.label || `Mensagem ${index + 1}`).trim().slice(0, 80),
+    body: String(item?.body || "").trim().slice(0, 800),
+  })).filter((item) => item.body);
+  return templates.length ? templates : DEFAULT_WHATSAPP_TEMPLATES.map((item) => ({ ...item }));
+}
+
+export function renderWhatsAppMessage(template, lead = {}, sender = "Agência Líder Local") {
+  const firstName = String(lead.name || "").trim().split(/\s+/)[0] || "tudo bem";
+  const values = {
+    nome: firstName,
+    empresa: String(lead.company_name || lead.clinic_name || lead.name || "sua empresa").trim(),
+    cidade: String(lead.city || "").trim(),
+    remetente: String(sender || "Agência Líder Local").trim(),
+  };
+  return String(template || "").replace(/\{\{\s*(nome|empresa|cidade|remetente)\s*\}\}/gi, (_, key) => values[key.toLowerCase()] || "").replace(/\s{2,}/g, " ").trim();
+}
 
 const safeNumber = (value) => {
   const number = Number(value);
