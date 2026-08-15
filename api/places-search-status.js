@@ -163,7 +163,8 @@ export default async function handler(req, res) {
     }
 
     if (statusPayload.status === "faulted" || statusPayload.status === "failed") {
-      res.status(200).json({ status: "error", message: "A Oxylabs não conseguiu concluir essa busca. Tente de novo." });
+      console.log("oxylabs_job_faulted", jobId, safeStringify({ status: statusPayload.status, message: statusPayload.message, error: statusPayload.error, details: statusPayload.details }, 1200));
+      res.status(200).json({ status: "error", message: statusPayload.message || "A Oxylabs não conseguiu concluir essa busca. Tente de novo." });
       return;
     }
     if (statusPayload.status !== "done") {

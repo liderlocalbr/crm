@@ -76,13 +76,11 @@ export default async function handler(req, res) {
         Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`,
       },
       body: JSON.stringify({
-        source: "google_maps",
-        query,
+        // Formato documentado pela Oxylabs para recuperar HTML de uma URL do Maps.
+        source: "google",
+        url: `https://www.google.com/maps/search/${encodeURIComponent(query)}?hl=pt-BR`,
         geo_location: geoLocation,
-        locale: "pt-BR",
         render: "html",
-        pages: 1,
-        limit: 50,
       }),
     });
     const payload = await submitResponse.json().catch(() => null);
@@ -91,7 +89,7 @@ export default async function handler(req, res) {
       res.status(submitResponse.status || 502).json({ message: payload?.message || payload?.status || "Não foi possível iniciar a busca na Oxylabs." });
       return;
     }
-    console.log("oxylabs_job_submitted", payload.id, keyword, locality, "→", query, "geo:", geoLocation);
+    console.log("oxylabs_job_submitted", payload.id, keyword, locality, "→", query, "geo:", geoLocation, "source: google maps url");
     res.status(200).json({ jobId: payload.id });
   } catch (error) {
     console.log("oxylabs_submit_exception", error.message);
