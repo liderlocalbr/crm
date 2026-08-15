@@ -56,6 +56,7 @@ export default async function handler(req, res) {
       res.status(submitResponse.status || 502).json({ message: payload?.message || payload?.status || "Não foi possível iniciar a busca na Oxylabs." });
       return;
     }
+    console.log("oxylabs_job_submitted", payload.id, keyword, locality);
     res.status(200).json({ jobId: payload.id });
   } catch (error) {
     res.status(502).json({ message: "Não foi possível se conectar à Oxylabs agora." });
