@@ -574,7 +574,6 @@ async function reloadPeriod() {
   renderDashboard();
   renderMetrics();
   renderGoals();
-  updateDashboardWidgets();
 }
 
 async function logout() {
@@ -664,7 +663,6 @@ function renderDashboard() {
         ${upcomingActivities(4)}
       </section>
     </div>`;
-  updateDashboardWidgets();
 }
 
 function kpi(label, value, goal, icon, percentage, currency = false) {
@@ -1210,7 +1208,6 @@ async function saveGoals(event) {
   try {
     state.settings = await store.saveSettings(state.month, settings);
     renderDashboard(); renderMetrics(); renderGoals();
-    updateDashboardWidgets();
     toast("Metas do mês atualizadas. Todo o funil foi recalculado.");
   } catch (error) { toast(error.message, "error"); }
 }
