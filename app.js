@@ -743,10 +743,26 @@ function renderLeads() {
     }).join("")}</div>`;
 }
 
+async function toggleLeadContact(leadId) {
+  const lead = state.leads.find((item) => item.id === leadId);
+  if (!lead) return;
+  const contactedAt = lead.contacted_at ? null : new Date().toISOString();
+  try {
+    const saved = await store.saveLead({ id: lead.id, contacted_at: contactedAt });
+    Object.assign(lead, saved || { contacted_at: contactedAt });
+    renderLeads();
+    toast(contactedAt ? `${lead.name} marcado como “Em contato”.` : `${lead.name} removido de “Em contato”.`);
+  } catch (error) {
+    toast(error.message || "Não foi possível atualizar o contato.", "error");
+  }
+}
+
 function leadCard(lead) {
   const overdue = lead.next_follow_up && lead.next_follow_up < todayIso();
   const whatsappAction = lead.whatsapp ? `<button type="button" draggable="false" class="whatsapp-button" data-action="open-whatsapp" data-id="${lead.id}" aria-label="Abrir conversa com ${escapeHtml(lead.name)} no WhatsApp Web"><span aria-hidden="true">◉</span> Abrir WhatsApp</button>` : "";
-  return `<article class="lead-card" draggable="true" data-action="edit-lead" data-id="${lead.id}" title="Arraste para mudar de etapa ou clique para editar"><div class="lead-card-top"><div><h3>${escapeHtml(lead.name)}</h3><p>${escapeHtml(lead.clinic_name || lead.specialty || "Sem clínica informada")}</p></div><span class="lead-card-value">${formatCurrency(lead.deal_value || state.settings.deal_value)}</span></div><div class="lead-meta"><span>${escapeHtml(lead.source || "Sem origem")}</span><span class="lead-follow-up ${overdue ? "overdue" : ""}">${lead.next_follow_up ? `Follow-up ${formatDate(lead.next_follow_up)}` : "Sem follow-up"}</span></div>${whatsappAction}</article>`;
+  const contactTag = lead.contacted_at ? `<span class="contacted-tag">Em contato</span>` : "";
+  const contactCheck = `<button type="button" draggable="false" class="lead-contact-toggle ${lead.contacted_at ? "checked" : ""}" data-action="toggle-lead-contact" data-id="${lead.id}" aria-pressed="${lead.contacted_at ? "true" : "false"}" aria-label="${lead.contacted_at ? "Desmarcar contato" : "Marcar como em contato"}">${lead.contacted_at ? "✓" : ""}</button>`;
+  return `<article class="lead-card ${lead.contacted_at ? "lead-contacted" : ""}" draggable="true" data-action="edit-lead" data-id="${lead.id}" title="Arraste para mudar de etapa ou clique para editar"><div class="lead-card-top"><div><h3>${escapeHtml(lead.name)}</h3><div class="lead-card-subtitle"><p>${escapeHtml(lead.clinic_name || lead.specialty || "Sem clínica informada")}</p>${contactTag}</div></div><span class="lead-card-value">${formatCurrency(lead.deal_value || state.settings.deal_value)}</span></div><div class="lead-meta"><span>${escapeHtml(lead.source || "Sem origem")}</span><span class="lead-follow-up ${overdue ? "overdue" : ""}">${lead.next_follow_up ? `Follow-up ${formatDate(lead.next_follow_up)}` : "Sem follow-up"}</span></div><div class="lead-card-footer">${whatsappAction}<span class="contact-check-label">${contactCheck} ${lead.contacted_at ? "Mensagem enviada" : "Marcar contato"}</span></div></article>`;
 }
 
 function openLeadWhatsApp(leadId) {
@@ -1069,7 +1085,7 @@ function savedSearchesMarkup() {
   return `<div class="saved-searches-list">${state.mapsSavedSearches.map((search) => `<article class="saved-search-card">
     <div class="saved-search-main"><div class="saved-search-title-row"><h3>${escapeHtml(search.name)}</h3><span class="saved-search-count">${Number(search.result_count || 0)} empresas</span></div>
       <p class="saved-search-query"><b>${escapeHtml(search.keyword)}</b> · ${escapeHtml(search.locality)}</p>
-      <div class="saved-search-meta"><span>${search.is_complete ? "Pesquisa completa" : "Pesquisa com mais resultados disponíveis"}</span><span>Filtro: ${{ all: "Todas", new: "Não prospectadas", prospected: "Já prospectadas", lead: "Já adicionadas como lead" }[search.prospect_filter] || "Todas"}</span>${search.guide_city ? `<span>Guia: ${escapeHtml(search.guide_city)}</span>` : ""}<span>Atualizada ${formatDate(search.updated_at, { day: "2-digit", month: "short", year: "numeric" })}</span></div>
+      <div class="saved-search-meta"><span>${search.is_complete ? "Pesquisa completa" : "Pesquisa com mais resultados disponíveis"}</span><span>Filtro: ${{ all: "Todas", new: "Não salvas", prospected: "Já salvas", lead: "Já adicionadas como lead" }[search.prospect_filter] || "Todas"}</span>${search.guide_city ? `<span>Guia: ${escapeHtml(search.guide_city)}</span>` : ""}<span>Atualizada ${formatDate(search.updated_at, { day: "2-digit", month: "short", year: "numeric" })}</span></div>
     </div><div class="saved-search-actions"><button class="button primary small" type="button" data-action="open-saved-search" data-id="${escapeHtml(search.id)}">Abrir pesquisa</button><button class="button ghost small" type="button" data-action="delete-saved-search" data-id="${escapeHtml(search.id)}">Excluir</button></div>
   </article>`).join("")}</div>`;
 }
@@ -1241,7 +1257,7 @@ function bindCityGuide() {
 
 function prospectStatusMeta(status) {
   return ({
-    prospected: { label: "Prospectada", className: "prospected" },
+    prospected: { label: "Salva", className: "prospected" },
     contacted: { label: "Em contato", className: "contacted" },
     converted: { label: "Convertida", className: "converted" },
     discarded: { label: "Descartada", className: "discarded" },
@@ -1274,7 +1290,7 @@ function mapsSelectionToolbar(places) {
 
 function mapsResultActions(place, reference, lead) {
   const action = lead ? `<button class="button ghost small" type="button" data-action="edit-lead" data-id="${escapeHtml(lead.id)}">Abrir lead</button>` : `<button class="button primary small" type="button" data-action="register-place-prospect" data-place-id="${escapeHtml(place.id)}">${reference ? "Atualizar prospecção" : "Registrar prospecção"}</button>`;
-  return `${place.mapsUrl ? `<a class="button ghost small" href="${escapeHtml(place.mapsUrl)}" target="_blank" rel="noopener">Ver no Maps ↗</a>` : ""}${reference ? `<select class="compact-select prospect-status-select" data-place-id="${escapeHtml(place.id)}" aria-label="Status da prospecção"><option value="prospected" ${reference.status === "prospected" ? "selected" : ""}>Prospectada</option><option value="contacted" ${reference.status === "contacted" ? "selected" : ""}>Em contato</option><option value="converted" ${reference.status === "converted" ? "selected" : ""}>Convertida</option><option value="discarded" ${reference.status === "discarded" ? "selected" : ""}>Descartada</option></select>` : ""}${action}${lead ? "" : `<button class="button primary small" type="button" data-action="add-place-lead" data-place-id="${escapeHtml(place.id)}">+ Adicionar como lead</button>`}`;
+  return `${place.mapsUrl ? `<a class="button ghost small" href="${escapeHtml(place.mapsUrl)}" target="_blank" rel="noopener">Ver no Maps ↗</a>` : ""}${reference ? `<select class="compact-select prospect-status-select" data-place-id="${escapeHtml(place.id)}" aria-label="Status da prospecção"><option value="prospected" ${reference.status === "prospected" ? "selected" : ""}>Salva</option><option value="contacted" ${reference.status === "contacted" ? "selected" : ""}>Em contato</option><option value="converted" ${reference.status === "converted" ? "selected" : ""}>Convertida</option><option value="discarded" ${reference.status === "discarded" ? "selected" : ""}>Descartada</option></select>` : ""}${action}${lead ? "" : `<button class="button primary small" type="button" data-action="add-place-lead" data-place-id="${escapeHtml(place.id)}">+ Adicionar como lead</button>`}`;
 }
 
 function placeSelectionMarkup(place) {
@@ -1290,7 +1306,7 @@ function mapsResultsMarkup() {
   if (!state.mapsSearched) return emptyState("⌖", "Busque por leads no Maps", "Digite uma palavra-chave (ex.: dentista) e uma cidade para encontrar clínicas e profissionais.", "");
   if (!state.mapsResults.length) return emptyState("⌖", "Nada encontrado", "Tente outra palavra-chave ou cidade.", "");
   const places = filteredMapsResults();
-  const filter = `<div class="maps-results-toolbar"><div><b>${state.mapsResults.length} empresa(s) encontrada(s)</b>${state.mapsResults.length < 150 && state.mapsHasMore ? " · ainda há mais resultados" : ""}</div><div class="maps-results-toolbar-actions"><select id="maps-prospect-filter" class="compact-select"><option value="all" ${state.mapsProspectFilter === "all" ? "selected" : ""}>Todas</option><option value="new" ${state.mapsProspectFilter === "new" ? "selected" : ""}>Não prospectadas</option><option value="prospected" ${state.mapsProspectFilter === "prospected" ? "selected" : ""}>Já prospectadas</option><option value="lead" ${state.mapsProspectFilter === "lead" ? "selected" : ""}>Já adicionadas como lead</option></select><button class="button ghost small" type="button" data-action="save-maps-search">Salvar pesquisa</button><div class="maps-view-toggle"><button class="${state.mapsViewMode === "cards" ? "active" : ""}" type="button" data-action="maps-view-cards">Cards</button><button class="${state.mapsViewMode === "list" ? "active" : ""}" type="button" data-action="maps-view-list">Lista</button></div></div></div>`;
+  const filter = `<div class="maps-results-toolbar"><div><b>${state.mapsResults.length} empresa(s) encontrada(s)</b>${state.mapsResults.length < 150 && state.mapsHasMore ? " · ainda há mais resultados" : ""}</div><div class="maps-results-toolbar-actions"><select id="maps-prospect-filter" class="compact-select"><option value="all" ${state.mapsProspectFilter === "all" ? "selected" : ""}>Todas</option><option value="new" ${state.mapsProspectFilter === "new" ? "selected" : ""}>Não salvas</option><option value="prospected" ${state.mapsProspectFilter === "prospected" ? "selected" : ""}>Já salvas</option><option value="lead" ${state.mapsProspectFilter === "lead" ? "selected" : ""}>Já adicionadas como lead</option></select><button class="button ghost small" type="button" data-action="save-maps-search">Salvar pesquisa</button><div class="maps-view-toggle"><button class="${state.mapsViewMode === "cards" ? "active" : ""}" type="button" data-action="maps-view-cards">Cards</button><button class="${state.mapsViewMode === "list" ? "active" : ""}" type="button" data-action="maps-view-list">Lista</button></div></div></div>`;
   const more = state.mapsHasMore && state.mapsResults.length < 150 ? `<button class="button ghost maps-load-more" type="button" data-action="load-more-places">Buscar mais 20 (${state.mapsResults.length}/150)</button>` : "";
   const content = places.length ? (state.mapsViewMode === "list" ? `<div class="maps-results-list">${places.map(mapsResultListRow).join("")}</div>` : `<div class="maps-results">${places.map(mapsResultCard).join("")}</div>`) : emptyState("⌖", "Nenhuma empresa neste filtro", "Altere o filtro para visualizar os demais resultados.", "");
   return `${filter}${mapsSelectionToolbar(places)}${content}${more}`;
@@ -1612,7 +1628,7 @@ async function registerPlaceProspect(placeId) {
     const notes = window.prompt("Observação da prospecção (opcional):", "") || null;
     await savePlaceReference(place, { status: "prospected", notes });
     renderMapsSearch();
-    toast(`${place.name} registrada como prospectada.`);
+    toast(`${place.name} registrada como salva.`);
   } catch (error) {
     toast(error.message || "Não foi possível registrar a prospecção.", "error");
   }
@@ -1754,6 +1770,7 @@ async function handleMainClick(event) {
   if (action.dataset.action === "open-lead") openLeadDialog();
   if (action.dataset.action === "edit-lead") openLeadDialog(state.leads.find((lead) => lead.id === action.dataset.id));
   if (action.dataset.action === "open-whatsapp") openLeadWhatsApp(action.dataset.id);
+  if (action.dataset.action === "toggle-lead-contact") await toggleLeadContact(action.dataset.id);
   if (action.dataset.action === "open-activity") openActivityDialog();
   if (action.dataset.action === "manage-stages") openStageDialog();
   if (action.dataset.action === "connect-google-calendar") connectGoogleCalendar();
