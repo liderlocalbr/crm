@@ -1082,16 +1082,24 @@ async function handleMapsSearch(event) {
   try {
     if (isLocalDemo) throw new Error("A busca no Maps não está disponível no modo demonstração.");
     const params = new URLSearchParams({ keyword, locality });
-    const response = await fetch(`/api/places-search?${params}`, {
-      headers: { Authorization: `Bearer ${state.session.access_token}` },
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    let response;
+    try {
+      response = await fetch(`/api/places-search?${params}`, {
+        headers: { Authorization: `Bearer ${state.session.access_token}` },
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
     const payload = await response.json().catch(() => null);
     if (!response.ok) throw new Error(payload?.message || "Não foi possível buscar no Google Maps.");
     state.mapsResults = payload.places || [];
     state.mapsSearched = true;
     await rest("place_search_usage", { method: "POST", body: { owner_id: state.user.id, keyword, locality } });
   } catch (error) {
-    state.mapsError = error.message;
+    state.mapsError = error.name === "AbortError" ? "A busca demorou demais e foi cancelada. Tente novamente." : error.message;
   } finally {
     state.mapsLoading = false;
     renderMapsSearch();
