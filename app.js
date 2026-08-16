@@ -617,6 +617,7 @@ function setupStaticEvents() {
   $(".main-content").addEventListener("click", handleMainClick);
   $(".main-content").addEventListener("change", handleMainChange);
   $(".main-content").addEventListener("input", handleMainInput);
+  $(".main-content").addEventListener("focusin", handleMainFocus);
   $(".main-content").addEventListener("dragstart", handleLeadDragStart);
   $(".main-content").addEventListener("dragover", handleLeadDragOver);
   $(".main-content").addEventListener("dragleave", handleLeadDragLeave);
@@ -2435,6 +2436,10 @@ async function handleMainChange(event) {
     row.querySelector(".save-row").classList.add("changed");
     if (event.target.dataset.field === "sales") row.querySelector("[data-revenue]").textContent = formatCurrency(Number(event.target.value) * state.settings.deal_value);
   }
+}
+
+function handleMainFocus(event) {
+  if (event.target.classList.contains("metric-input")) event.target.select();
 }
 
 function handleMainInput(event) {
