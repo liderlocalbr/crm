@@ -1019,3 +1019,66 @@ body.booting::before { color: #a6b8b8; font-size: 12px; }
   .dashboard-grid > .panel { min-height: auto; }
   .kanban-column::before { border-radius: 10px 10px 0 0; }
 }
+
+
+/* Maps results — cards and list alignment */
+.maps-results { grid-template-columns: repeat(auto-fill, minmax(285px, 1fr)); gap: 12px; align-items: stretch; }
+.maps-result-card { display: flex; flex-direction: column; min-height: 230px; padding: 14px; overflow: hidden; }
+.maps-result-card .maps-place-selector { top: 13px; left: 13px; }
+.maps-place-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; min-height: 47px; margin-left: 27px; }
+.maps-place-identity { min-width: 0; width: 100%; }
+.maps-place-title-line { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; min-width: 0; }
+.maps-place-title-line h3 { min-width: 0; margin: 0; color: #eff7f3; font-size: 13px; line-height: 1.28; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.maps-rating { flex: 0 0 auto; color: #ffd36b; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.maps-rating small { color: #a6956d; font-size: 9px; font-weight: 600; }
+.maps-status-line { margin-top: 7px; }
+.maps-place-details { display: grid; gap: 6px; margin: 14px 0 0 27px; padding: 11px 0 2px; border-top: 1px solid rgba(118,148,151,.15); }
+.maps-place-detail { display: grid; grid-template-columns: 17px minmax(0,1fr); align-items: start; gap: 6px; color: #b8c8c5; font-size: 11px; line-height: 1.35; }
+.maps-detail-icon { color: var(--green); font-weight: 800; text-align: center; }
+.maps-place-detail span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.maps-result-card .maps-result-actions { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 6px; align-items: stretch; margin: auto 0 0 27px; padding-top: 13px; }
+.maps-result-card .maps-result-actions > * { width: 100%; min-width: 0; justify-content: center; }
+.maps-result-card .maps-result-actions .prospect-status-select { grid-column: 1 / -1; }
+.maps-result-card .maps-result-actions > :only-child { grid-column: 1 / -1; }
+.maps-result-card .maps-result-actions .button { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.maps-result-card.prospect-state-prospected { border-left: 3px solid #f36d75; }
+.maps-result-card.prospect-state-contacted { border-left: 3px solid #66a7ff; }
+.maps-result-card.prospect-state-converted { border-left: 3px solid #b58cff; }
+.maps-result-card.prospect-state-discarded { border-left: 3px solid #f36d75; opacity: .82; }
+.maps-result-card.maps-in-funnel { box-shadow: inset 4px 0 0 #ffc557, 0 8px 22px rgba(0,0,0,.16); }
+
+.maps-results-list { gap: 8px; }
+.maps-result-row { grid-template-columns: 28px minmax(220px, 1.45fr) minmax(150px, .85fr) minmax(130px, .75fr) minmax(250px, 1.25fr); min-height: 72px; padding: 10px 12px; }
+.maps-result-row .maps-place-selector { align-self: center; }
+.maps-list-main { gap: 5px; }
+.maps-list-title-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.maps-list-main b { color: #eef6f2; font-size: 12px; }
+.maps-list-main .maps-address { color: #8ea4a4; font-size: 10px; }
+.maps-list-contact { gap: 5px; }
+.maps-list-contact span { font-size: 10px; }
+.maps-list-contact .maps-contact-value { color: #c4d3cf; font-weight: 700; }
+.maps-list-status { min-width: 0; justify-content: flex-start; }
+.maps-list-actions { min-width: 0; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 5px; }
+.maps-list-actions > * { min-width: 0; width: 100%; justify-content: center; }
+.maps-list-actions .prospect-status-select { grid-column: 1 / -1; }
+.maps-list-actions > :only-child { grid-column: 1 / -1; }
+.maps-result-row .funnel-badge, .maps-result-row .prospect-badge { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+@media (max-width: 1180px) {
+  .maps-result-row { grid-template-columns: 28px minmax(190px, 1.25fr) minmax(125px, .8fr) minmax(120px, .7fr) minmax(210px, 1.1fr); }
+}
+@media (max-width: 760px) {
+  .maps-results { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+  .maps-result-row { grid-template-columns: 25px minmax(0,1fr) auto; padding: 10px; }
+  .maps-result-row .maps-list-contact, .maps-result-row .maps-list-status, .maps-result-row .maps-list-actions { grid-column: 2 / -1; }
+  .maps-result-row .maps-list-status { justify-content: flex-start; }
+  .maps-result-row .maps-list-actions { display: flex; flex-wrap: wrap; justify-content: flex-start; }
+  .maps-result-row .maps-list-actions > * { width: auto; flex: 1 1 140px; }
+  .maps-result-row .maps-list-actions .prospect-status-select { flex-basis: 100%; }
+}
+@media (max-width: 480px) {
+  .maps-results { grid-template-columns: 1fr; }
+  .maps-result-card { min-height: 0; }
+  .maps-result-card .maps-result-actions { grid-template-columns: 1fr; }
+  .maps-result-card .maps-result-actions .prospect-status-select { grid-column: auto; }
+}
