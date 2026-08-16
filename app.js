@@ -558,6 +558,9 @@ function setupStaticEvents() {
   $$(".activity-close").forEach((button) => button.addEventListener("click", () => $("#activity-dialog").close()));
   $$(".stage-close").forEach((button) => button.addEventListener("click", () => $("#stage-dialog").close()));
   $("#lead-form").addEventListener("submit", saveLeadFromDialog);
+  $("#lead-pipeline").addEventListener("change", async (event) => {
+    await updateLeadStagesForPipeline(event.target.value, "");
+  });
   $("#lead-activity-button").addEventListener("click", () => {
     const leadId = $("#lead-id").value;
     $("#lead-dialog").close();
@@ -585,8 +588,28 @@ function setupStaticEvents() {
   $(".main-content").addEventListener("dragend", handleLeadDragEnd);
 }
 
-function populateStageOptions() {
-  $("#lead-stage").innerHTML = state.stages.map((stage) => `<option value="${stage.value}">${escapeHtml(stage.label)}</option>`).join("");
+function populateStageOptions(stages = state.stages, selectedStage = "") {
+  const select = $("#lead-stage");
+  if (!select) return;
+  select.innerHTML = stages.map((stage) => `<option value="${stage.value}">${escapeHtml(stage.label)}</option>`).join("");
+  if (selectedStage && stages.some((stage) => stage.value === selectedStage)) select.value = selectedStage;
+}
+function populateLeadPipelineOptions(selectedPipelineId = state.activePipelineId) {
+  const select = $("#lead-pipeline");
+  if (!select) return;
+  select.innerHTML = state.pipelines.map((pipeline) => `<option value="${pipeline.id}">${escapeHtml(pipeline.name)}</option>`).join("");
+  if (selectedPipelineId && state.pipelines.some((pipeline) => pipeline.id === selectedPipelineId)) select.value = selectedPipelineId;
+}
+async function updateLeadStagesForPipeline(pipelineId, selectedStage = "") {
+  const pipeline = state.pipelines.find((item) => item.id === pipelineId);
+  if (!pipeline) {
+    populateStageOptions([], "");
+    return;
+  }
+  const stages = pipelineId === state.activePipelineId
+    ? state.stages
+    : (await store.getStages(pipelineId)).map((stage) => ({ ...stage, value: stage.stage_key, label: stage.name }));
+  populateStageOptions(stages, selectedStage);
 }
 
 function renderAuthMode() {
@@ -2085,12 +2108,12 @@ async function addPlaceAsLead(placeId) {
   const reference = placeTracking(place);
   const existingLead = state.leads.find((lead) => lead.place_id === place.id) || (reference?.lead_id ? state.leads.find((lead) => lead.id === reference.lead_id) : null);
   if (existingLead) {
-    openLeadDialog(existingLead);
+    await openLeadDialog(existingLead);
     toast("Esta empresa já está cadastrada como lead.");
     return;
   }
   state.mapsPendingLeadPlace = place;
-  openLeadDialog({
+  await openLeadDialog({
     clinic_name: place.name,
     website: place.website || "",
     cnpj: place.cnpj || "",
@@ -2250,8 +2273,8 @@ async function handleMainClick(event) {
   const action = event.target.closest("[data-action]");
   if (!action) return;
   if (suppressLeadClick && action.dataset.action === "edit-lead") return;
-  if (action.dataset.action === "open-lead") openLeadDialog();
-  if (action.dataset.action === "edit-lead") openLeadDialog(state.leads.find((lead) => lead.id === action.dataset.id));
+  if (action.dataset.action === "open-lead") await openLeadDialog();
+  if (action.dataset.action === "edit-lead") await openLeadDialog(state.leads.find((lead) => lead.id === action.dataset.id));
   if (action.dataset.action === "toggle-lead-selection") { toggleLeadSelection(action.dataset.id); return; }
   if (action.dataset.action === "select-stage-leads") { toggleStageLeadSelection(action.dataset.stage); return; }
   if (action.dataset.action === "delete-selected-leads") { await deleteSelectedLeads(action.dataset.stage); return; }
@@ -2341,7 +2364,7 @@ function renderLeadActivitiesPanel(lead) {
   panel.innerHTML = lead ? leadActivitiesMarkup(lead) : "";
 }
 
-function openLeadDialog(lead = null) {
+async function openLeadDialog(lead = null) {
   $("#lead-form").reset();
   $("#lead-id").value = lead?.id || "";
   $("#lead-dialog-title").textContent = lead ? "Editar lead" : "Novo lead";
@@ -2354,7 +2377,9 @@ function openLeadDialog(lead = null) {
   $("#lead-whatsapp").value = lead?.whatsapp || "";
   $("#lead-email").value = lead?.email || "";
   $("#lead-source").value = lead?.source || "Prospecção ativa";
-  $("#lead-stage").value = lead?.stage || "new";
+  const pipelineId = lead?.pipeline_id || state.activePipelineId || state.pipelines[0]?.id || "";
+  populateLeadPipelineOptions(pipelineId);
+  await updateLeadStagesForPipeline(pipelineId, lead?.stage || "");
   $("#lead-value").value = lead?.deal_value ?? state.settings.deal_value;
   $("#lead-follow-up").value = lead?.next_follow_up || "";
   $("#lead-notes").value = lead?.notes || "";
@@ -2374,7 +2399,7 @@ async function saveLeadFromDialog(event) {
     website: $("#lead-website").value.trim() || null, cnpj: $("#lead-cnpj").value.trim() || null,
     ...(state.mapsPendingLeadPlace && !id ? { place_id: state.mapsPendingLeadPlace.id } : {}),
     whatsapp: $("#lead-whatsapp").value.trim() || null,
-    email: $("#lead-email").value.trim() || null, source: $("#lead-source").value, stage: $("#lead-stage").value,
+    email: $("#lead-email").value.trim() || null, source: $("#lead-source").value, pipeline_id: $("#lead-pipeline").value || state.activePipelineId, stage: $("#lead-stage").value,
     deal_value: Number($("#lead-value").value) || null, next_follow_up: $("#lead-follow-up").value || null, notes: $("#lead-notes").value.trim() || null,
   };
   try {
