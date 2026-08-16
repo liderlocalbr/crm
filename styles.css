@@ -1121,3 +1121,9 @@ body.booting::before { color: #a6b8b8; font-size: 12px; }
 /* Compatibilidade visual: a versão atual usa o ícone inline, nunca um botão textual de Maps. */
 .maps-result-card .maps-inline-map-link, .maps-result-row .maps-inline-map-link { flex: 0 0 22px; }
 .warning-ver-no-maps, .legacy-maps-link { display: none !important; }
+
+
+/* Pipeline no celular: colunas um pouco mais largas para melhorar a leitura dos cards */
+@media (max-width: 560px) {
+  .kanban { grid-auto-columns: minmax(320px, 86vw); gap: 12px; }
+}
