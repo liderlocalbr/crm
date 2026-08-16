@@ -738,10 +738,10 @@ async function enterApp() {
 async function loadPipelineContext() {
   const pipelines = await store.getPipelines();
   state.pipelines = pipelines.map((pipeline) => ({ ...pipeline }));
-  const remembered = localStorage.getItem("livonno-active-pipeline");
+  const remembered = localStorage.getItem("lider-local-active-pipeline");
   const active = state.pipelines.find((pipeline) => pipeline.id === remembered) || state.pipelines.find((pipeline) => pipeline.is_default) || state.pipelines[0];
   state.activePipelineId = active?.id || null;
-  if (state.activePipelineId) localStorage.setItem("livonno-active-pipeline", state.activePipelineId);
+  if (state.activePipelineId) localStorage.setItem("lider-local-active-pipeline", state.activePipelineId);
   const stages = state.activePipelineId ? await store.getStages(state.activePipelineId) : [];
   state.stages = stages.map((stage) => ({ ...stage, value: stage.stage_key, label: stage.name }));
 }
@@ -801,7 +801,7 @@ function navigate(view, options = {}) {
 
 function renderAll() {
   if (state.loading) {
-    $$(".view").forEach((view) => { view.innerHTML = `<div class="loading">Sincronizando sua órbita…</div>`; });
+    $$(".view").forEach((view) => { view.innerHTML = `<div class="loading">Carregando seu CRM…</div>`; });
     return;
   }
   renderDashboard();
@@ -849,7 +849,7 @@ function renderDashboard() {
   const maxGoal = Math.max(1, ...allStages.map((item) => item[2]));
   const recentLeads = state.leads.slice(0, 5);
   $("#view-dashboard").innerHTML = `
-    <header class="page-head dashboard-controls"><span class="eyebrow">PAINEL DE ÓRBITA</span><div class="head-actions">
+    <header class="page-head dashboard-controls"><span class="eyebrow">LÍDER LOCAL · CRM COMERCIAL</span><div class="head-actions">
       <div class="filters">${monthInput("dashboard-month")}<select id="dashboard-week" class="compact-select"><option value="all">Todas as semanas</option>${[1,2,3,4,5,6].map((w) => `<option value="${w}" ${state.week === String(w) ? "selected" : ""}>Semana ${w}</option>`).join("")}</select></div>
       <button class="button primary" data-action="open-lead">+ Novo lead</button>
     </div></header>
@@ -910,7 +910,7 @@ function upcomingActivities(limit) {
 async function refreshActivePipeline({ render = true } = {}) {
   const stages = state.activePipelineId ? await store.getStages(state.activePipelineId) : [];
   state.stages = stages.map((stage) => ({ ...stage, value: stage.stage_key, label: stage.name }));
-  if (state.activePipelineId) localStorage.setItem("livonno-active-pipeline", state.activePipelineId);
+  if (state.activePipelineId) localStorage.setItem("lider-local-active-pipeline", state.activePipelineId);
   if (render) { populateStageOptions(); renderLeads(); }
 }
 
@@ -1390,7 +1390,7 @@ function renderMetrics() {
   if (todayIndex > 0) dates.unshift(dates.splice(todayIndex, 1)[0]);
   const total = aggregateMetrics(dates, state.settings.deal_value);
   $("#view-metrics").innerHTML = `
-    ${pageHead("REGISTRO DIÁRIO", "A rotina que alimenta o painel", "Edite os números do dia e acompanhe o fechamento semanal e mensal.", `${monthInput("metrics-month")}<span class="date-chip">Salvamento por linha</span>`)}
+    ${pageHead("REGISTRO DIÁRIO", "", "", `${monthInput("metrics-month")}<span class="date-chip">Salvamento por linha</span>`)}
     <div class="table-wrap"><table class="data-table"><thead><tr><th>Data</th><th>Semana</th><th class="metric-messages-sent">Mensagens Enviadas</th><th>Agendadas</th><th>Realizadas</th><th>Negociação</th><th>Vendas</th><th>Receita</th><th></th></tr></thead><tbody>
       ${dates.map((row) => metricTableRow(row)).join("")}
       <tr class="table-total"><td>TOTAL DO MÊS</td><td></td><td class="metric-messages-sent">${formatNumber(total.leads)}</td><td>${formatNumber(total.meetingsScheduled)}</td><td>${formatNumber(total.meetingsCompleted)}</td><td>${formatNumber(total.negotiations)}</td><td>${formatNumber(total.sales)}</td><td>${formatCurrency(total.revenue)}</td><td></td></tr>
@@ -1642,7 +1642,7 @@ function renderMapsSearch() {
       </section>
       <section class="panel">${mapsResultsMarkup()}</section>`;
   section.innerHTML = `
-    ${pageHead("PROSPECÇÃO", "Buscar leads no Maps", "Encontre clínicas e profissionais por palavra-chave e cidade usando o Google Maps.")}
+    ${pageHead("PROSPECÇÃO", "", "", "")}
     ${mapsSavedTabsMarkup()}
     ${content}`;
   $("#maps-search-form")?.addEventListener("submit", handleMapsSearch);
