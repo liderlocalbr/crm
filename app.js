@@ -2237,6 +2237,13 @@ async function handleLeadDialogClick(event) {
 }
 
 async function handleMainClick(event) {
+  const selection = event.target.closest(".lead-card-select");
+  if (selection) {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleLeadSelection(selection.querySelector("input")?.dataset.id);
+    return;
+  }
   const viewTarget = event.target.closest("[data-view-target]");
   if (viewTarget) return navigate(viewTarget.dataset.viewTarget);
   const action = event.target.closest("[data-action]");
