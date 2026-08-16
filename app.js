@@ -816,7 +816,8 @@ function renderAll() {
 }
 
 function pageHead(eyebrow, title, subtitle, actions = "", inlineStatus = "") {
-  return `<header class="page-head ${inlineStatus ? "dashboard-head" : ""}"><div class="page-title"><span class="eyebrow">${eyebrow}</span><div class="page-title-row"><h1>${title}</h1>${inlineStatus}</div>${subtitle ? `<p>${subtitle}</p>` : ""}</div><div class="head-actions">${actions}</div></header>`;
+  const titleBlock = title || inlineStatus ? `<div class="page-title-row">${title ? `<h1>${title}</h1>` : ""}${inlineStatus}</div>` : "";
+  return `<header class="page-head ${inlineStatus ? "dashboard-head" : ""}"><div class="page-title">${eyebrow ? `<span class="eyebrow">${eyebrow}</span>` : ""}${titleBlock}${subtitle ? `<p>${subtitle}</p>` : ""}</div><div class="head-actions">${actions}</div></header>`;
 }
 
 function monthInput(id, value = state.month) {
