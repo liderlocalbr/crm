@@ -1332,14 +1332,14 @@ function renderMetrics() {
   const total = aggregateMetrics(dates, state.settings.deal_value);
   $("#view-metrics").innerHTML = `
     ${pageHead("REGISTRO DIÁRIO", "A rotina que alimenta o painel", "Edite os números do dia e acompanhe o fechamento semanal e mensal.", `${monthInput("metrics-month")}<span class="date-chip">Salvamento por linha</span>`)}
-    <div class="table-wrap"><table class="data-table"><thead><tr><th>Data</th><th>Semana</th><th>Leads</th><th>Mensagens</th><th>Agendadas</th><th>Realizadas</th><th>Negociação</th><th>Vendas</th><th>Receita</th><th></th></tr></thead><tbody>
+    <div class="table-wrap"><table class="data-table"><thead><tr><th>Data</th><th>Semana</th><th>Mensagens Enviadas</th><th>Agendadas</th><th>Realizadas</th><th>Negociação</th><th>Vendas</th><th>Receita</th><th></th></tr></thead><tbody>
       ${dates.map((row) => metricTableRow(row)).join("")}
-      <tr class="table-total"><td>TOTAL DO MÊS</td><td></td><td>${formatNumber(total.leads)}</td><td>${formatNumber(total.messages)}</td><td>${formatNumber(total.meetingsScheduled)}</td><td>${formatNumber(total.meetingsCompleted)}</td><td>${formatNumber(total.negotiations)}</td><td>${formatNumber(total.sales)}</td><td>${formatCurrency(total.revenue)}</td><td></td></tr>
+      <tr class="table-total"><td>TOTAL DO MÊS</td><td></td><td>${formatNumber(total.leads)}</td><td>${formatNumber(total.meetingsScheduled)}</td><td>${formatNumber(total.meetingsCompleted)}</td><td>${formatNumber(total.negotiations)}</td><td>${formatNumber(total.sales)}</td><td>${formatCurrency(total.revenue)}</td><td></td></tr>
     </tbody></table></div>`;
 }
 
 function metricTableRow(row) {
-  const fields = ["leads", "messages", "meetings_scheduled", "meetings_completed", "negotiations", "sales"];
+  const fields = ["leads", "meetings_scheduled", "meetings_completed", "negotiations", "sales"];
   const weekday = new Date(`${row.metric_date}T12:00:00`).getDay();
   const isWeekend = weekday === 0 || weekday === 6;
   const isToday = row.metric_date === todayIso();
