@@ -2396,7 +2396,8 @@ async function handleMainChange(event) {
     state.mapsBulkPipelineId = event.target.value;
     state.mapsBulkStage = "";
     try {
-      state.mapsBulkStages = state.mapsBulkPipelineId === state.activePipelineId ? state.stages : await store.getStages(state.mapsBulkPipelineId);
+      const rawStages = state.mapsBulkPipelineId === state.activePipelineId ? state.stages : await store.getStages(state.mapsBulkPipelineId);
+      state.mapsBulkStages = rawStages.map((stage, position) => ({ ...stage, value: stage.value || stage.stage_key, label: stage.label || stage.name, position: stage.position ?? position }));
       renderMapsSearch();
     } catch (error) { toast(error.message || "Não foi possível carregar as etapas desse pipeline.", "error"); }
     return;
