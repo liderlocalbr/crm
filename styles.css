@@ -1099,3 +1099,26 @@ body.booting::before { color: #a6b8b8; font-size: 12px; }
 @media (max-width: 760px) {
   .maps-place-name { max-width: calc(100% - 12px); }
 }
+
+
+/* Maps — seleção em massa e ações dos cards: alinhamento final */
+.maps-selection-toolbar .maps-bulk-actions { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(120px, 1fr) auto auto; align-items: stretch; width: min(100%, 760px); }
+.maps-selection-toolbar .maps-bulk-actions .compact-select { width: 100%; min-width: 0; }
+.maps-selection-toolbar .maps-bulk-actions .button { min-width: 0; white-space: nowrap; }
+.maps-result-card .maps-result-actions, .maps-result-row .maps-list-actions { width: auto; }
+.maps-result-card .maps-result-actions .prospect-status-select, .maps-result-row .maps-list-actions .prospect-status-select { grid-column: 1 / -1; justify-self: stretch; align-self: stretch; width: 100%; min-width: 0; margin: 0; box-sizing: border-box; }
+@media (max-width: 860px) {
+  .maps-selection-toolbar { align-items: stretch; flex-direction: column; }
+  .maps-selection-toolbar .maps-bulk-actions { width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .maps-selection-toolbar .maps-bulk-actions .button { width: 100%; }
+}
+@media (max-width: 480px) {
+  .maps-selection-toolbar .maps-bulk-actions { grid-template-columns: 1fr; }
+  .maps-selection-toolbar .maps-bulk-actions .compact-select, .maps-selection-toolbar .maps-bulk-actions .button { grid-column: 1; }
+}
+.maps-place-detail .maps-website-link, .maps-list-contact .maps-website-link { display: inline-block; max-width: 100%; }
+.maps-place-detail .maps-website-link::after, .maps-list-contact .maps-website-link::after { content: " ↗"; opacity: .7; }
+
+/* Compatibilidade visual: a versão atual usa o ícone inline, nunca um botão textual de Maps. */
+.maps-result-card .maps-inline-map-link, .maps-result-row .maps-inline-map-link { flex: 0 0 22px; }
+.warning-ver-no-maps, .legacy-maps-link { display: none !important; }

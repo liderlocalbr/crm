@@ -85,6 +85,9 @@ const state = {
   mapsSavedSearchesLoading: false,
   mapsActiveSavedSearchId: null,
   mapsSelectedPlaceIds: [],
+  mapsBulkPipelineId: null,
+  mapsBulkStage: "",
+  mapsBulkStages: [],
   selectedLeadIds: [],
   mapsViewMode: "cards",
 };
@@ -1727,10 +1730,17 @@ function filteredMapsResults() {
 
 function mapsSelectionToolbar(places) {
   const selectedCount = state.mapsSelectedPlaceIds.filter((id) => state.mapsResults.some((place) => place.id === id)).length;
-  const stageOptions = state.stages.map((stage) => `<option value="${escapeHtml(stage.value)}">${escapeHtml(stage.label)}</option>`).join("");
+  const validPipeline = state.pipelines.find((pipeline) => pipeline.id === state.mapsBulkPipelineId);
+  const pipelineId = validPipeline?.id || state.activePipelineId || state.pipelines[0]?.id || "";
+  if (state.mapsBulkPipelineId !== pipelineId) state.mapsBulkPipelineId = pipelineId;
+  const stages = pipelineId === state.activePipelineId && !state.mapsBulkStages.length ? state.stages : state.mapsBulkStages;
+  const selectedStage = stages.some((stage) => stage.value === state.mapsBulkStage) ? state.mapsBulkStage : stages[0]?.value || "";
+  if (state.mapsBulkStage !== selectedStage) state.mapsBulkStage = selectedStage;
+  const pipelineOptions = state.pipelines.map((pipeline) => `<option value="${escapeHtml(pipeline.id)}" ${pipeline.id === pipelineId ? "selected" : ""}>${escapeHtml(pipeline.name)}</option>`).join("");
+  const stageOptions = stages.map((stage) => `<option value="${escapeHtml(stage.value)}" ${stage.value === selectedStage ? "selected" : ""}>${escapeHtml(stage.label)}</option>`).join("");
   return `<div class="maps-selection-toolbar ${selectedCount ? "has-selection" : ""}">
     <div class="maps-selection-summary"><label class="maps-select-all"><input type="checkbox" id="maps-select-visible" ${places.length && places.every((place) => state.mapsSelectedPlaceIds.includes(place.id)) ? "checked" : ""} /><span></span></label><b>${selectedCount ? `${selectedCount} selecionada(s)` : "Selecione empresas"}</b><button class="text-button" type="button" data-action="select-visible-places">Selecionar resultados visíveis</button></div>
-    ${selectedCount ? `<div class="maps-bulk-actions"><select id="maps-bulk-stage" class="compact-select" aria-label="Etapa do funil">${stageOptions}</select><button class="button primary small" type="button" data-action="add-selected-to-funnel">Adicionar ao funil</button><button class="button ghost small" type="button" data-action="clear-place-selection">Limpar seleção</button></div>` : ""}
+    ${selectedCount ? `<div class="maps-bulk-actions"><select id="maps-bulk-pipeline" class="compact-select" aria-label="Pipeline de destino">${pipelineOptions}</select><select id="maps-bulk-stage" class="compact-select" aria-label="Etapa do funil" ${stages.length ? "" : "disabled"}>${stageOptions}</select><button class="button primary small" type="button" data-action="add-selected-to-funnel" ${stages.length ? "" : "disabled"}>Adicionar ao funil</button><button class="button ghost small" type="button" data-action="clear-place-selection">Limpar seleção</button></div>` : ""}
   </div>`;
 }
 
@@ -2125,18 +2135,23 @@ function selectVisiblePlaces() {
 
 async function addSelectedPlacesToFunnel() {
   const selected = state.mapsResults.filter((place) => state.mapsSelectedPlaceIds.includes(place.id));
-  const stage = $("#maps-bulk-stage")?.value || state.stages[0]?.value || "new";
+  const pipelineId = $("#maps-bulk-pipeline")?.value || state.mapsBulkPipelineId || state.activePipelineId || state.pipelines[0]?.id || "";
+  const pipeline = state.pipelines.find((item) => item.id === pipelineId);
+  const stages = pipelineId === state.activePipelineId && !state.mapsBulkStages.length ? state.stages : state.mapsBulkStages;
+  const stage = $("#maps-bulk-stage")?.value || state.mapsBulkStage || stages[0]?.value || "new";
   if (!selected.length) { toast("Selecione pelo menos uma empresa.", "error"); return; }
+  if (!pipelineId || !pipeline) { toast("Escolha um pipeline de destino.", "error"); return; }
+  if (!stages.some((item) => item.value === stage)) { toast("Escolha uma etapa válida para o pipeline selecionado.", "error"); return; }
   if (!selected.some((place) => !state.leads.some((lead) => lead.place_id === place.id))) { toast("As empresas selecionadas já estão no funil.", "error"); return; }
-  const stageLabel = state.stages.find((item) => item.value === stage)?.label || stage;
-  if (!window.confirm(`Adicionar ${selected.length} empresa(s) ao funil na etapa “${stageLabel}”?`)) return;
+  const stageLabel = stages.find((item) => item.value === stage)?.label || stage;
+  if (!window.confirm(`Adicionar ${selected.length} empresa(s) ao pipeline “${pipeline.name}”, na etapa “${stageLabel}”?`)) return;
   let added = 0;
   let skipped = 0;
   try {
     for (const place of selected) {
       const existing = state.leads.find((lead) => lead.place_id === place.id);
       if (existing) { skipped += 1; continue; }
-      const created = await store.saveLead({ name: place.name, clinic_name: place.name, website: place.website || "", cnpj: place.cnpj || "", stage, source: "Prospecção ativa", whatsapp: place.phone || "", email: "", deal_value: state.settings.deal_value, next_follow_up: null, notes: [place.address, place.mapsUrl].filter(Boolean).join("\\n"), place_id: place.id });
+      const created = await store.saveLead({ name: place.name, clinic_name: place.name, website: place.website || "", cnpj: place.cnpj || "", pipeline_id: pipelineId, stage, source: "Prospecção ativa", whatsapp: place.phone || "", email: "", deal_value: state.settings.deal_value, next_follow_up: null, notes: [place.address, place.mapsUrl].filter(Boolean).join("\\n"), place_id: place.id });
       state.leads.unshift(created);
       await savePlaceReference(place, { status: "prospected", leadId: created.id });
       added += 1;
@@ -2376,6 +2391,18 @@ async function handleMainChange(event) {
   if (event.target.id === "maps-prospect-filter") {
     state.mapsProspectFilter = event.target.value;
     renderMapsSearch();
+  }
+  if (event.target.id === "maps-bulk-pipeline") {
+    state.mapsBulkPipelineId = event.target.value;
+    state.mapsBulkStage = "";
+    try {
+      state.mapsBulkStages = state.mapsBulkPipelineId === state.activePipelineId ? state.stages : await store.getStages(state.mapsBulkPipelineId);
+      renderMapsSearch();
+    } catch (error) { toast(error.message || "Não foi possível carregar as etapas desse pipeline.", "error"); }
+    return;
+  }
+  if (event.target.id === "maps-bulk-stage") {
+    state.mapsBulkStage = event.target.value;
   }
   if (event.target.id === "maps-select-visible") selectVisiblePlaces();
   if (event.target.classList.contains("maps-place-select")) togglePlaceSelection(event.target.dataset.placeId, event.target.checked);
