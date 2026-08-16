@@ -1063,7 +1063,15 @@ async function deleteLeadFromCard(leadId) {
   }
 }
 
+function leadCardTitle(lead) {
+  const fullName = String(lead?.clinic_name || lead?.name || "").trim();
+  const words = fullName.split(/\s+/).filter(Boolean);
+  return words.length > 2 ? `${words.slice(0, 2).join(" ")}...` : fullName;
+}
+
 function leadCard(lead) {
+  const fullCompanyName = String(lead.clinic_name || lead.name || "").trim();
+  const visibleCompanyName = leadCardTitle(lead);
   const overdue = lead.next_follow_up && lead.next_follow_up < todayIso();
   const leadActivities = state.activities.filter((activity) => activity.lead_id === lead.id).sort((a, b) => String(a.completed_at || "").localeCompare(String(b.completed_at || "")) || String(a.due_at || "9999").localeCompare(String(b.due_at || "9999")));
   const previewActivities = leadActivities.filter((activity) => !activity.completed_at).slice(0, 2);
@@ -1075,7 +1083,7 @@ function leadCard(lead) {
   const whatsappAction = lead.whatsapp ? `<button type="button" draggable="false" class="whatsapp-button" data-action="open-whatsapp" data-id="${lead.id}" aria-label="Abrir ${whatsappLabel} de ${escapeHtml(lead.name)}" title="${whatsappLabel}"><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M12 3.2a8.8 8.8 0 0 0-7.58 13.27L3.2 20.8l4.48-1.18A8.8 8.8 0 1 0 12 3.2Zm0 1.7a7.1 7.1 0 0 1 5.03 12.13 7.1 7.1 0 0 1-8.36 1.27l-.48-.25-2.65.7.71-2.58-.28-.49A7.1 7.1 0 0 1 12 4.9Zm-2.25 2.28c-.2 0-.52.08-.79.38-.27.3-1.03 1.01-1.03 2.47s1.05 2.86 1.2 3.05c.15.2 2.03 3.25 5.02 4.42 2.48.97 2.99.78 3.53.73.54-.05 1.75-.71 2-1.4.25-.69.25-1.28.17-1.4-.07-.12-.27-.2-.57-.35-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.5h-.52Z"/></svg><span>${whatsappLabel}</span></button>` : "";
   const deleteAction = `<button type="button" draggable="false" class="lead-card-delete" data-action="delete-lead-card" data-id="${lead.id}" aria-label="Excluir ${escapeHtml(lead.name)}" title="Excluir lead"><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-.8 11.2a2 2 0 0 1-2 1.8H8.8a2 2 0 0 1-2-1.8L6 9Zm3 2v7h2v-7H9Zm4 0v7h2v-7h-2Z"/></svg></button>`;
   const selectAction = `<label class="lead-card-select" title="Selecionar lead"><input type="checkbox" data-action="toggle-lead-selection" data-id="${lead.id}" ${state.selectedLeadIds.includes(lead.id) ? "checked" : ""} aria-label="Selecionar ${escapeHtml(lead.name)}" /><span></span></label>`;
-  return `<article class="lead-card ${lead.contacted_at ? "lead-contacted" : ""}" draggable="true" data-action="edit-lead" data-id="${lead.id}" title="Arraste para mudar de etapa ou clique para editar"><div class="lead-card-top"><div class="lead-card-selection-wrap">${selectAction}<div><h3>${escapeHtml(lead.name)}</h3><div class="lead-card-subtitle"></div></div></div><div class="lead-card-header-actions"><span class="lead-card-value">${formatCurrency(lead.deal_value || state.settings.deal_value)}</span>${deleteAction}</div></div><div class="lead-meta">${followUpIndicator}</div>${activityMarkup}<div class="lead-card-footer">${whatsappAction}${activityAction}</div></article>`;
+  return `<article class="lead-card ${lead.contacted_at ? "lead-contacted" : ""}" draggable="true" data-action="edit-lead" data-id="${lead.id}" title="Arraste para mudar de etapa ou clique para editar"><div class="lead-card-top"><div class="lead-card-selection-wrap">${selectAction}<div><h3 title="${escapeHtml(fullCompanyName)}">${escapeHtml(visibleCompanyName)}</h3><div class="lead-card-subtitle"></div></div></div><div class="lead-card-header-actions"><span class="lead-card-value">${formatCurrency(lead.deal_value || state.settings.deal_value)}</span>${deleteAction}</div></div><div class="lead-meta">${followUpIndicator}</div>${activityMarkup}<div class="lead-card-footer">${whatsappAction}${activityAction}</div></article>`;
 }
 
 function whatsappStageConfig(stage = "greeting") {
