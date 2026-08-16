@@ -117,12 +117,27 @@
           <label class="field"><span>Etapa</span><select id="lead-stage"></select></label>
           <label class="field"><span>Valor potencial</span><input id="lead-value" type="number" min="0" step="100" placeholder="3000" /></label>
           <label class="field"><span>Próximo follow-up</span><input id="lead-follow-up" type="date" /></label>
-          <label class="field span-2"><span>Anotações</span><textarea id="lead-notes" rows="4" placeholder="Registre contexto, objeções e próximos passos"></textarea></label>
         </div>
-        <section id="lead-activities-panel" class="lead-activities-panel hidden" aria-label="Atividades do lead"></section>
+        <input id="lead-notes-legacy" type="hidden" />
+        <section id="lead-detail-tabs" class="lead-detail-tabs hidden" aria-label="Detalhes do lead">
+          <div class="lead-detail-tab-buttons" role="tablist" aria-label="Seções do lead">
+            <button type="button" class="lead-detail-tab active" data-action="lead-detail-tab" data-tab="notes" role="tab" aria-selected="true">Anotações</button>
+            <button type="button" class="lead-detail-tab" data-action="lead-detail-tab" data-tab="activities" role="tab" aria-selected="false">Atividades</button>
+          </div>
+          <div id="lead-notes-view" class="lead-detail-tab-view">
+            <div id="lead-note-form" class="lead-note-form">
+              <div class="lead-note-form-grid"><label class="field"><span>Título *</span><input id="lead-note-title" required maxlength="160" placeholder="Ex.: Retorno da primeira conversa" /></label><label class="field"><span>Descrição</span><textarea id="lead-note-description" rows="3" placeholder="Detalhes, contexto ou próximos passos"></textarea></label></div>
+              <div class="lead-note-actions"><button id="lead-note-cancel" class="button ghost small hidden" type="button">Cancelar edição</button><span class="spacer"></span><button id="lead-note-submit" class="button primary small" type="button" data-action="save-lead-note">Adicionar anotação</button></div>
+            </div>
+            <div id="lead-notes-panel" class="lead-notes-panel"></div>
+          </div>
+          <div id="lead-activities-view" class="lead-detail-tab-view hidden">
+            <div class="lead-activities-toolbar"><span class="panel-note">Atividades deste lead</span><button type="button" class="button primary small" data-action="open-lead-activity" data-id="">+ Nova atividade</button></div>
+            <section id="lead-activities-panel" class="lead-activities-panel" aria-label="Atividades do lead"></section>
+          </div>
+        </section>
         <div class="modal-actions">
           <button id="delete-lead" class="button danger hidden" type="button">Excluir lead</button>
-          <button id="lead-activity-button" class="button ghost hidden" type="button">+ Nova atividade</button>
           <span class="spacer"></span>
           <button class="button ghost modal-close" type="button">Cancelar</button>
           <button class="button primary" type="submit">Salvar lead</button>

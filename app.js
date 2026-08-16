@@ -45,6 +45,9 @@ const state = {
   metrics: [],
   leads: [],
   activities: [],
+  notes: [],
+  leadDetailTab: "notes",
+  editingNoteId: null,
   pipelines: [],
   activePipelineId: null,
   stages: DEFAULT_STAGES.map((stage, position) => ({ ...stage, position })),
@@ -130,6 +133,7 @@ function createMockData() {
     metrics,
     leads: leads.map((item) => ({ ...item, pipeline_id: pipelineId })),
     activities,
+    notes: [],
   };
 }
 
@@ -451,6 +455,7 @@ const store = {
     if (isLocalDemo) {
       mock.leads = mock.leads.filter((lead) => lead.id !== id);
       mock.activities = mock.activities.filter((activity) => activity.lead_id !== id);
+      mock.notes = mock.notes.filter((note) => note.lead_id !== id);
       return;
     }
     await rest("leads", { method: "DELETE", query: `id=eq.${id}&owner_id=eq.${state.user.id}`, prefer: "return=minimal" });
@@ -458,6 +463,38 @@ const store = {
   async getActivities() {
     if (isLocalDemo) return [...mock.activities];
     return rest("activities", { query: `owner_id=eq.${state.user.id}&select=*&order=due_at.asc.nullslast` });
+  },
+  async getNotes() {
+    if (isLocalDemo) return [...mock.notes];
+    return rest("lead_notes", { query: `owner_id=eq.${state.user.id}&select=*&order=created_at.desc` });
+  },
+  async saveNote(note) {
+    if (isLocalDemo) {
+      const created = { ...note, id: crypto.randomUUID(), owner_id: "demo-user", created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      mock.notes.unshift(created);
+      return created;
+    }
+    const rows = await rest("lead_notes", { method: "POST", body: { owner_id: state.user.id, ...note } });
+    if (!rows?.[0]) throw new Error("O Supabase não confirmou a criação da anotação.");
+    return rows[0];
+  },
+  async updateNote(id, note) {
+    if (isLocalDemo) {
+      const item = mock.notes.find((entry) => entry.id === id);
+      if (!item) throw new Error("Anotação não encontrada.");
+      Object.assign(item, note, { updated_at: new Date().toISOString() });
+      return item;
+    }
+    const rows = await rest("lead_notes", { method: "PATCH", query: `id=eq.${id}&owner_id=eq.${state.user.id}`, body: note });
+    if (!rows?.[0]) throw new Error("O Supabase não confirmou a atualização da anotação.");
+    return rows[0];
+  },
+  async deleteNote(id) {
+    if (isLocalDemo) {
+      mock.notes = mock.notes.filter((note) => note.id !== id);
+      return;
+    }
+    await rest("lead_notes", { method: "DELETE", query: `id=eq.${id}&owner_id=eq.${state.user.id}`, prefer: "return=minimal" });
   },
   async saveActivity(activity) {
     if (isLocalDemo) {
@@ -561,11 +598,7 @@ function setupStaticEvents() {
   $("#lead-pipeline").addEventListener("change", async (event) => {
     await updateLeadStagesForPipeline(event.target.value, "");
   });
-  $("#lead-activity-button").addEventListener("click", () => {
-    const leadId = $("#lead-id").value;
-    $("#lead-dialog").close();
-    openActivityDialog(null, leadId);
-  });
+  $("#lead-note-cancel").addEventListener("click", cancelLeadNoteEdit);
   $("#delete-lead").addEventListener("click", deleteCurrentLead);
   $("#activity-form").addEventListener("submit", saveActivityFromDialog);
   $("#activity-kind").addEventListener("change", updateActivityKindControls);
@@ -714,13 +747,14 @@ async function loadPipelineContext() {
 }
 
 async function loadData() {
-  const [settings, metrics, leads, activities] = await Promise.all([
-    store.getSettings(state.month), store.getMetrics(state.month), store.getLeads(), store.getActivities(),
+  const [settings, metrics, leads, activities, notes] = await Promise.all([
+    store.getSettings(state.month), store.getMetrics(state.month), store.getLeads(), store.getActivities(), store.getNotes(),
   ]);
   state.settings = { ...DEFAULT_SETTINGS, ...settings, whatsapp_templates: normalizeWhatsAppTemplates(settings.whatsapp_templates), whatsapp_greeting_templates: normalizeWhatsAppTemplates(settings.whatsapp_greeting_templates || settings.whatsapp_templates), whatsapp_offer_templates: normalizeWhatsAppTemplates(settings.whatsapp_offer_templates) };
   state.metrics = metrics;
   state.leads = leads;
   state.activities = activities;
+  state.notes = notes;
   await loadPipelineContext();
 }
 
@@ -2258,6 +2292,11 @@ async function handleLeadDialogClick(event) {
   if (action.dataset.action === "toggle-activity") await toggleActivity(action.dataset.id);
   if (action.dataset.action === "edit-activity") openEditActivityDialog(action.dataset.id);
   if (action.dataset.action === "delete-activity") await deleteActivity(action.dataset.id);
+  if (action.dataset.action === "lead-detail-tab") { setLeadDetailTab(action.dataset.tab); return; }
+  if (action.dataset.action === "save-lead-note") { await saveLeadNote(); return; }
+  if (action.dataset.action === "edit-lead-note") { beginLeadNoteEdit(action.dataset.id); return; }
+  if (action.dataset.action === "delete-lead-note") { await deleteLeadNote(action.dataset.id); return; }
+  if (action.dataset.action === "open-lead-activity") { setLeadDetailTab("activities"); openActivityDialog(null, action.dataset.id || $("#lead-id").value); return; }
 }
 
 async function handleMainClick(event) {
@@ -2350,6 +2389,73 @@ function handleMainInput(event) {
   if (event.target.classList.contains("metric-input")) event.target.closest("tr").querySelector(".save-row").classList.add("changed");
 }
 
+function setLeadDetailTab(tab = "notes") {
+  state.leadDetailTab = tab === "activities" ? "activities" : "notes";
+  $$(".lead-detail-tab").forEach((button) => {
+    const active = button.dataset.tab === state.leadDetailTab;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+  $("#lead-notes-view")?.classList.toggle("hidden", state.leadDetailTab !== "notes");
+  $("#lead-activities-view")?.classList.toggle("hidden", state.leadDetailTab !== "activities");
+}
+function resetLeadNoteForm() {
+  state.editingNoteId = null;
+  $("#lead-note-title").value = "";
+  $("#lead-note-description").value = "";
+  $("#lead-note-submit").textContent = "Adicionar anotação";
+  $("#lead-note-cancel").classList.add("hidden");
+}
+function renderLeadNotesPanel(lead) {
+  const panel = $("#lead-notes-panel");
+  if (!panel) return;
+  const notes = lead ? state.notes.filter((note) => note.lead_id === lead.id).sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || ""))) : [];
+  panel.innerHTML = notes.length ? `<div class="lead-notes-list">${notes.map((note) => `<article class="lead-note-card"><div class="lead-note-card-head"><div><b>${escapeHtml(note.title)}</b><span>${note.created_at ? formatDate(note.created_at, { day: "2-digit", month: "short", year: "numeric" }) : ""}</span></div><div class="lead-note-card-actions"><button type="button" class="lead-activity-edit" data-action="edit-lead-note" data-id="${note.id}" aria-label="Editar anotação" title="Editar anotação">✎</button><button type="button" class="activity-delete" data-action="delete-lead-note" data-id="${note.id}" aria-label="Excluir anotação" title="Excluir anotação">×</button></div></div><p>${escapeHtml(note.description || "Sem descrição")}</p></article>`).join("")}</div>` : `<div class="lead-activities-empty">Nenhuma anotação cadastrada para este lead.</div>`;
+}
+async function saveLeadNote() {
+  const leadId = $("#lead-id").value;
+  const title = $("#lead-note-title").value.trim();
+  const description = $("#lead-note-description").value.trim();
+  if (!leadId) return toast("Salve o lead antes de adicionar uma anotação.", "error");
+  if (!title) return toast("Informe um título para a anotação.", "error");
+  const payload = { lead_id: leadId, title, description };
+  const editingNoteId = state.editingNoteId;
+  try {
+    const saved = editingNoteId ? await store.updateNote(editingNoteId, payload) : await store.saveNote(payload);
+    state.notes = editingNoteId ? state.notes.map((note) => note.id === saved.id ? saved : note) : [saved, ...state.notes];
+    resetLeadNoteForm();
+    renderLeadNotesPanel(state.leads.find((lead) => lead.id === leadId));
+    toast(editingNoteId ? "Anotação atualizada." : "Anotação adicionada.");
+  } catch (error) {
+    toast(error.message || "Não foi possível salvar a anotação.", "error");
+  }
+}
+function beginLeadNoteEdit(noteId) {
+  const note = state.notes.find((item) => item.id === noteId);
+  if (!note) return toast("Anotação não encontrada.", "error");
+  state.editingNoteId = note.id;
+  $("#lead-note-title").value = note.title || "";
+  $("#lead-note-description").value = note.description || "";
+  $("#lead-note-submit").textContent = "Salvar anotação";
+  $("#lead-note-cancel").classList.remove("hidden");
+  $("#lead-note-title").focus();
+}
+function cancelLeadNoteEdit() {
+  resetLeadNoteForm();
+}
+async function deleteLeadNote(noteId) {
+  const note = state.notes.find((item) => item.id === noteId);
+  if (!note || !window.confirm(`Excluir a anotação “${note.title}”?`)) return;
+  try {
+    await store.deleteNote(noteId);
+    state.notes = state.notes.filter((item) => item.id !== noteId);
+    if (state.editingNoteId === noteId) resetLeadNoteForm();
+    renderLeadNotesPanel(state.leads.find((lead) => lead.id === $("#lead-id").value));
+    toast("Anotação excluída.");
+  } catch (error) {
+    toast(error.message || "Não foi possível excluir a anotação.", "error");
+  }
+}
 function leadActivitiesMarkup(lead) {
   if (!lead) return "";
   const activities = state.activities.filter((activity) => activity.lead_id === lead.id).sort((a, b) => String(a.completed_at || "").localeCompare(String(b.completed_at || "")) || String(a.due_at || "9999").localeCompare(String(b.due_at || "9999")));
@@ -2369,7 +2475,6 @@ async function openLeadDialog(lead = null) {
   $("#lead-id").value = lead?.id || "";
   $("#lead-dialog-title").textContent = lead ? "Editar lead" : "Novo lead";
   $("#delete-lead").classList.toggle("hidden", !lead);
-  $("#lead-activity-button").classList.toggle("hidden", !lead);
   $("#lead-name").value = lead?.name || "";
   $("#lead-clinic").value = lead?.clinic_name || "";
   $("#lead-website").value = lead?.website || "";
@@ -2382,8 +2487,14 @@ async function openLeadDialog(lead = null) {
   await updateLeadStagesForPipeline(pipelineId, lead?.stage || "");
   $("#lead-value").value = lead?.deal_value ?? state.settings.deal_value;
   $("#lead-follow-up").value = lead?.next_follow_up || "";
-  $("#lead-notes").value = lead?.notes || "";
+  $("#lead-detail-tabs").classList.toggle("hidden", !lead);
+  state.leadDetailTab = "notes";
+  state.editingNoteId = null;
+  resetLeadNoteForm();
+  renderLeadNotesPanel(lead);
   renderLeadActivitiesPanel(lead);
+  setLeadDetailTab("notes");
+  $("#lead-activities-view [data-action=\"open-lead-activity\"]").dataset.id = lead?.id || "";
   $("#lead-dialog").showModal();
 }
 
@@ -2400,7 +2511,7 @@ async function saveLeadFromDialog(event) {
     ...(state.mapsPendingLeadPlace && !id ? { place_id: state.mapsPendingLeadPlace.id } : {}),
     whatsapp: $("#lead-whatsapp").value.trim() || null,
     email: $("#lead-email").value.trim() || null, source: $("#lead-source").value, pipeline_id: $("#lead-pipeline").value || state.activePipelineId, stage: $("#lead-stage").value,
-    deal_value: Number($("#lead-value").value) || null, next_follow_up: $("#lead-follow-up").value || null, notes: $("#lead-notes").value.trim() || null,
+    deal_value: Number($("#lead-value").value) || null, next_follow_up: $("#lead-follow-up").value || null,
   };
   try {
     const saved = await store.saveLead(payload);
