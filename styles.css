@@ -207,8 +207,14 @@ button { color: inherit; }
 .kanban { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(290px, 1fr); gap: 14px; overflow-x: auto; padding: 2px 2px 20px; scroll-snap-type: x proximity; }
 .kanban-column { background: rgba(12,18,20,.8); border: 1px solid var(--line); border-radius: 15px; min-height: 520px; scroll-snap-align: start; transition: border-color .18s ease, box-shadow .18s ease, background .18s ease; }
 .kanban-column.drop-target { border-color: rgba(43,220,175,.72); background: rgba(43,220,175,.045); box-shadow: 0 0 0 2px rgba(43,220,175,.1), 0 18px 40px rgba(0,0,0,.2); }
-.kanban-head { display: flex; align-items: center; justify-content: space-between; padding: 15px; border-bottom: 1px solid var(--line); }
+.kanban-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 15px; border-bottom: 1px solid var(--line); }
+.kanban-stage-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .kanban-head span { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 14px; }
+.kanban-head-actions { display: flex; align-items: center; gap: 5px; }
+.kanban-select-action, .kanban-bulk-delete { border: 1px solid var(--line); border-radius: 6px; background: rgba(255,255,255,.035); color: var(--muted); padding: 4px 6px; font: inherit; font-size: 10px; cursor: pointer; white-space: nowrap; }
+.kanban-select-action:hover { color: var(--text); border-color: rgba(255,255,255,.25); }
+.kanban-bulk-delete { color: #f6a6ab; border-color: rgba(243,109,117,.35); background: rgba(243,109,117,.08); }
+.kanban-bulk-delete:hover { color: #fff; background: rgba(243,109,117,.22); }
 .kanban-head i { width: 7px; height: 7px; border-radius: 50%; background: var(--column-color, var(--muted)); }
 .kanban-count { color: var(--muted); font: 700 10px monospace; border: 1px solid var(--line); padding: 3px 6px; border-radius: 999px; }
 .kanban-cards { padding: 10px; display: flex; flex-direction: column; gap: 9px; }
@@ -217,6 +223,12 @@ button { color: inherit; }
 .lead-card:active { cursor: grabbing; }
 .lead-card.dragging { opacity: .42; transform: scale(.98); border-color: rgba(43,220,175,.42); }
 .lead-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.lead-card-selection-wrap { display: flex; align-items: flex-start; gap: 7px; min-width: 0; }
+.lead-card-select { display: inline-flex; align-items: center; justify-content: center; margin-top: 2px; cursor: pointer; flex: 0 0 auto; }
+.lead-card-select input { position: absolute; opacity: 0; pointer-events: none; }
+.lead-card-select span { width: 15px; height: 15px; display: block; border: 1px solid rgba(255,255,255,.28); border-radius: 4px; background: rgba(255,255,255,.035); }
+.lead-card-select input:checked + span { border-color: var(--green); background: var(--green); box-shadow: inset 0 0 0 3px #10201e; }
+.lead-card-select input:focus-visible + span { outline: 2px solid var(--green); outline-offset: 2px; }
 .lead-card-header-actions { display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto; }
 .lead-card-delete { width: 24px; height: 24px; display: inline-grid; place-items: center; padding: 0; border: 1px solid rgba(243,109,117,.24); border-radius: 7px; background: rgba(243,109,117,.05); color: #d8898f; cursor: pointer; transition: .16s ease; }
 .lead-card-delete svg { width: 13px; height: 13px; fill: currentColor; }

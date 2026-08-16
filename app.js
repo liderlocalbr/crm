@@ -82,6 +82,7 @@ const state = {
   mapsSavedSearchesLoading: false,
   mapsActiveSavedSearchId: null,
   mapsSelectedPlaceIds: [],
+  selectedLeadIds: [],
   mapsViewMode: "cards",
 };
 
@@ -917,7 +918,11 @@ function renderLeads() {
     ${pageHead("PIPELINE COMERCIAL", activePipeline?.name || "Pipeline", "Organize seus leads em pipelines independentes.", `${pipelineControls}<span class="date-chip">${pipelineLeads.length} leads</span><button class="button ghost" data-action="manage-stages">⚙ Etapas</button><button class="button primary" data-action="open-lead">+ Novo lead</button>`)}
     <div class="kanban">${state.stages.map((stage) => {
       const leads = pipelineLeads.filter((lead) => lead.stage === stage.value);
-      return `<section class="kanban-column" data-drop-stage="${stage.value}"><div class="kanban-head"><span><i style="--column-color:${stage.color}"></i>${escapeHtml(stage.label)}</span><b class="kanban-count">${leads.length}</b></div><div class="kanban-cards">${leads.length ? leads.map(leadCard).join("") : `<div class="empty-column">Solte um lead nesta etapa</div>`}</div></section>`;
+      const selectedCount = leads.filter((lead) => state.selectedLeadIds.includes(lead.id)).length;
+      const allSelected = leads.length > 0 && selectedCount === leads.length;
+      const selectionAction = leads.length ? `<button type="button" class="kanban-select-action" data-action="select-stage-leads" data-stage="${escapeHtml(stage.value)}" title="${allSelected ? "Limpar seleção" : "Selecionar todos os leads desta etapa"}">${allSelected ? "Limpar" : "Selecionar"}</button>` : "";
+      const deleteAction = selectedCount ? `<button type="button" class="kanban-bulk-delete" data-action="delete-selected-leads" data-stage="${escapeHtml(stage.value)}" title="Excluir ${selectedCount} lead(s) selecionado(s)">Excluir ${selectedCount}</button>` : "";
+      return `<section class="kanban-column" data-drop-stage="${stage.value}"><div class="kanban-head"><div class="kanban-stage-title"><span><i style="--column-color:${stage.color}"></i>${escapeHtml(stage.label)}</span><b class="kanban-count">${leads.length}</b></div><div class="kanban-head-actions">${selectionAction}${deleteAction}</div></div><div class="kanban-cards">${leads.length ? leads.map(leadCard).join("") : `<div class="empty-column">Solte um lead nesta etapa</div>`}</div></section>`;
     }).join("")}</div>`;
 }
 
@@ -942,6 +947,43 @@ async function toggleLeadContact(leadId) {
     toast(contactedAt ? `${lead.name} marcado como “Contatado”${nextStage ? ` e movido para ${nextStage.label}.` : "."}` : `${lead.name} removido de “Contatado”${restoredMessage}.`);
   } catch (error) {
     toast(error.message || "Não foi possível atualizar o contato.", "error");
+  }
+}
+
+function toggleLeadSelection(leadId) {
+  state.selectedLeadIds = state.selectedLeadIds.includes(leadId)
+    ? state.selectedLeadIds.filter((id) => id !== leadId)
+    : [...state.selectedLeadIds, leadId];
+  renderLeads();
+}
+
+function toggleStageLeadSelection(stageValue) {
+  const stageLeadIds = state.leads
+    .filter((lead) => lead.pipeline_id === state.activePipelineId && lead.stage === stageValue)
+    .map((lead) => lead.id);
+  const allSelected = stageLeadIds.length > 0 && stageLeadIds.every((id) => state.selectedLeadIds.includes(id));
+  state.selectedLeadIds = allSelected
+    ? state.selectedLeadIds.filter((id) => !stageLeadIds.includes(id))
+    : [...new Set([...state.selectedLeadIds, ...stageLeadIds])];
+  renderLeads();
+}
+
+async function deleteSelectedLeads(stageValue) {
+  const selectedLeads = state.leads.filter((lead) => lead.pipeline_id === state.activePipelineId && lead.stage === stageValue && state.selectedLeadIds.includes(lead.id));
+  if (!selectedLeads.length) return toast("Selecione pelo menos um lead desta etapa.", "error");
+  const names = selectedLeads.length === 1 ? `o lead “${selectedLeads[0].name}”` : `${selectedLeads.length} leads`;
+  if (!window.confirm(`Excluir ${names} do pipeline? Os registros salvos na aba Buscar no Maps não serão excluídos.`)) return;
+  try {
+    await Promise.all(selectedLeads.map((lead) => store.deleteLead(lead.id)));
+    const deletedIds = new Set(selectedLeads.map((lead) => lead.id));
+    state.selectedLeadIds = state.selectedLeadIds.filter((id) => !deletedIds.has(id));
+    [state.leads, state.activities] = await Promise.all([store.getLeads(), store.getActivities()]);
+    renderDashboard();
+    renderLeads();
+    renderAgenda();
+    toast(`${selectedLeads.length} ${selectedLeads.length === 1 ? "lead excluído" : "leads excluídos"} do pipeline.`);
+  } catch (error) {
+    toast(error.message || "Não foi possível excluir os leads selecionados.", "error");
   }
 }
 
@@ -971,7 +1013,8 @@ function leadCard(lead) {
   const contactTag = lead.contacted_at ? `<span class="contacted-tag">Em contato</span>` : "";
   const contactCheck = `<button type="button" draggable="false" class="lead-contact-toggle ${lead.contacted_at ? "checked" : ""}" data-action="toggle-lead-contact" data-id="${lead.id}" aria-pressed="${lead.contacted_at ? "true" : "false"}" aria-label="${lead.contacted_at ? "Desmarcar contatado" : "Marcar como contatado"}">${lead.contacted_at ? "✓" : ""}</button>`;
   const deleteAction = `<button type="button" draggable="false" class="lead-card-delete" data-action="delete-lead-card" data-id="${lead.id}" aria-label="Excluir ${escapeHtml(lead.name)}" title="Excluir lead"><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-.8 11.2a2 2 0 0 1-2 1.8H8.8a2 2 0 0 1-2-1.8L6 9Zm3 2v7h2v-7H9Zm4 0v7h2v-7h-2Z"/></svg></button>`;
-  return `<article class="lead-card ${lead.contacted_at ? "lead-contacted" : ""}" draggable="true" data-action="edit-lead" data-id="${lead.id}" title="Arraste para mudar de etapa ou clique para editar"><div class="lead-card-top"><div><h3>${escapeHtml(lead.name)}</h3><div class="lead-card-subtitle">${contactTag}</div></div><div class="lead-card-header-actions"><span class="lead-card-value">${formatCurrency(lead.deal_value || state.settings.deal_value)}</span>${deleteAction}</div></div><div class="lead-meta">${followUpIndicator}</div>${activityMarkup}<div class="lead-card-footer">${whatsappAction}${activityAction}<span class="contact-check-label">${contactCheck} ${lead.contacted_at ? "Em contato" : "Contatado"}</span></div></article>`;
+  const selectAction = `<label class="lead-card-select" title="Selecionar lead"><input type="checkbox" data-action="toggle-lead-selection" data-id="${lead.id}" ${state.selectedLeadIds.includes(lead.id) ? "checked" : ""} aria-label="Selecionar ${escapeHtml(lead.name)}" /><span></span></label>`;
+  return `<article class="lead-card ${lead.contacted_at ? "lead-contacted" : ""}" draggable="true" data-action="edit-lead" data-id="${lead.id}" title="Arraste para mudar de etapa ou clique para editar"><div class="lead-card-top"><div class="lead-card-selection-wrap">${selectAction}<div><h3>${escapeHtml(lead.name)}</h3><div class="lead-card-subtitle">${contactTag}</div></div></div><div class="lead-card-header-actions"><span class="lead-card-value">${formatCurrency(lead.deal_value || state.settings.deal_value)}</span>${deleteAction}</div></div><div class="lead-meta">${followUpIndicator}</div>${activityMarkup}<div class="lead-card-footer">${whatsappAction}${activityAction}<span class="contact-check-label">${contactCheck} ${lead.contacted_at ? "Em contato" : "Contatado"}</span></div></article>`;
 }
 
 function whatsappStageConfig(stage = "greeting") {
@@ -2203,6 +2246,9 @@ async function handleMainClick(event) {
   if (suppressLeadClick && action.dataset.action === "edit-lead") return;
   if (action.dataset.action === "open-lead") openLeadDialog();
   if (action.dataset.action === "edit-lead") openLeadDialog(state.leads.find((lead) => lead.id === action.dataset.id));
+  if (action.dataset.action === "toggle-lead-selection") { toggleLeadSelection(action.dataset.id); return; }
+  if (action.dataset.action === "select-stage-leads") { toggleStageLeadSelection(action.dataset.stage); return; }
+  if (action.dataset.action === "delete-selected-leads") { await deleteSelectedLeads(action.dataset.stage); return; }
   if (action.dataset.action === "delete-lead-card") { await deleteLeadFromCard(action.dataset.id); return; }
   if (action.dataset.action === "open-whatsapp") await openLeadWhatsApp(action.dataset.id);
   if (action.dataset.action === "switch-message-stage") { state.messageSettingsStage = action.dataset.stage === "offer" ? "offer" : "greeting"; renderSettings(); return; }
