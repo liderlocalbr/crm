@@ -974,7 +974,7 @@ function renderLeads() {
   const pipelineOptions = state.pipelines.map((pipeline) => `<option value="${pipeline.id}" ${pipeline.id === state.activePipelineId ? "selected" : ""}>${escapeHtml(pipeline.name)}</option>`).join("");
   const pipelineControls = `<div class="pipeline-switcher"><select data-pipeline-select aria-label="Selecionar pipeline">${pipelineOptions}</select><button class="icon-button" data-action="new-pipeline" title="Criar pipeline" aria-label="Criar pipeline">＋</button><button class="icon-button" data-action="rename-pipeline" title="Renomear pipeline" aria-label="Renomear pipeline">✎</button><button class="icon-button danger-icon" data-action="delete-pipeline" title="Excluir pipeline" aria-label="Excluir pipeline">×</button></div>`;
   $("#view-leads").innerHTML = `
-    ${pageHead("PIPELINE COMERCIAL", activePipeline?.name || "Pipeline", "Organize seus leads em pipelines independentes.", `${pipelineControls}<span class="date-chip">${pipelineLeads.length} leads</span><button class="button ghost" data-action="manage-stages">⚙ Etapas</button><button class="button primary" data-action="open-lead">+ Novo lead</button>`)}
+    ${pageHead("", activePipeline?.name || "Pipeline", "", `${pipelineControls}<span class="date-chip">${pipelineLeads.length} leads</span><button class="button ghost" data-action="manage-stages">⚙ Etapas</button><button class="button primary" data-action="open-lead">+ Novo lead</button>`)}
     <div class="kanban">${state.stages.map((stage) => {
       const leads = pipelineLeads.filter((lead) => lead.stage === stage.value);
       const selectedCount = leads.filter((lead) => state.selectedLeadIds.includes(lead.id)).length;
