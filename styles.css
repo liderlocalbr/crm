@@ -901,3 +901,121 @@ body.booting::before { color: #a6b8b8; font-size: 12px; }
   .funnel-row { grid-template-columns: 105px minmax(70px,1fr) 34px; }
   .page-head h1 { font-size: 24px; }
 }
+
+
+/* =========================================================
+   Líder Local CRM — segunda camada visual perceptível
+   ========================================================= */
+:root {
+  --border-subtle: rgba(118,148,151,.18);
+  --border-active: rgba(43,220,175,.38);
+  --surface-elevated: #111d20;
+}
+
+.main-content { background: linear-gradient(180deg, #081012 0, #070b0d 42%, #080d0f 100%); }
+.page-head {
+  position: relative;
+  min-height: 56px;
+  padding: 13px 15px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 13px;
+  background: linear-gradient(110deg, rgba(15,29,32,.94), rgba(8,16,18,.7));
+  box-shadow: 0 8px 22px rgba(0,0,0,.14);
+}
+.page-head::after { content: ""; position: absolute; left: 0; bottom: -1px; width: 92px; height: 2px; border-radius: 0 3px 3px 0; background: var(--green); box-shadow: 0 0 16px rgba(43,220,175,.42); }
+.page-head .page-title { display: flex; flex-direction: column; gap: 2px; }
+.page-head h1 { color: #f3f8f5; font-size: clamp(23px, 2.2vw, 32px); }
+.page-head .eyebrow { color: #89aaa4; }
+.dashboard-controls { min-height: 56px; }
+.dashboard-controls .head-actions { margin-left: auto; }
+
+.panel, .kpi-card { border-color: var(--border-subtle); background: linear-gradient(145deg, rgba(18,31,34,.98), rgba(9,17,19,.98)); }
+.panel:hover { border-color: rgba(118,148,151,.27); }
+.panel-head { padding-bottom: 12px; border-bottom: 1px solid rgba(118,148,151,.13); }
+.panel-head h2 { color: #f0f6f3; }
+.panel-head span, .panel-note { color: #91a7a7; }
+
+.kpi-card { min-height: 136px; padding: 14px 15px 13px; }
+.kpi-card:nth-child(1) { border-top: 2px solid #2bdcaf; }
+.kpi-card:nth-child(2) { border-top: 2px solid #63a9ff; }
+.kpi-card:nth-child(3) { border-top: 2px solid #5dbfd0; }
+.kpi-card:nth-child(4) { border-top: 2px solid #f6a821; }
+.kpi-card:nth-child(5) { border-top: 2px solid #bd88ff; }
+.kpi-card:nth-child(6) { border-top: 2px solid #f0c86a; }
+.kpi-card h3 { color: #f3f8f5; font-size: 34px; }
+.kpi-card:nth-child(2) .kpi-icon, .kpi-card:nth-child(3) .kpi-icon { color: var(--blue); background: rgba(99,169,255,.12); }
+.kpi-card:nth-child(4) .kpi-icon { color: var(--amber); background: var(--amber-soft); }
+.kpi-card:nth-child(5) .kpi-icon { color: #bd88ff; background: rgba(189,136,255,.12); }
+.kpi-card:nth-child(6) .kpi-icon { color: #f0c86a; background: rgba(240,200,106,.12); }
+
+.dashboard-grid > .panel { min-height: 100%; }
+.dashboard-grid > .panel:nth-child(1) { background: linear-gradient(145deg, rgba(15,34,34,.99), rgba(9,18,20,.98)); }
+.dashboard-grid > .panel:nth-child(3), .dashboard-grid > .panel:nth-child(4) { background: linear-gradient(145deg, rgba(15,27,30,.98), rgba(9,16,18,.98)); }
+.funnel-row { padding: 5px 0; }
+.funnel-label { color: #d6e1de; }
+.funnel-track { background: #071012; border-color: rgba(118,148,151,.18); }
+.rate-tile { background: rgba(5,13,15,.52); border-color: rgba(118,148,151,.17); }
+.goal-card { border-color: rgba(246,168,33,.22); }
+
+.kanban { padding-top: 4px; }
+.kanban-column { border-color: var(--border-subtle); background: linear-gradient(180deg, rgba(14,25,28,.96), rgba(8,15,17,.95)); }
+.kanban-column::before { content: ""; display: block; height: 3px; border-radius: 12px 12px 0 0; background: linear-gradient(90deg, var(--green), transparent 76%); opacity: .8; }
+.kanban-head { padding-top: 9px; background: rgba(255,255,255,.018); }
+.kanban-stage-title span { color: #e5efec; }
+.kanban-head-actions { opacity: .82; }
+.kanban-column:hover .kanban-head-actions { opacity: 1; }
+.lead-card { background: linear-gradient(145deg, #172426, #0e181a); border-color: rgba(118,148,151,.2); }
+.lead-card:hover { border-color: rgba(43,220,175,.38); box-shadow: 0 10px 22px rgba(0,0,0,.23); }
+.lead-card-top { padding-bottom: 2px; }
+.lead-card h3 { color: #edf5f1; }
+.lead-card-subtitle p { color: #8ea4a4; }
+.lead-card-footer { border-top-color: rgba(118,148,151,.17); }
+
+.table-wrap { background: #091113; border-color: var(--border-subtle); }
+.data-table th { background: #102024; color: #b9ceca; border-bottom-color: rgba(118,148,151,.22); }
+.data-table td { color: #d2ddda; border-bottom-color: rgba(118,148,151,.12); }
+.data-table tbody tr:hover td { background: rgba(43,220,175,.045); }
+.metric-input { background: #0c181a; border-color: rgba(118,148,151,.22); }
+.today-row td { box-shadow: inset 0 1px 0 rgba(43,220,175,.4), inset 0 -1px 0 rgba(43,220,175,.4); }
+.table-total td { background: #142427; }
+
+.agenda-layout > .panel:first-child { background: linear-gradient(145deg, rgba(13,29,31,.98), rgba(8,16,18,.98)); }
+.calendar-day { background: rgba(7,16,18,.74); border-color: rgba(118,148,151,.17); }
+.calendar-day:hover { background: rgba(43,220,175,.06); }
+.calendar-day.today { background: rgba(43,220,175,.11); }
+.agenda-layout aside { background: linear-gradient(145deg, rgba(18,30,33,.98), rgba(10,17,19,.98)); }
+.summary-tile { background: rgba(7,15,17,.66); }
+.summary-tile:first-child b { color: var(--green); }
+
+.maps-search-layout > .panel:first-child { background: linear-gradient(145deg, rgba(14,32,33,.98), rgba(9,17,19,.98)); }
+.maps-city-guide { border-color: rgba(99,169,255,.22); background: linear-gradient(145deg, rgba(14,25,34,.98), rgba(9,17,21,.98)); }
+.maps-subtabs { padding-left: 4px; border-bottom-color: rgba(118,148,151,.19); }
+.maps-subtab.active { color: #f0f7f4; background: rgba(43,220,175,.07); border-radius: 8px 8px 0 0; }
+.maps-selection-toolbar.has-selection { box-shadow: 0 0 0 1px rgba(43,220,175,.12), 0 8px 22px rgba(43,220,175,.06); }
+.maps-results-toolbar { padding-bottom: 8px; border-bottom: 1px solid rgba(118,148,151,.13); }
+.maps-result-card, .maps-result-row, .saved-search-card { border-color: rgba(118,148,151,.19); background: linear-gradient(145deg, rgba(16,28,31,.98), rgba(9,17,19,.98)); }
+.maps-result-card:hover, .maps-result-row:hover, .saved-search-card:hover { border-color: rgba(43,220,175,.35); box-shadow: 0 8px 22px rgba(0,0,0,.18); }
+
+.goals-layout > .panel:first-child { background: linear-gradient(145deg, rgba(14,31,31,.98), rgba(9,17,19,.98)); }
+.goals-layout > .panel:last-child { background: linear-gradient(145deg, rgba(17,29,34,.98), rgba(9,17,20,.98)); }
+.goal-form .field:nth-child(-n+2) { padding: 10px; border: 1px solid rgba(43,220,175,.14); border-radius: 9px; background: rgba(43,220,175,.035); }
+.projection-row { background: rgba(7,16,18,.62); }
+.projection-row:not(.final)::before { content: ""; display: inline-block; }
+.projection-row.final { box-shadow: 0 0 0 1px rgba(246,168,33,.12); }
+
+.settings-message-panel { background: linear-gradient(145deg, rgba(15,29,32,.99), rgba(9,17,19,.98)); }
+.settings-stage-tabs { background: rgba(4,12,14,.55); }
+.settings-stage-tab.active { box-shadow: 0 7px 18px rgba(43,220,175,.1); }
+.message-template-row { position: relative; overflow: hidden; background: rgba(7,16,18,.6); }
+.message-template-row::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--green); opacity: .72; }
+.message-template-row textarea { background: rgba(4,12,14,.56); }
+.settings-callout { background: rgba(43,220,175,.07); }
+
+@media (max-width: 680px) {
+  .page-head { padding: 11px 12px 12px; }
+  .page-head .head-actions { margin-left: 0; }
+  .page-head .head-actions > * { flex: 1 1 auto; }
+  .dashboard-controls .head-actions { width: 100%; }
+  .dashboard-grid > .panel { min-height: auto; }
+  .kanban-column::before { border-radius: 10px 10px 0 0; }
+}
