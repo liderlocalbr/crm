@@ -304,6 +304,10 @@ button { color: inherit; }
 
 .goals-layout { display: grid; grid-template-columns: minmax(360px,.72fr) minmax(0,1fr); gap: 14px; }
 .settings-layout { display: grid; grid-template-columns: minmax(0,1fr); gap: 14px; align-items: start; }
+.pipeline-switcher { display: inline-flex; align-items: center; gap: 5px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.035); }
+.pipeline-switcher select { min-width: 150px; max-width: 220px; height: 31px; padding: 0 27px 0 10px; border: 0; background: transparent; color: var(--text); font-size: 12px; font-weight: 700; }
+.pipeline-switcher .icon-button { width: 28px; height: 28px; }
+.pipeline-switcher .danger-icon { color: var(--red); }
 .settings-layout > .panel { min-width: 0; padding: 17px; }
 .settings-message-panel { overflow: hidden; }
 .settings-stage-tabs { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; padding: 5px; margin: -2px 0 18px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.025); }
@@ -518,6 +522,8 @@ button { color: inherit; }
   .goals-layout, .settings-layout { grid-template-columns: 1fr; }
   .template-limit-grid, .settings-controls-grid { grid-template-columns: 1fr; }
   .settings-stage-tabs { grid-template-columns: 1fr; }
+  .pipeline-switcher { width: 100%; }
+  .pipeline-switcher select { min-width: 0; flex: 1; max-width: none; }
   .settings-section-header { align-items: stretch; flex-direction: column; }
   .stage-editor { grid-template-columns: 26px 30px 34px minmax(0,1fr) auto 30px; gap: 6px; }
   .stage-lead-count { display: none; }

@@ -45,6 +45,8 @@ const state = {
   metrics: [],
   leads: [],
   activities: [],
+  pipelines: [],
+  activePipelineId: null,
   stages: DEFAULT_STAGES.map((stage, position) => ({ ...stage, position })),
   calendarConnected: false,
   googleIdentityLinked: false,
@@ -117,11 +119,15 @@ function createMockData() {
     { id: crypto.randomUUID(), lead_id: leads[5].id, kind: "call", title: "Alinhar proposta comercial", due_at: `${addDays(1)}T16:00:00`, completed_at: null },
     { id: crypto.randomUUID(), lead_id: leads[4].id, kind: "email", title: "Enviar estudo de caso", due_at: `${todayIso()}T09:00:00`, completed_at: new Date().toISOString() },
   ];
+  const pipelineId = crypto.randomUUID();
+  const pipeline = { id: pipelineId, owner_id: "demo-user", name: "Pipeline principal", is_default: true, position: 0 };
+  const pipelineStages = DEFAULT_STAGES.map((stage, position) => ({ ...stage, id: crypto.randomUUID(), pipeline_id: pipelineId, stage_key: stage.value, name: stage.label, position }));
   return {
     settingsByMonth: new Map([[month, { ...DEFAULT_SETTINGS }]]),
-    stages: DEFAULT_STAGES.map((stage, position) => ({ ...stage, id: crypto.randomUUID(), stage_key: stage.value, name: stage.label, position })),
+    pipelines: [pipeline],
+    stages: pipelineStages,
     metrics,
-    leads,
+    leads: leads.map((item) => ({ ...item, pipeline_id: pipelineId })),
     activities,
   };
 }
@@ -341,46 +347,64 @@ const store = {
     const rows = await rest("funnel_settings", { method: "POST", query: "on_conflict=owner_id,goal_month", body: { owner_id: state.user.id, goal_month: `${month}-01`, ...settings }, prefer: "resolution=merge-duplicates,return=representation" });
     return rows[0];
   },
-  async getStages() {
-    if (isLocalDemo) return mock.stages.map((stage) => ({ ...stage }));
-    let rows = await rest("pipeline_stages", { query: `owner_id=eq.${state.user.id}&select=*&order=position.asc` });
+  async getPipelines() {
+    if (isLocalDemo) return mock.pipelines.map((pipeline) => ({ ...pipeline }));
+    let rows = await rest("pipelines", { query: `owner_id=eq.${state.user.id}&select=*&order=position.asc` });
     if (rows.length) return rows;
-    const defaults = DEFAULT_STAGES.map((stage, position) => ({ owner_id: state.user.id, stage_key: stage.value, name: stage.label, color: stage.color, position }));
+    const created = await rest("pipelines", { method: "POST", body: { owner_id: state.user.id, name: "Pipeline principal", is_default: true, position: 0 }, prefer: "return=representation" });
+    return created;
+  },
+  async savePipeline(pipeline) {
+    if (isLocalDemo) {
+      const index = mock.pipelines.findIndex((item) => item.id === pipeline.id);
+      if (index >= 0) { mock.pipelines[index] = { ...mock.pipelines[index], ...pipeline }; return mock.pipelines[index]; }
+      const created = { ...pipeline, id: crypto.randomUUID(), owner_id: "demo-user" };
+      mock.pipelines.push(created);
+      return created;
+    }
+    if (pipeline.id) {
+      const { id, ...payload } = pipeline;
+      const rows = await rest("pipelines", { method: "PATCH", query: `id=eq.${id}&owner_id=eq.${state.user.id}`, body: payload });
+      return rows[0];
+    }
+    const rows = await rest("pipelines", { method: "POST", body: { owner_id: state.user.id, ...pipeline }, prefer: "return=representation" });
+    return rows[0];
+  },
+  async deletePipeline(id) {
+    if (isLocalDemo) { mock.pipelines = mock.pipelines.filter((pipeline) => pipeline.id !== id); return; }
+    await rest("pipelines", { method: "DELETE", query: `id=eq.${id}&owner_id=eq.${state.user.id}`, prefer: "return=minimal" });
+  },
+  async getStages(pipelineId = state.activePipelineId) {
+    if (isLocalDemo) return mock.stages.filter((stage) => stage.pipeline_id === pipelineId).map((stage) => ({ ...stage }));
+    let rows = await rest("pipeline_stages", { query: `owner_id=eq.${state.user.id}&pipeline_id=eq.${pipelineId}&select=*&order=position.asc` });
+    if (rows.length) return rows;
+    const defaults = DEFAULT_STAGES.map((stage, position) => ({ owner_id: state.user.id, pipeline_id: pipelineId, stage_key: stage.value, name: stage.label, color: stage.color, position }));
     rows = await rest("pipeline_stages", { method: "POST", body: defaults });
     return rows;
   },
   async saveStage(stage) {
     if (isLocalDemo) {
       const index = mock.stages.findIndex((item) => item.id === stage.id);
-      if (index >= 0) {
-        mock.stages[index] = { ...mock.stages[index], ...stage };
-        return mock.stages[index];
-      }
-      const created = { ...stage, id: crypto.randomUUID(), owner_id: "demo-user" };
+      if (index >= 0) { mock.stages[index] = { ...mock.stages[index], ...stage }; return mock.stages[index]; }
+      const created = { ...stage, id: crypto.randomUUID(), owner_id: "demo-user", pipeline_id: stage.pipeline_id || state.activePipelineId };
       mock.stages.push(created);
       return created;
     }
     if (stage.id) {
       const { id, ...payload } = stage;
-      const rows = await rest("pipeline_stages", { method: "PATCH", query: `id=eq.${id}&owner_id=eq.${state.user.id}`, body: payload });
+      const rows = await rest("pipeline_stages", { method: "PATCH", query: `id=eq.${id}&owner_id=eq.${state.user.id}&pipeline_id=eq.${state.activePipelineId}`, body: payload });
       return rows[0];
     }
-    const rows = await rest("pipeline_stages", { method: "POST", body: { owner_id: state.user.id, ...stage } });
+    const rows = await rest("pipeline_stages", { method: "POST", body: { owner_id: state.user.id, pipeline_id: state.activePipelineId, ...stage } });
     return rows[0];
   },
   async deleteStage(id) {
-    if (isLocalDemo) {
-      mock.stages = mock.stages.filter((stage) => stage.id !== id);
-      return;
-    }
-    await rest("pipeline_stages", { method: "DELETE", query: `id=eq.${id}&owner_id=eq.${state.user.id}`, prefer: "return=minimal" });
+    if (isLocalDemo) { mock.stages = mock.stages.filter((stage) => stage.id !== id); return; }
+    await rest("pipeline_stages", { method: "DELETE", query: `id=eq.${id}&owner_id=eq.${state.user.id}&pipeline_id=eq.${state.activePipelineId}`, prefer: "return=minimal" });
   },
   async reassignStage(fromStage, nextStage) {
-    if (isLocalDemo) {
-      mock.leads = reassignStage(mock.leads, fromStage, nextStage).leads;
-      return;
-    }
-    await rest("leads", { method: "PATCH", query: `owner_id=eq.${state.user.id}&stage=eq.${encodeURIComponent(fromStage)}`, body: { stage: nextStage }, prefer: "return=minimal" });
+    if (isLocalDemo) {       mock.leads = mock.leads.map((lead) => lead.pipeline_id === state.activePipelineId && lead.stage === fromStage ? { ...lead, stage: nextStage } : lead); return; }
+    await rest("leads", { method: "PATCH", query: `owner_id=eq.${state.user.id}&pipeline_id=eq.${state.activePipelineId}&stage=eq.${encodeURIComponent(fromStage)}`, body: { stage: nextStage }, prefer: "return=minimal" });
   },
   async getMetrics(month) {
     const { start, end } = monthBounds(month);
@@ -408,7 +432,7 @@ const store = {
         mock.leads[index] = { ...mock.leads[index], ...lead };
         return mock.leads[index];
       }
-      const created = { ...lead, id: crypto.randomUUID(), owner_id: "demo-user", created_at: new Date().toISOString() };
+      const created = { ...lead, pipeline_id: lead.pipeline_id || state.activePipelineId, id: crypto.randomUUID(), owner_id: "demo-user", created_at: new Date().toISOString() };
       mock.leads.unshift(created);
       return created;
     }
@@ -418,7 +442,7 @@ const store = {
       if (!rows?.[0]) throw new Error("O Supabase não confirmou a atualização deste card. Recarregue a página e tente novamente.");
       return rows[0];
     }
-    const rows = await rest("leads", { method: "POST", body: { owner_id: state.user.id, ...lead } });
+    const rows = await rest("leads", { method: "POST", body: { owner_id: state.user.id, pipeline_id: lead.pipeline_id || state.activePipelineId, ...lead } });
     if (!rows?.[0]) throw new Error("O Supabase não confirmou a criação deste card. Tente novamente.");
     return rows[0];
   },
@@ -654,15 +678,26 @@ async function enterApp() {
   }
 }
 
+async function loadPipelineContext() {
+  const pipelines = await store.getPipelines();
+  state.pipelines = pipelines.map((pipeline) => ({ ...pipeline }));
+  const remembered = localStorage.getItem("livonno-active-pipeline");
+  const active = state.pipelines.find((pipeline) => pipeline.id === remembered) || state.pipelines.find((pipeline) => pipeline.is_default) || state.pipelines[0];
+  state.activePipelineId = active?.id || null;
+  if (state.activePipelineId) localStorage.setItem("livonno-active-pipeline", state.activePipelineId);
+  const stages = state.activePipelineId ? await store.getStages(state.activePipelineId) : [];
+  state.stages = stages.map((stage) => ({ ...stage, value: stage.stage_key, label: stage.name }));
+}
+
 async function loadData() {
-  const [settings, metrics, leads, activities, stages] = await Promise.all([
-    store.getSettings(state.month), store.getMetrics(state.month), store.getLeads(), store.getActivities(), store.getStages(),
+  const [settings, metrics, leads, activities] = await Promise.all([
+    store.getSettings(state.month), store.getMetrics(state.month), store.getLeads(), store.getActivities(),
   ]);
   state.settings = { ...DEFAULT_SETTINGS, ...settings, whatsapp_templates: normalizeWhatsAppTemplates(settings.whatsapp_templates), whatsapp_greeting_templates: normalizeWhatsAppTemplates(settings.whatsapp_greeting_templates || settings.whatsapp_templates), whatsapp_offer_templates: normalizeWhatsAppTemplates(settings.whatsapp_offer_templates) };
   state.metrics = metrics;
   state.leads = leads;
   state.activities = activities;
-  state.stages = stages.map((stage) => ({ ...stage, value: stage.stage_key, label: stage.name }));
+  await loadPipelineContext();
 }
 
 async function reloadPeriod() {
@@ -812,11 +847,76 @@ function upcomingActivities(limit) {
   }).join("")}</div>`;
 }
 
+async function refreshActivePipeline({ render = true } = {}) {
+  const stages = state.activePipelineId ? await store.getStages(state.activePipelineId) : [];
+  state.stages = stages.map((stage) => ({ ...stage, value: stage.stage_key, label: stage.name }));
+  if (state.activePipelineId) localStorage.setItem("livonno-active-pipeline", state.activePipelineId);
+  if (render) { populateStageOptions(); renderLeads(); }
+}
+
+async function switchPipeline(pipelineId) {
+  if (!state.pipelines.some((pipeline) => pipeline.id === pipelineId)) return;
+  state.activePipelineId = pipelineId;
+  await refreshActivePipeline();
+  toast(`Pipeline “${state.pipelines.find((pipeline) => pipeline.id === pipelineId)?.name || "selecionado"}” ativo.`);
+}
+
+async function createPipeline() {
+  const name = window.prompt("Nome do novo pipeline:", "Novo pipeline")?.trim();
+  if (!name) return;
+  if (state.pipelines.some((pipeline) => pipeline.name.toLowerCase() === name.toLowerCase())) return toast("Já existe um pipeline com esse nome.", "error");
+  try {
+    const created = await store.savePipeline({ name, is_default: false, position: state.pipelines.length });
+    const pipeline = { ...created, name: created?.name || name };
+    state.pipelines.push(pipeline);
+    state.activePipelineId = pipeline.id;
+    for (const [position, stage] of DEFAULT_STAGES.entries()) {
+      await store.saveStage({ pipeline_id: pipeline.id, stage_key: stage.value, name: stage.label, color: stage.color, position });
+    }
+    await refreshActivePipeline();
+    toast(`Pipeline “${pipeline.name}” criado.`);
+  } catch (error) { toast(error.message || "Não foi possível criar o pipeline.", "error"); }
+}
+
+async function renamePipeline() {
+  const pipeline = state.pipelines.find((item) => item.id === state.activePipelineId);
+  if (!pipeline) return;
+  const name = window.prompt("Novo nome do pipeline:", pipeline.name)?.trim();
+  if (!name || name === pipeline.name) return;
+  if (state.pipelines.some((item) => item.id !== pipeline.id && item.name.toLowerCase() === name.toLowerCase())) return toast("Já existe um pipeline com esse nome.", "error");
+  try {
+    const saved = await store.savePipeline({ id: pipeline.id, name });
+    Object.assign(pipeline, saved || { name });
+    renderLeads();
+    toast("Pipeline renomeado.");
+  } catch (error) { toast(error.message || "Não foi possível renomear o pipeline.", "error"); }
+}
+
+async function deleteActivePipeline() {
+  const pipeline = state.pipelines.find((item) => item.id === state.activePipelineId);
+  if (!pipeline) return;
+  if (state.pipelines.length <= 1) return toast("Mantenha pelo menos um pipeline no CRM.", "error");
+  const affected = state.leads.filter((lead) => lead.pipeline_id === pipeline.id).length;
+  if (affected) return toast(`Esvazie o pipeline antes de excluí-lo. Ele ainda possui ${affected} ${affected === 1 ? "lead" : "leads"}.`, "error");
+  if (!window.confirm(`Excluir o pipeline “${pipeline.name}” e suas etapas?`)) return;
+  try {
+    await store.deletePipeline(pipeline.id);
+    state.pipelines = state.pipelines.filter((item) => item.id !== pipeline.id);
+    state.activePipelineId = state.pipelines[0]?.id || null;
+    await refreshActivePipeline();
+    toast("Pipeline excluído.");
+  } catch (error) { toast(error.message || "Não foi possível excluir o pipeline.", "error"); }
+}
+
 function renderLeads() {
+  const activePipeline = state.pipelines.find((pipeline) => pipeline.id === state.activePipelineId);
+  const pipelineLeads = state.leads.filter((lead) => !state.activePipelineId || lead.pipeline_id === state.activePipelineId);
+  const pipelineOptions = state.pipelines.map((pipeline) => `<option value="${pipeline.id}" ${pipeline.id === state.activePipelineId ? "selected" : ""}>${escapeHtml(pipeline.name)}</option>`).join("");
+  const pipelineControls = `<div class="pipeline-switcher"><select data-pipeline-select aria-label="Selecionar pipeline">${pipelineOptions}</select><button class="icon-button" data-action="new-pipeline" title="Criar pipeline" aria-label="Criar pipeline">＋</button><button class="icon-button" data-action="rename-pipeline" title="Renomear pipeline" aria-label="Renomear pipeline">✎</button><button class="icon-button danger-icon" data-action="delete-pipeline" title="Excluir pipeline" aria-label="Excluir pipeline">×</button></div>`;
   $("#view-leads").innerHTML = `
-    ${pageHead("PIPELINE COMERCIAL", "", "", `<span class="date-chip">${state.leads.length} leads</span><button class="button ghost" data-action="manage-stages">⚙ Etapas</button><button class="button primary" data-action="open-lead">+ Novo lead</button>`)}
+    ${pageHead("PIPELINE COMERCIAL", activePipeline?.name || "Pipeline", "Organize seus leads em pipelines independentes.", `${pipelineControls}<span class="date-chip">${pipelineLeads.length} leads</span><button class="button ghost" data-action="manage-stages">⚙ Etapas</button><button class="button primary" data-action="open-lead">+ Novo lead</button>`)}
     <div class="kanban">${state.stages.map((stage) => {
-      const leads = state.leads.filter((lead) => lead.stage === stage.value);
+      const leads = pipelineLeads.filter((lead) => lead.stage === stage.value);
       return `<section class="kanban-column" data-drop-stage="${stage.value}"><div class="kanban-head"><span><i style="--column-color:${stage.color}"></i>${escapeHtml(stage.label)}</span><b class="kanban-count">${leads.length}</b></div><div class="kanban-cards">${leads.length ? leads.map(leadCard).join("") : `<div class="empty-column">Solte um lead nesta etapa</div>`}</div></section>`;
     }).join("")}</div>`;
 }
@@ -965,7 +1065,7 @@ function openStageDialog() {
 
 function renderStageManager() {
   $("#stage-list").innerHTML = state.stages.map((stage, index) => {
-    const leadCount = state.leads.filter((lead) => lead.stage === stage.value).length;
+    const leadCount = state.leads.filter((lead) => lead.pipeline_id === state.activePipelineId && lead.stage === stage.value).length;
     return `<div class="stage-editor" draggable="true" data-stage-id="${stage.id}">
       <button class="stage-drag-handle" type="button" draggable="false" aria-label="Reordenar etapa" title="Arraste para reordenar">⋮⋮</button><span class="stage-order">${index + 1}</span>
       <input class="stage-color" data-stage-color type="color" value="${stage.color || "#2bdcaf"}" aria-label="Cor da etapa ${escapeHtml(stage.label)}" />
@@ -1081,13 +1181,13 @@ async function deletePipelineStage(stage) {
   if (state.stages.length <= 1) return toast("O pipeline precisa ter pelo menos uma etapa.", "error");
   const currentIndex = state.stages.findIndex((item) => item.id === stage.id);
   const fallback = state.stages[currentIndex + 1] || state.stages[currentIndex - 1];
-  const affected = state.leads.filter((lead) => lead.stage === stage.value).length;
+  const affected = state.leads.filter((lead) => lead.pipeline_id === state.activePipelineId && lead.stage === stage.value).length;
   const detail = affected ? ` Os ${affected} ${affected === 1 ? "lead será movido" : "leads serão movidos"} para “${fallback.label}”.` : "";
   if (!confirm(`Excluir a etapa “${stage.label}”?${detail}`)) return;
   try {
     if (affected) await store.reassignStage(stage.value, fallback.value);
     await store.deleteStage(stage.id);
-    state.leads = reassignStage(state.leads, stage.value, fallback.value).leads;
+    state.leads = state.leads.map((lead) => lead.pipeline_id === state.activePipelineId && lead.stage === stage.value ? { ...lead, stage: fallback.value } : lead);
     state.stages = state.stages.filter((item) => item.id !== stage.id);
     populateStageOptions();
     renderDashboard();
@@ -2098,6 +2198,9 @@ async function handleMainClick(event) {
   if (action.dataset.action === "toggle-lead-contact") await toggleLeadContact(action.dataset.id);
   if (action.dataset.action === "open-activity") openActivityDialog();
   if (action.dataset.action === "manage-stages") openStageDialog();
+  if (action.dataset.action === "new-pipeline") await createPipeline();
+  if (action.dataset.action === "rename-pipeline") await renamePipeline();
+  if (action.dataset.action === "delete-pipeline") await deleteActivePipeline();
   if (action.dataset.action === "connect-google-calendar") connectGoogleCalendar();
   if (action.dataset.action === "refresh-google-calendar") await loadGoogleEvents({ notify: true });
   if (action.dataset.action === "sync-google-activity") await syncActivityToGoogle(action.dataset.id);
@@ -2127,6 +2230,7 @@ async function handleMainChange(event) {
     state.week = "all";
     try { await reloadPeriod(); } catch (error) { toast(error.message, "error"); }
   }
+  if (event.target.matches("[data-pipeline-select]")) { await switchPipeline(event.target.value); return; }
   if (event.target.id === "maps-prospect-filter") {
     state.mapsProspectFilter = event.target.value;
     renderMapsSearch();
