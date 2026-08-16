@@ -844,7 +844,6 @@ function metricRowsForFilter() {
 
 function dashboardSimulatorRows(simulated, settings) {
   const rates = [
-    ["Mensagens enviadas", simulated.messages, "base"],
     [`Reuniões agendadas (${formatPercent(settings.message_to_scheduled)})`, simulated.meetingsScheduled, "rate"],
     [`Reuniões realizadas (${formatPercent(settings.scheduled_to_completed)})`, simulated.meetingsCompleted, "rate"],
     [`Negociações (${formatPercent(settings.completed_to_negotiation)})`, simulated.negotiations, "rate"],
