@@ -2177,6 +2177,7 @@ async function addPlaceAsLead(placeId) {
   }
   state.mapsPendingLeadPlace = place;
   await openLeadDialog({
+    name: place.name,
     clinic_name: place.name,
     website: place.website || "",
     cnpj: place.cnpj || "",
@@ -2517,8 +2518,9 @@ async function openLeadDialog(lead = null) {
   $("#lead-id").value = lead?.id || "";
   $("#lead-dialog-title").textContent = lead ? "Editar lead" : "Novo lead";
   $("#delete-lead").classList.toggle("hidden", !lead);
-  $("#lead-name").value = lead?.name || "";
-  $("#lead-clinic").value = lead?.clinic_name || "";
+  const companyName = lead?.clinic_name || lead?.name || "";
+  $("#lead-name").value = companyName;
+  $("#lead-clinic").value = lead?.clinic_name || companyName;
   $("#lead-website").value = lead?.website || "";
   $("#lead-cnpj").value = lead?.cnpj || "";
   $("#lead-whatsapp").value = lead?.whatsapp || "";
