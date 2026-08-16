@@ -154,6 +154,14 @@ export function whatsappWebUrl({ phone, message = "" } = {}) {
   return `https://web.whatsapp.com/send?${params.toString()}`;
 }
 
+export function whatsappMobileUrl({ phone, message = "" } = {}) {
+  const normalized = normalizeWhatsAppNumber(phone);
+  if (!normalized) return "";
+  const params = new URLSearchParams({ phone: normalized });
+  if (message) params.set("text", message);
+  return `whatsapp://send?${params.toString()}`;
+}
+
 export function googleCalendarUrl({ title, dueAt, details = "", durationMinutes = 45 } = {}) {
   if (!title || !dueAt) return "";
   const start = new Date(dueAt);

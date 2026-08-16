@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarEvent, googleCalendarUrl, monthBounds, moveLeadToStage, normalizeGoogleEvents, reassignStage, weekOfMonth } from "../calculations.js";
+import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarEvent, googleCalendarUrl, monthBounds, moveLeadToStage, normalizeGoogleEvents, reassignStage, weekOfMonth, whatsappMobileUrl } from "../calculations.js";
 
 test("reproduz a projeção da planilha Métricas", () => {
   assert.deepEqual(deriveGoals(DEFAULT_SETTINGS), {
@@ -56,6 +56,13 @@ test("realoca todos os leads ao excluir uma etapa", () => {
   assert.equal(result.changed, 2);
   assert.deepEqual(result.leads.map((lead) => lead.stage), ["new", "new", "new"]);
   assert.equal(original[0].stage, "custom");
+});
+
+test("gera link móvel do WhatsApp com telefone e mensagem", () => {
+  const url = whatsappMobileUrl({ phone: "(11) 99999-8888", message: "Olá, Clínica A!" });
+  assert.match(url, /^whatsapp:\/\/send\?/);
+  assert.match(url, /phone=5511999998888/);
+  assert.match(url, /text=Ol%C3%A1%2C\+Cl%C3%ADnica\+A%21/);
 });
 
 test("gera link de evento para o Google Agenda", () => {

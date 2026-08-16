@@ -1,5 +1,5 @@
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./config.js";
-import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarEvent, monthBounds, moveLeadToStage, normalizeGoogleEvents, normalizeWhatsAppTemplates, progress, reassignStage, renderWhatsAppMessage, weekOfMonth, whatsappWebUrl } from "./calculations.js";
+import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarEvent, monthBounds, moveLeadToStage, normalizeGoogleEvents, normalizeWhatsAppTemplates, progress, reassignStage, renderWhatsAppMessage, weekOfMonth, whatsappMobileUrl, whatsappWebUrl } from "./calculations.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -1099,6 +1099,10 @@ function whatsappStageConfig(stage = "greeting") {
   };
 }
 function whatsappStageForLead(lead) { return lead?.contacted_at ? "offer" : "greeting"; }
+function prefersWhatsAppApp() {
+  const userAgent = navigator.userAgent || "";
+  return /Android|iPhone|iPad|iPod/i.test(userAgent) || (navigator.maxTouchPoints > 1 && Math.min(window.innerWidth, window.innerHeight) <= 900);
+}
 function whatsappTemplatesForStage(stage = "greeting") {
   const config = whatsappStageConfig(stage);
   return normalizeWhatsAppTemplates(state.settings[config.templatesKey] || (stage === "greeting" ? state.settings.whatsapp_templates : null));
@@ -1152,12 +1156,13 @@ async function openLeadWhatsApp(leadId) {
   if (templateLimit && templateUsedToday >= templateLimit) return toast(`O modelo de ${config.label} “${template.label}” atingiu o limite diário de ${templateLimit}. Ajuste os limites em Configurações.`, "error");
   const sender = String(state.user?.user_metadata?.full_name || "Damião").trim().split(/\s+/)[0] || "Damião";
   const message = renderWhatsAppMessage(template.body, lead, sender);
-  const url = whatsappWebUrl({ phone: lead.whatsapp, message });
+  const mobile = prefersWhatsAppApp();
+  const url = mobile ? whatsappMobileUrl({ phone: lead.whatsapp, message }) : whatsappWebUrl({ phone: lead.whatsapp, message });
   if (!url) return toast("Cadastre um WhatsApp válido para este lead.", "error");
   const dailyLimit = Math.max(0, Number(state.settings.whatsapp_daily_limit) || 0);
   const contactsToday = state.leads.filter((item) => item.contacted_at?.slice(0, 10) === todayIso()).length;
   if (dailyLimit && contactsToday >= dailyLimit && !window.confirm(`Você já registrou ${contactsToday} contatos hoje, atingindo o limite de referência configurado. Deseja continuar manualmente?`)) return;
-  window.open(url, "_blank", "noopener,noreferrer");
+  window.open(url, "_blank", mobile ? "" : "noopener,noreferrer");
   await recordWhatsAppTemplateUsage(templateIndex, stage);
   if (!lead.contacted_at) {
     await toggleLeadContact(leadId);
