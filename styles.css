@@ -1000,7 +1000,6 @@ body.booting::before { color: #a6b8b8; font-size: 12px; }
 .goals-layout > .panel:last-child { background: linear-gradient(145deg, rgba(17,29,34,.98), rgba(9,17,20,.98)); }
 .goal-form .field:nth-child(-n+2) { padding: 10px; border: 1px solid rgba(43,220,175,.14); border-radius: 9px; background: rgba(43,220,175,.035); }
 .projection-row { background: rgba(7,16,18,.62); }
-.projection-row:not(.final)::before { content: ""; display: inline-block; }
 .projection-row.final { box-shadow: 0 0 0 1px rgba(246,168,33,.12); }
 
 .settings-message-panel { background: linear-gradient(145deg, rgba(15,29,32,.99), rgba(9,17,19,.98)); }
