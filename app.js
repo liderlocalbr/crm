@@ -931,8 +931,8 @@ async function toggleLeadContact(leadId) {
     ? state.stages.find((stage) => stage.value === lead.contacted_previous_stage)
     : null;
   const nextPayload = contactedAt
-    ? { ...(nextStage ? { stage: nextStage.value, contacted_previous_stage: lead.stage } : {}) }
-    : { ...(restoredStage ? { stage: restoredStage.value } : {}), contacted_previous_stage: null };
+    ? { contacted_previous_stage: lead.stage, ...(nextStage ? { stage: nextStage.value } : {}) }
+    : { ...(restoredStage ? { stage: restoredStage.value } : {}), contacted_previous_stage: lead.contacted_previous_stage };
   try {
     const saved = await store.saveLead({ id: lead.id, contacted_at: contactedAt, ...nextPayload });
     Object.assign(lead, saved || { contacted_at: contactedAt, ...nextPayload });
@@ -966,7 +966,7 @@ function leadCard(lead) {
   const activityAction = `<button type="button" draggable="false" class="lead-activity-quick icon-only" data-action="open-lead-activity" data-id="${lead.id}" aria-label="Nova atividade para ${escapeHtml(lead.name)}" title="Nova atividade"><span aria-hidden="true">＋</span></button>`;
   const followUpIndicator = lead.next_follow_up ? `<span class="lead-follow-up-dot ${overdue ? "overdue" : ""}" title="Follow-up em ${formatDate(lead.next_follow_up)}" aria-label="Follow-up em ${formatDate(lead.next_follow_up)}"></span>` : "";
   const whatsappStage = lead.contacted_at ? "Proposta" : "Saudação";
-  const whatsappLabel = lead.contacted_at ? "Proposta" : "WhatsApp";
+  const whatsappLabel = lead.contacted_at ? "Proposta" : (lead.contacted_previous_stage ? "WhatsApp" : "Saudação");
   const whatsappAction = lead.whatsapp ? `<button type="button" draggable="false" class="whatsapp-button" data-action="open-whatsapp" data-id="${lead.id}" aria-label="Abrir ${whatsappLabel} de ${escapeHtml(lead.name)}" title="${whatsappLabel}"><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M12 3.2a8.8 8.8 0 0 0-7.58 13.27L3.2 20.8l4.48-1.18A8.8 8.8 0 1 0 12 3.2Zm0 1.7a7.1 7.1 0 0 1 5.03 12.13 7.1 7.1 0 0 1-8.36 1.27l-.48-.25-2.65.7.71-2.58-.28-.49A7.1 7.1 0 0 1 12 4.9Zm-2.25 2.28c-.2 0-.52.08-.79.38-.27.3-1.03 1.01-1.03 2.47s1.05 2.86 1.2 3.05c.15.2 2.03 3.25 5.02 4.42 2.48.97 2.99.78 3.53.73.54-.05 1.75-.71 2-1.4.25-.69.25-1.28.17-1.4-.07-.12-.27-.2-.57-.35-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.5h-.52Z"/></svg><span>${whatsappLabel}</span></button>` : "";
   const contactTag = lead.contacted_at ? `<span class="contacted-tag">Em contato</span>` : "";
   const contactCheck = `<button type="button" draggable="false" class="lead-contact-toggle ${lead.contacted_at ? "checked" : ""}" data-action="toggle-lead-contact" data-id="${lead.id}" aria-pressed="${lead.contacted_at ? "true" : "false"}" aria-label="${lead.contacted_at ? "Desmarcar contatado" : "Marcar como contatado"}">${lead.contacted_at ? "✓" : ""}</button>`;
