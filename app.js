@@ -785,7 +785,7 @@ function renderDashboard() {
   const goals = deriveGoals(state.settings);
   const salesProgress = progress(totals.sales, goals.sales);
   const allStages = [
-    ["Leads", totals.leads, goals.leads], ["Mensagens", totals.messages, goals.messages],
+    ["Mensagens Enviadas", totals.leads, goals.leads],
     ["Reuniões agendadas", totals.meetingsScheduled, goals.meetingsScheduled], ["Reuniões realizadas", totals.meetingsCompleted, goals.meetingsCompleted],
     ["Negociação", totals.negotiations, goals.negotiations], ["Vendas", totals.sales, goals.sales],
   ];
@@ -797,8 +797,10 @@ function renderDashboard() {
       <button class="button primary" data-action="open-lead">+ Novo lead</button>
     </div></header>
     <div class="kpi-grid">
-      ${kpi("Leads no período", totals.leads, goals.leads, "◎", progress(totals.leads, goals.leads))}
+      ${kpi("Mensagens enviadas", totals.leads, goals.leads, "◎", progress(totals.leads, goals.leads))}
+      ${kpi("Reuniões agendadas", totals.meetingsScheduled, goals.meetingsScheduled, "◷", progress(totals.meetingsScheduled, goals.meetingsScheduled))}
       ${kpi("Reuniões realizadas", totals.meetingsCompleted, goals.meetingsCompleted, "◷", progress(totals.meetingsCompleted, goals.meetingsCompleted))}
+      ${kpi("Negociação", totals.negotiations, goals.negotiations, "◇", progress(totals.negotiations, goals.negotiations))}
       ${kpi("Vendas", totals.sales, goals.sales, "◇", salesProgress)}
       ${kpi("Receita estimada", formatCurrency(totals.revenue), formatCurrency(goals.revenue), "↗", progress(totals.revenue, goals.revenue), true)}
     </div>
@@ -2219,7 +2221,7 @@ async function saveMessageSettings(event) {
 
 function projectionRows(goals) {
   return [
-    ["Leads de entrada", goals.leads], ["Mensagens", goals.messages], ["Reuniões agendadas", goals.meetingsScheduled],
+    ["Mensagens Enviadas", goals.leads], ["Reuniões agendadas", goals.meetingsScheduled],
     ["Reuniões realizadas", goals.meetingsCompleted], ["Negociações", goals.negotiations], ["Vendas", goals.sales],
   ].map(([label, value]) => `<div class="projection-row"><span>${label}</span><b>${formatNumber(value)}</b></div>`).join("") + `<div class="projection-row final"><span>Receita projetada</span><b>${formatCurrency(goals.revenue)}</b></div>`;
 }
