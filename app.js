@@ -1734,9 +1734,25 @@ function mapsSelectionToolbar(places) {
   </div>`;
 }
 
+function websiteHref(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  return /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+}
+
+function websiteLabel(value) {
+  const raw = String(value || "").trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/$/, "");
+  return raw || "Site";
+}
+
+function mapsPlaceMapLink(place) {
+  if (!place.mapsUrl) return "";
+  return `<a class="maps-inline-map-link" href="${escapeHtml(place.mapsUrl)}" target="_blank" rel="noopener" aria-label="Abrir ${escapeHtml(place.name)} no Google Maps" title="Abrir no Google Maps">⌖</a>`;
+}
+
 function mapsResultActions(place, reference, lead) {
   const action = lead ? `<button class="button ghost small" type="button" data-action="edit-lead" data-id="${escapeHtml(lead.id)}">Abrir lead</button>` : `<button class="button primary small" type="button" data-action="register-place-prospect" data-place-id="${escapeHtml(place.id)}">${reference ? "Atualizar prospecção" : "Registrar prospecção"}</button>`;
-  return `${place.mapsUrl ? `<a class="button ghost small" href="${escapeHtml(place.mapsUrl)}" target="_blank" rel="noopener">Ver no Maps ↗</a>` : ""}${reference ? `<select class="compact-select prospect-status-select" data-place-id="${escapeHtml(place.id)}" aria-label="Status da prospecção"><option value="prospected" ${reference.status === "prospected" ? "selected" : ""}>Salva</option><option value="contacted" ${reference.status === "contacted" ? "selected" : ""}>Em contato</option><option value="converted" ${reference.status === "converted" ? "selected" : ""}>Convertida</option><option value="discarded" ${reference.status === "discarded" ? "selected" : ""}>Descartada</option></select>` : ""}${action}${lead ? "" : `<button class="button primary small" type="button" data-action="add-place-lead" data-place-id="${escapeHtml(place.id)}">+ Adicionar como lead</button>`}`;
+  return `${reference ? `<select class="compact-select prospect-status-select" data-place-id="${escapeHtml(place.id)}" aria-label="Status da prospecção"><option value="prospected" ${reference.status === "prospected" ? "selected" : ""}>Salva</option><option value="contacted" ${reference.status === "contacted" ? "selected" : ""}>Em contato</option><option value="converted" ${reference.status === "converted" ? "selected" : ""}>Convertida</option><option value="discarded" ${reference.status === "discarded" ? "selected" : ""}>Descartada</option></select>` : ""}${action}${lead ? "" : `<button class="button primary small" type="button" data-action="add-place-lead" data-place-id="${escapeHtml(place.id)}">+ Adicionar como lead</button>`}`;
 }
 
 function placeSelectionMarkup(place) {
@@ -1765,7 +1781,7 @@ function mapsResultListRow(place) {
   const funnelTag = lead ? `<span class="funnel-badge">● No funil</span>` : "";
   const statusMarkup = `${status ? `<span class="prospect-badge ${status.className}">${status.label}</span>` : `<span class="prospect-badge new">Nova</span>`}${funnelTag}`;
   const rowState = `${status ? `prospect-state-${status.className}` : "prospect-state-new"}${lead ? " maps-in-funnel" : ""}`;
-  return `<article class="maps-result-row ${rowState}">${placeSelectionMarkup(place)}<div class="maps-list-main"><div class="maps-list-title-line"><b>${escapeHtml(place.name)}</b>${place.rating ? `<span class="maps-rating">★ ${place.rating} <small>(${place.ratingCount || 0})</small></span>` : ""}</div><span class="maps-address">${escapeHtml(place.address || "Sem endereço")}</span></div><div class="maps-list-contact"><span class="maps-contact-value">${escapeHtml(place.phone || "Sem telefone")}</span><span>${place.website ? "Site disponível" : "Sem site informado"}</span></div><div class="maps-list-status">${statusMarkup}</div><div class="maps-list-actions">${mapsResultActions(place, reference, lead)}</div></article>`;
+  return `<article class="maps-result-row ${rowState}">${placeSelectionMarkup(place)}<div class="maps-list-main"><div class="maps-list-title-line"><div class="maps-place-name"><b>${escapeHtml(place.name)}</b>${mapsPlaceMapLink(place)}</div>${place.rating ? `<span class="maps-rating">★ ${place.rating} <small>(${place.ratingCount || 0})</small></span>` : ""}</div><span class="maps-address">${escapeHtml(place.address || "Sem endereço")}</span></div><div class="maps-list-contact"><span class="maps-contact-value">${escapeHtml(place.phone || "Sem telefone")}</span>${place.website ? `<a class="maps-website-link" href="${escapeHtml(websiteHref(place.website))}" target="_blank" rel="noopener">${escapeHtml(websiteLabel(place.website))}</a>` : `<span>Sem site informado</span>`}</div><div class="maps-list-status">${statusMarkup}</div><div class="maps-list-actions">${mapsResultActions(place, reference, lead)}</div></article>`;
 }
 
 function mapsResultCard(place) {
@@ -1775,7 +1791,7 @@ function mapsResultCard(place) {
   const funnelTag = lead ? `<span class="funnel-badge">● No funil</span>` : "";
   const statusMarkup = `${status ? `<span class="prospect-badge ${status.className}">${status.label}${reference.prospected_at ? ` · ${formatDate(reference.prospected_at, { day: "2-digit", month: "short" })}` : ""}</span>` : `<span class="prospect-badge new">Nova</span>`}${funnelTag}`;
   const cardStateClass = `${status ? `prospect-state-${status.className}` : "prospect-state-new"}${lead ? " maps-in-funnel" : ""}`;
-  return `<article class="lead-card maps-result-card ${cardStateClass}">${placeSelectionMarkup(place)}<div class="maps-place-header"><div class="maps-place-identity"><div class="maps-place-title-line"><h3>${escapeHtml(place.name)}</h3>${place.rating ? `<span class="maps-rating">★ ${place.rating} <small>(${place.ratingCount || 0})</small></span>` : ""}</div><div class="maps-status-line">${statusMarkup}</div></div></div><div class="maps-place-details"><div class="maps-place-detail"><span class="maps-detail-icon">⌖</span><span>${escapeHtml(place.address || "Sem endereço")}</span></div>${place.phone ? `<div class="maps-place-detail"><span class="maps-detail-icon">◌</span><span>${escapeHtml(place.phone)}</span></div>` : ""}${place.website ? `<div class="maps-place-detail"><span class="maps-detail-icon">↗</span><span>Site disponível</span></div>` : ""}</div><div class="maps-result-actions">${mapsResultActions(place, reference, lead)}</div></article>`;
+  return `<article class="lead-card maps-result-card ${cardStateClass}">${placeSelectionMarkup(place)}<div class="maps-place-header"><div class="maps-place-identity"><div class="maps-place-title-line"><div class="maps-place-name"><h3>${escapeHtml(place.name)}</h3>${mapsPlaceMapLink(place)}</div>${place.rating ? `<span class="maps-rating">★ ${place.rating} <small>(${place.ratingCount || 0})</small></span>` : ""}</div><div class="maps-status-line">${statusMarkup}</div></div></div><div class="maps-place-details"><div class="maps-place-detail"><span class="maps-detail-icon">⌖</span><span>${escapeHtml(place.address || "Sem endereço")}</span></div>${place.phone ? `<div class="maps-place-detail"><span class="maps-detail-icon">◌</span><span>${escapeHtml(place.phone)}</span></div>` : ""}${place.website ? `<div class="maps-place-detail"><span class="maps-detail-icon">↗</span><a class="maps-website-link" href="${escapeHtml(websiteHref(place.website))}" target="_blank" rel="noopener">${escapeHtml(websiteLabel(place.website))}</a></div>` : ""}</div><div class="maps-result-actions">${mapsResultActions(place, reference, lead)}</div></article>`;
 }
 
 function mapsCacheValue(value) {

@@ -1082,3 +1082,20 @@ body.booting::before { color: #a6b8b8; font-size: 12px; }
   .maps-result-card .maps-result-actions { grid-template-columns: 1fr; }
   .maps-result-card .maps-result-actions .prospect-status-select { grid-column: auto; }
 }
+
+
+/* Maps — inline map icon and real website links */
+.maps-place-name { display: inline-flex; align-items: center; min-width: 0; max-width: 100%; gap: 6px; }
+.maps-place-name h3 { min-width: 0; }
+.maps-inline-map-link { display: inline-grid; place-items: center; width: 22px; height: 22px; flex: 0 0 22px; border: 1px solid rgba(99,169,255,.34); border-radius: 7px; background: rgba(99,169,255,.1); color: #9ec7ff; font-size: 13px; line-height: 1; text-decoration: none; transition: .16s ease; }
+.maps-inline-map-link:hover { border-color: #9ec7ff; background: rgba(99,169,255,.22); color: #fff; transform: translateY(-1px); }
+.maps-inline-map-link:focus-visible, .maps-website-link:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(99,169,255,.18); }
+.maps-website-link { min-width: 0; overflow: hidden; color: #8fc1ff !important; font-size: 10px !important; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.maps-website-link:hover { color: #c7deff !important; text-decoration: underline; }
+.maps-place-detail .maps-website-link { display: block; padding-top: 1px; }
+.maps-list-title-line .maps-place-name { min-width: 0; }
+.maps-list-title-line .maps-place-name b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.maps-list-contact .maps-website-link { max-width: 100%; }
+@media (max-width: 760px) {
+  .maps-place-name { max-width: calc(100% - 12px); }
+}
