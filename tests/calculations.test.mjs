@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarEvent, googleCalendarUrl, monthBounds, moveLeadToStage, normalizeGoogleEvents, reassignStage, weekOfMonth, whatsappMobileUrl } from "../calculations.js";
+import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarEvent, googleCalendarUrl, monthBounds, moveLeadToStage, normalizeGoogleEvents, reassignStage, simulateGoalsFromMessages, weekOfMonth, whatsappMobileUrl } from "../calculations.js";
 
 test("reproduz a projeção da planilha Métricas", () => {
   assert.deepEqual(deriveGoals(DEFAULT_SETTINGS), {
@@ -12,6 +12,11 @@ test("reproduz a projeção da planilha Métricas", () => {
     sales: 3,
     revenue: 9000,
   });
+});
+
+test("simula o funil a partir de mensagens enviadas", () => {
+  const result = simulateGoalsFromMessages(150, DEFAULT_SETTINGS);
+  assert.deepEqual(result, { messages: 150, meetingsScheduled: 3, meetingsCompleted: 1, negotiations: 1, sales: 0, revenue: 0 });
 });
 
 test("agrega registros diários e calcula taxas reais", () => {

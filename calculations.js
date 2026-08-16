@@ -72,6 +72,16 @@ export function deriveGoals(settings = DEFAULT_SETTINGS) {
   return { leads, messages, meetingsScheduled, meetingsCompleted, negotiations, sales, revenue };
 }
 
+export function simulateGoalsFromMessages(messages, settings = DEFAULT_SETTINGS) {
+  const sent = Math.max(0, Math.round(safeNumber(messages)));
+  const meetingsScheduled = Math.round(sent * safeNumber(settings.message_to_scheduled) / 100);
+  const meetingsCompleted = Math.round(meetingsScheduled * safeNumber(settings.scheduled_to_completed) / 100);
+  const negotiations = Math.round(meetingsCompleted * safeNumber(settings.completed_to_negotiation) / 100);
+  const sales = Math.round(negotiations * safeNumber(settings.negotiation_to_sale) / 100);
+  const revenue = sales * Math.max(0, safeNumber(settings.deal_value));
+  return { messages: sent, meetingsScheduled, meetingsCompleted, negotiations, sales, revenue };
+}
+
 export function aggregateMetrics(rows = [], dealValue = 0) {
   const total = rows.reduce((acc, row) => {
     acc.leads += safeNumber(row.leads);

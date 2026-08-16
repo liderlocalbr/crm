@@ -1,5 +1,5 @@
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./config.js";
-import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarEvent, monthBounds, moveLeadToStage, normalizeGoogleEvents, normalizeWhatsAppTemplates, progress, reassignStage, renderWhatsAppMessage, weekOfMonth, whatsappMobileUrl, whatsappWebUrl } from "./calculations.js";
+import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarEvent, monthBounds, moveLeadToStage, normalizeGoogleEvents, normalizeWhatsAppTemplates, progress, reassignStage, renderWhatsAppMessage, simulateGoalsFromMessages, weekOfMonth, whatsappMobileUrl, whatsappWebUrl } from "./calculations.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -90,6 +90,7 @@ const state = {
   mapsBulkStages: [],
   selectedLeadIds: [],
   mapsViewMode: "cards",
+  dashboardSimulatorMessages: null,
 };
 
 const mock = createMockData();
@@ -841,6 +842,23 @@ function metricRowsForFilter() {
   return state.metrics.filter((row) => weekOfMonth(row.metric_date) === Number(state.week));
 }
 
+function dashboardSimulatorRows(simulated, settings) {
+  const rates = [
+    ["Mensagens enviadas", simulated.messages, "base"],
+    [`Reuniões agendadas (${formatPercent(settings.message_to_scheduled)})`, simulated.meetingsScheduled, "rate"],
+    [`Reuniões realizadas (${formatPercent(settings.scheduled_to_completed)})`, simulated.meetingsCompleted, "rate"],
+    [`Negociações (${formatPercent(settings.completed_to_negotiation)})`, simulated.negotiations, "rate"],
+    [`Vendas (${formatPercent(settings.negotiation_to_sale)})`, simulated.sales, "rate"],
+  ];
+  return `${rates.map(([label, value, kind]) => `<div class="simulator-row ${kind}"><span>${label}</span><b>${formatNumber(value)}</b></div>`).join("")}<div class="simulator-row revenue"><span>Receita estimada</span><b>${formatCurrency(simulated.revenue)}</b></div>`;
+}
+
+function dashboardSimulatorMarkup() {
+  const inputValue = state.dashboardSimulatorMessages == null ? "" : String(state.dashboardSimulatorMessages);
+  const simulated = simulateGoalsFromMessages(state.dashboardSimulatorMessages || 0, state.settings);
+  return `<section class="panel dashboard-simulator"><div class="panel-head"><div><h2>Simulador de metas</h2><span>Veja o potencial do funil em tempo real</span></div><span class="simulator-badge">Taxas da aba Metas</span></div><label class="simulator-input-label" for="dashboard-simulator-messages">Mensagens enviadas</label><input id="dashboard-simulator-messages" class="simulator-input" type="number" min="0" step="1" inputmode="numeric" value="${escapeHtml(inputValue)}" placeholder="Ex.: 150" /><div class="simulator-flow">${dashboardSimulatorRows(simulated, state.settings)}</div></section>`;
+}
+
 function renderDashboard() {
   const rows = metricRowsForFilter();
   const totals = aggregateMetrics(rows, state.settings.deal_value);
@@ -891,6 +909,7 @@ function renderDashboard() {
         <div class="panel-head"><div><h2>Próximos passos</h2><span>Follow-ups ainda não concluídos</span></div><button class="text-button" data-view-target="agenda">Abrir agenda</button></div>
         ${upcomingActivities(4)}
       </section>
+      ${dashboardSimulatorMarkup()}
     </div>`;
 }
 
@@ -2448,6 +2467,11 @@ function handleMainInput(event) {
     $("#projection-flow").innerHTML = projectionRows(deriveGoals(values));
   }
   if (event.target.classList.contains("metric-input")) event.target.closest("tr").querySelector(".save-row").classList.add("changed");
+  if (event.target.id === "dashboard-simulator-messages") {
+    state.dashboardSimulatorMessages = Math.max(0, Number(event.target.value) || 0);
+    const simulator = event.target.closest(".dashboard-simulator");
+    if (simulator) simulator.querySelector(".simulator-flow").innerHTML = dashboardSimulatorRows(simulateGoalsFromMessages(state.dashboardSimulatorMessages, state.settings), state.settings);
+  }
 }
 
 function setLeadDetailTab(tab = "notes") {
