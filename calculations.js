@@ -28,7 +28,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   whatsapp_greeting_randomize_templates: false,
   whatsapp_greeting_template_limits: {},
   whatsapp_greeting_template_usage: {},
-  whatsapp_offer_templates: [{ label: "Oferta inicial", body: "{{nome}}, analisando a {{empresa}}, acredito que podemos ajudar a melhorar a presença digital e gerar mais oportunidades. Posso te mostrar como?" }],
+  whatsapp_offer_templates: [{ label: "Proposta inicial", body: "{{nome}}, analisando a {{empresa}}, acredito que podemos ajudar a melhorar a presença digital e gerar mais oportunidades. Posso te mostrar como?" }],
   whatsapp_offer_default_template: 0,
   whatsapp_offer_randomize_templates: false,
   whatsapp_offer_template_limits: {},
