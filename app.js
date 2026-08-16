@@ -1055,7 +1055,21 @@ async function openLeadWhatsApp(leadId) {
   if (dailyLimit && contactsToday >= dailyLimit && !window.confirm(`Você já registrou ${contactsToday} contatos hoje, atingindo o limite de referência configurado. Deseja continuar manualmente?`)) return;
   window.open(url, "_blank", "noopener,noreferrer");
   await recordWhatsAppTemplateUsage(templateIndex, stage);
-  if (!lead.contacted_at) await toggleLeadContact(leadId);
+  if (!lead.contacted_at) {
+    await toggleLeadContact(leadId);
+    return;
+  }
+  if (stage === "offer") {
+    const currentIndex = state.stages.findIndex((item) => item.value === lead.stage);
+    const nextStage = currentIndex >= 0 ? state.stages[currentIndex + 1] : null;
+    if (nextStage) {
+      const saved = await store.saveLead({ id: lead.id, stage: nextStage.value });
+      Object.assign(lead, saved || { stage: nextStage.value });
+      renderDashboard();
+      renderLeads();
+      toast(`${lead.name} movido para ${nextStage.label}.`);
+    }
+  }
 }
 
 function openStageDialog() {
