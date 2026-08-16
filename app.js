@@ -1643,7 +1643,7 @@ function renderMapsSearch() {
       </section>
       <section class="panel">${mapsResultsMarkup()}</section>`;
   section.innerHTML = `
-    ${pageHead("PROSPECÇÃO", "", "", "")}
+    ${pageHead("", "Prospecção", "", "")}
     ${mapsSavedTabsMarkup()}
     ${content}`;
   $("#maps-search-form")?.addEventListener("submit", handleMapsSearch);
