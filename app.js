@@ -2126,10 +2126,9 @@ function renderGoals() {
   $("#view-goals").innerHTML = `
     ${pageHead("METAS E CONVERSÕES", `Metas de ${monthLabel}`, "Cada mês possui metas próprias. Ao alterar um número, todo o funil é recalculado automaticamente.", `${monthInput("goals-month")}<span class="date-chip">Meta mensal</span>`)}
     <div class="goals-layout"><section class="panel"><div class="panel-head"><div><h2>Premissas do mês</h2><span>Percentuais em escala de 0 a 100</span></div></div><form id="goals-form" class="goal-form">
-      ${goalInput("leads_goal", "Meta de leads", state.settings.leads_goal, 1)}
+      ${goalInput("leads_goal", "Meta de mensagens enviadas", state.settings.leads_goal, 1)}
       ${goalInput("deal_value", "Setup + MRR (R$)", state.settings.deal_value, 100)}
-      ${goalInput("lead_to_message", "Leads → mensagem (%)", state.settings.lead_to_message, .1)}
-      ${goalInput("message_to_scheduled", "Mensagem → agendada (%)", state.settings.message_to_scheduled, .1)}
+      ${goalInput("message_to_scheduled", "Mensagens enviadas → agendada (%)", state.settings.message_to_scheduled, .1)}
       ${goalInput("scheduled_to_completed", "Agendada → realizada (%)", state.settings.scheduled_to_completed, .1)}
       ${goalInput("completed_to_negotiation", "Realizada → negociação (%)", state.settings.completed_to_negotiation, .1)}
       ${goalInput("negotiation_to_sale", "Negociação → venda (%)", state.settings.negotiation_to_sale, .1)}
