@@ -23,6 +23,16 @@ export const DEFAULT_SETTINGS = Object.freeze({
   whatsapp_template_limits: {},
   whatsapp_template_usage: {},
   whatsapp_daily_limit: 150,
+  whatsapp_greeting_templates: DEFAULT_WHATSAPP_TEMPLATES,
+  whatsapp_greeting_default_template: 0,
+  whatsapp_greeting_randomize_templates: false,
+  whatsapp_greeting_template_limits: {},
+  whatsapp_greeting_template_usage: {},
+  whatsapp_offer_templates: [{ label: "Oferta inicial", body: "{{nome}}, analisando a {{empresa}}, acredito que podemos ajudar a melhorar a presença digital e gerar mais oportunidades. Posso te mostrar como?" }],
+  whatsapp_offer_default_template: 0,
+  whatsapp_offer_randomize_templates: false,
+  whatsapp_offer_template_limits: {},
+  whatsapp_offer_template_usage: {},
 });
 
 export function normalizeWhatsAppTemplates(value) {

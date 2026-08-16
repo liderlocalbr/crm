@@ -658,7 +658,7 @@ async function loadData() {
   const [settings, metrics, leads, activities, stages] = await Promise.all([
     store.getSettings(state.month), store.getMetrics(state.month), store.getLeads(), store.getActivities(), store.getStages(),
   ]);
-  state.settings = { ...DEFAULT_SETTINGS, ...settings, whatsapp_templates: normalizeWhatsAppTemplates(settings.whatsapp_templates) };
+  state.settings = { ...DEFAULT_SETTINGS, ...settings, whatsapp_templates: normalizeWhatsAppTemplates(settings.whatsapp_templates), whatsapp_greeting_templates: normalizeWhatsAppTemplates(settings.whatsapp_greeting_templates || settings.whatsapp_templates), whatsapp_offer_templates: normalizeWhatsAppTemplates(settings.whatsapp_offer_templates) };
   state.metrics = metrics;
   state.leads = leads;
   state.activities = activities;
@@ -667,7 +667,7 @@ async function loadData() {
 
 async function reloadPeriod() {
   const [settings, metrics] = await Promise.all([store.getSettings(state.month), store.getMetrics(state.month)]);
-  state.settings = { ...DEFAULT_SETTINGS, ...settings, whatsapp_templates: normalizeWhatsAppTemplates(settings.whatsapp_templates) };
+  state.settings = { ...DEFAULT_SETTINGS, ...settings, whatsapp_templates: normalizeWhatsAppTemplates(settings.whatsapp_templates), whatsapp_greeting_templates: normalizeWhatsAppTemplates(settings.whatsapp_greeting_templates || settings.whatsapp_templates), whatsapp_offer_templates: normalizeWhatsAppTemplates(settings.whatsapp_offer_templates) };
   state.metrics = metrics;
     renderDashboard();
   renderMetrics();
@@ -865,41 +865,71 @@ function leadCard(lead) {
   const activityMarkup = previewActivities.length ? `<div class="lead-card-activities">${previewActivities.map((activity) => `<span title="${escapeHtml(activity.title)}${activity.due_at ? ` · ${formatDate(activity.due_at, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}"><i></i>${escapeHtml(activity.title)}</span>`).join("")}</div>` : "";
   const activityAction = `<button type="button" draggable="false" class="lead-activity-quick icon-only" data-action="open-lead-activity" data-id="${lead.id}" aria-label="Nova atividade para ${escapeHtml(lead.name)}" title="Nova atividade"><span aria-hidden="true">＋</span></button>`;
   const followUpIndicator = lead.next_follow_up ? `<span class="lead-follow-up-dot ${overdue ? "overdue" : ""}" title="Follow-up em ${formatDate(lead.next_follow_up)}" aria-label="Follow-up em ${formatDate(lead.next_follow_up)}"></span>` : "";
-  const whatsappAction = lead.whatsapp ? `<button type="button" draggable="false" class="whatsapp-button" data-action="open-whatsapp" data-id="${lead.id}" aria-label="Abrir WhatsApp de ${escapeHtml(lead.name)}" title="WhatsApp de ${escapeHtml(lead.name)}"><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M12 3.2a8.8 8.8 0 0 0-7.58 13.27L3.2 20.8l4.48-1.18A8.8 8.8 0 1 0 12 3.2Zm0 1.7a7.1 7.1 0 0 1 5.03 12.13 7.1 7.1 0 0 1-8.36 1.27l-.48-.25-2.65.7.71-2.58-.28-.49A7.1 7.1 0 0 1 12 4.9Zm-2.25 2.28c-.2 0-.52.08-.79.38-.27.3-1.03 1.01-1.03 2.47s1.05 2.86 1.2 3.05c.15.2 2.03 3.25 5.02 4.42 2.48.97 2.99.78 3.53.73.54-.05 1.75-.71 2-1.4.25-.69.25-1.28.17-1.4-.07-.12-.27-.2-.57-.35-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.5h-.52Z"/></svg><span>WhatsApp</span></button>` : "";
+  const whatsappStage = lead.contacted_at ? "Oferta" : "Saudação";
+  const whatsappAction = lead.whatsapp ? `<button type="button" draggable="false" class="whatsapp-button" data-action="open-whatsapp" data-id="${lead.id}" aria-label="Abrir WhatsApp de ${escapeHtml(lead.name)} para ${whatsappStage}" title="WhatsApp · ${whatsappStage}"><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M12 3.2a8.8 8.8 0 0 0-7.58 13.27L3.2 20.8l4.48-1.18A8.8 8.8 0 1 0 12 3.2Zm0 1.7a7.1 7.1 0 0 1 5.03 12.13 7.1 7.1 0 0 1-8.36 1.27l-.48-.25-2.65.7.71-2.58-.28-.49A7.1 7.1 0 0 1 12 4.9Zm-2.25 2.28c-.2 0-.52.08-.79.38-.27.3-1.03 1.01-1.03 2.47s1.05 2.86 1.2 3.05c.15.2 2.03 3.25 5.02 4.42 2.48.97 2.99.78 3.53.73.54-.05 1.75-.71 2-1.4.25-.69.25-1.28.17-1.4-.07-.12-.27-.2-.57-.35-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.5h-.52Z"/></svg><span>WhatsApp · ${whatsappStage}</span></button>` : "";
   const contactTag = lead.contacted_at ? `<span class="contacted-tag">Em contato</span>` : "";
   const contactCheck = `<button type="button" draggable="false" class="lead-contact-toggle ${lead.contacted_at ? "checked" : ""}" data-action="toggle-lead-contact" data-id="${lead.id}" aria-pressed="${lead.contacted_at ? "true" : "false"}" aria-label="${lead.contacted_at ? "Desmarcar contatado" : "Marcar como contatado"}">${lead.contacted_at ? "✓" : ""}</button>`;
   const deleteAction = `<button type="button" draggable="false" class="lead-card-delete" data-action="delete-lead-card" data-id="${lead.id}" aria-label="Excluir ${escapeHtml(lead.name)}" title="Excluir lead"><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-.8 11.2a2 2 0 0 1-2 1.8H8.8a2 2 0 0 1-2-1.8L6 9Zm3 2v7h2v-7H9Zm4 0v7h2v-7h-2Z"/></svg></button>`;
   return `<article class="lead-card ${lead.contacted_at ? "lead-contacted" : ""}" draggable="true" data-action="edit-lead" data-id="${lead.id}" title="Arraste para mudar de etapa ou clique para editar"><div class="lead-card-top"><div><h3>${escapeHtml(lead.name)}</h3><div class="lead-card-subtitle">${contactTag}</div></div><div class="lead-card-header-actions"><span class="lead-card-value">${formatCurrency(lead.deal_value || state.settings.deal_value)}</span>${deleteAction}</div></div><div class="lead-meta">${followUpIndicator}</div>${activityMarkup}<div class="lead-card-footer">${whatsappAction}${activityAction}<span class="contact-check-label">${contactCheck} ${lead.contacted_at ? "Em contato" : "Contatado"}</span></div></article>`;
 }
 
-function whatsappTemplateUsageToday() {
-  const usage = state.settings.whatsapp_template_usage && typeof state.settings.whatsapp_template_usage === "object" ? state.settings.whatsapp_template_usage : {};
+function whatsappStageConfig(stage = "greeting") {
+  const offer = stage === "offer";
+  return offer ? {
+    key: "offer",
+    label: "Oferta",
+    templatesKey: "whatsapp_offer_templates",
+    defaultKey: "whatsapp_offer_default_template",
+    randomizeKey: "whatsapp_offer_randomize_templates",
+    limitsKey: "whatsapp_offer_template_limits",
+    usageKey: "whatsapp_offer_template_usage",
+  } : {
+    key: "greeting",
+    label: "Saudação",
+    templatesKey: "whatsapp_greeting_templates",
+    defaultKey: "whatsapp_greeting_default_template",
+    randomizeKey: "whatsapp_greeting_randomize_templates",
+    limitsKey: "whatsapp_greeting_template_limits",
+    usageKey: "whatsapp_greeting_template_usage",
+  };
+}
+function whatsappStageForLead(lead) { return lead?.contacted_at ? "offer" : "greeting"; }
+function whatsappTemplatesForStage(stage = "greeting") {
+  const config = whatsappStageConfig(stage);
+  return normalizeWhatsAppTemplates(state.settings[config.templatesKey] || (stage === "greeting" ? state.settings.whatsapp_templates : null));
+}
+function whatsappTemplateUsageToday(stage = "greeting") {
+  const config = whatsappStageConfig(stage);
+  const usage = state.settings[config.usageKey] && typeof state.settings[config.usageKey] === "object" ? state.settings[config.usageKey] : {};
   const today = todayIso();
   return usage[today] && typeof usage[today] === "object" ? usage[today] : {};
 }
-function whatsappTemplateLimit(index) {
-  const limits = state.settings.whatsapp_template_limits && typeof state.settings.whatsapp_template_limits === "object" ? state.settings.whatsapp_template_limits : {};
+function whatsappTemplateLimit(index, stage = "greeting") {
+  const config = whatsappStageConfig(stage);
+  const limits = state.settings[config.limitsKey] && typeof state.settings[config.limitsKey] === "object" ? state.settings[config.limitsKey] : {};
   return Math.max(0, Number(limits[String(index)]) || 0);
 }
-function chooseWhatsAppTemplateIndex(templates) {
-  const usageToday = whatsappTemplateUsageToday();
+function chooseWhatsAppTemplateIndex(templates, stage = "greeting") {
+  const config = whatsappStageConfig(stage);
+  const usageToday = whatsappTemplateUsageToday(stage);
   const eligible = templates.map((_, index) => index).filter((index) => {
-    const limit = whatsappTemplateLimit(index);
+    const limit = whatsappTemplateLimit(index, stage);
     return !limit || Number(usageToday[String(index)] || 0) < limit;
   });
-  if (state.settings.whatsapp_randomize_templates && eligible.length) return eligible[Math.floor(Math.random() * eligible.length)];
-  const configuredIndex = Math.min(Math.max(0, Number(state.settings.whatsapp_default_template) || 0), templates.length - 1);
-  return configuredIndex;
+  if (state.settings[config.randomizeKey] && eligible.length) return eligible[Math.floor(Math.random() * eligible.length)];
+  return Math.min(Math.max(0, Number(state.settings[config.defaultKey]) || 0), templates.length - 1);
 }
-async function recordWhatsAppTemplateUsage(index) {
+async function recordWhatsAppTemplateUsage(index, stage = "greeting") {
+  const config = whatsappStageConfig(stage);
   const today = todayIso();
-  const usage = state.settings.whatsapp_template_usage && typeof state.settings.whatsapp_template_usage === "object" ? structuredClone(state.settings.whatsapp_template_usage) : {};
-  const day = usage[today] && typeof usage[today] === "object" ? { ...usage[today] } : {};
+  const current = state.settings[config.usageKey] && typeof state.settings[config.usageKey] === "object" ? structuredClone(state.settings[config.usageKey]) : {};
+  const day = current[today] && typeof current[today] === "object" ? { ...current[today] } : {};
   day[String(index)] = Number(day[String(index)] || 0) + 1;
-  state.settings = { ...state.settings, whatsapp_template_usage: { [today]: day } };
+  const nextUsage = { [today]: day };
+  state.settings = { ...state.settings, [config.usageKey]: nextUsage };
   try {
-    const saved = await store.saveSettings(state.month, { whatsapp_template_usage: state.settings.whatsapp_template_usage });
-    state.settings = { ...state.settings, ...saved, whatsapp_template_usage: state.settings.whatsapp_template_usage };
+    const saved = await store.saveSettings(state.month, { [config.usageKey]: nextUsage });
+    state.settings = { ...state.settings, ...saved, [config.usageKey]: nextUsage };
   } catch (error) {
     toast("WhatsApp aberto, mas não foi possível salvar o contador do modelo.", "error");
   }
@@ -907,12 +937,14 @@ async function recordWhatsAppTemplateUsage(index) {
 async function openLeadWhatsApp(leadId) {
   const lead = state.leads.find((item) => item.id === leadId);
   if (!lead) return toast("Lead não encontrado.", "error");
-  const templates = normalizeWhatsAppTemplates(state.settings.whatsapp_templates);
-  const templateIndex = chooseWhatsAppTemplateIndex(templates);
+  const stage = whatsappStageForLead(lead);
+  const config = whatsappStageConfig(stage);
+  const templates = whatsappTemplatesForStage(stage);
+  const templateIndex = chooseWhatsAppTemplateIndex(templates, stage);
   const template = templates[templateIndex] || templates[0];
-  const templateLimit = whatsappTemplateLimit(templateIndex);
-  const templateUsedToday = Number(whatsappTemplateUsageToday()[String(templateIndex)] || 0);
-  if (templateLimit && templateUsedToday >= templateLimit) return toast(`O modelo “${template.label}” atingiu o limite diário de ${templateLimit}. Escolha outro modelo nas Configurações ou desative o sorteio.`, "error");
+  const templateLimit = whatsappTemplateLimit(templateIndex, stage);
+  const templateUsedToday = Number(whatsappTemplateUsageToday(stage)[String(templateIndex)] || 0);
+  if (templateLimit && templateUsedToday >= templateLimit) return toast(`O modelo de ${config.label} “${template.label}” atingiu o limite diário de ${templateLimit}. Ajuste os limites em Configurações.`, "error");
   const sender = String(state.user?.user_metadata?.full_name || "Damião").trim().split(/\s+/)[0] || "Damião";
   const message = renderWhatsAppMessage(template.body, lead, sender);
   const url = whatsappWebUrl({ phone: lead.whatsapp, message });
@@ -921,7 +953,7 @@ async function openLeadWhatsApp(leadId) {
   const contactsToday = state.leads.filter((item) => item.contacted_at?.slice(0, 10) === todayIso()).length;
   if (dailyLimit && contactsToday >= dailyLimit && !window.confirm(`Você já registrou ${contactsToday} contatos hoje, atingindo o limite de referência configurado. Deseja continuar manualmente?`)) return;
   window.open(url, "_blank", "noopener,noreferrer");
-  await recordWhatsAppTemplateUsage(templateIndex);
+  await recordWhatsAppTemplateUsage(templateIndex, stage);
   if (!lead.contacted_at) await toggleLeadContact(leadId);
 }
 
@@ -1953,11 +1985,14 @@ function goalInput(name, label, value, step) {
 }
 
 function renderSettings() {
-  const templates = normalizeWhatsAppTemplates(state.settings.whatsapp_templates);
-  const defaultIndex = Math.min(Math.max(0, Number(state.settings.whatsapp_default_template) || 0), templates.length - 1);
-  const usageToday = whatsappTemplateUsageToday();
-  const templateRows = templates.map((template, index) => `<div class="message-template-row" data-template-row><div class="message-template-row-head"><label class="field"><span>Nome do modelo ${index + 1}</span><input data-message-template-label maxlength="80" value="${escapeHtml(template.label)}" placeholder="Ex.: Apresentação inicial" /></label><button type="button" class="icon-button message-template-remove" data-action="remove-message-template" data-index="${index}" aria-label="Remover modelo" title="Remover modelo">×</button></div><label class="field"><span>Mensagem</span><textarea data-message-template-body maxlength="800" rows="3" placeholder="Use {{nome}}, {{empresa}}, {{cidade}} e {{remetente}}.">${escapeHtml(template.body)}</textarea></label><div class="template-limit-grid"><label class="field"><span>Limite diário (0 = sem limite)</span><input data-message-template-limit type="number" min="0" max="1000" step="1" value="${whatsappTemplateLimit(index)}" /></label><div class="template-usage-note">Usados hoje: <b>${Number(usageToday[String(index)] || 0)}</b></div></div></div>`).join("");
-  $("#view-settings").innerHTML = `${pageHead("CONFIGURAÇÕES", "Mensagens do WhatsApp", "Escolha e edite modelos para abrir no WhatsApp. O envio continua sendo manual, em uma nova aba.", `<span class="date-chip">${templates.length} modelos</span>`)}<div class="settings-layout"><section class="panel"><div class="panel-head"><div><h2>Biblioteca de mensagens</h2><span>Personalize os textos sem automatizar o envio</span></div><button type="button" class="button ghost" data-action="add-message-template">+ Novo modelo</button></div><form id="message-settings-form" class="form-stack"><div class="settings-callout"><b>Campos disponíveis</b><span><code>{{nome}}</code> primeiro nome · <code>{{empresa}}</code> empresa · <code>{{cidade}}</code> cidade · <code>{{remetente}}</code> seu nome</span></div><div class="message-template-list">${templateRows}</div><div class="form-grid settings-controls-grid"><label class="field"><span>Modelo padrão ao clicar em WhatsApp</span><select data-message-default>${templates.map((template, index) => `<option value="${index}" ${index === defaultIndex ? "selected" : ""}>${escapeHtml(template.label)}</option>`).join("")}</select></label><label class="field"><span>Limite diário de referência</span><input data-message-daily-limit type="number" min="0" max="1000" step="1" value="${Math.max(0, Number(state.settings.whatsapp_daily_limit) || 0)}" /></label></div><label class="check-field settings-randomize-toggle"><input data-message-randomize type="checkbox" ${state.settings.whatsapp_randomize_templates ? "checked" : ""} /><span>Escolher aleatoriamente um modelo configurado ao abrir o WhatsApp</span></label><div class="modal-actions"><span class="spacer"></span><button class="button primary" type="submit">Salvar mensagens</button></div></form></section></div>`;
+  const activeStage = state.messageSettingsStage === "offer" ? "offer" : "greeting";
+  const stage = whatsappStageConfig(activeStage);
+  const templates = whatsappTemplatesForStage(activeStage);
+  const defaultIndex = Math.min(Math.max(0, Number(state.settings[stage.defaultKey]) || 0), templates.length - 1);
+  const usageToday = whatsappTemplateUsageToday(activeStage);
+  const templateRows = templates.map((template, index) => `<div class="message-template-row" data-template-row><div class="message-template-row-head"><label class="field"><span>Nome do modelo ${index + 1}</span><input data-message-template-label maxlength="80" value="${escapeHtml(template.label)}" placeholder="Ex.: ${activeStage === "offer" ? "Oferta inicial" : "Apresentação inicial"}" /></label><button type="button" class="icon-button message-template-remove" data-action="remove-message-template" data-index="${index}" aria-label="Remover modelo" title="Remover modelo">×</button></div><label class="field"><span>Mensagem</span><textarea data-message-template-body maxlength="800" rows="3" placeholder="Use {{nome}}, {{empresa}}, {{cidade}} e {{remetente}}.">${escapeHtml(template.body)}</textarea></label><div class="template-limit-grid"><label class="field"><span>Limite diário (0 = sem limite)</span><input data-message-template-limit type="number" min="0" max="1000" step="1" value="${whatsappTemplateLimit(index, activeStage)}" /></label><div class="template-usage-note">Usados hoje: <b>${Number(usageToday[String(index)] || 0)}</b></div></div></div>`).join("");
+  const tabs = `<div class="settings-stage-tabs" role="tablist"><button type="button" class="settings-stage-tab ${activeStage === "greeting" ? "active" : ""}" data-action="switch-message-stage" data-stage="greeting" role="tab" aria-selected="${activeStage === "greeting"}"><span class="settings-stage-icon">01</span><span><b>Saudação</b><small>Primeiro contato</small></span></button><button type="button" class="settings-stage-tab ${activeStage === "offer" ? "active" : ""}" data-action="switch-message-stage" data-stage="offer" role="tab" aria-selected="${activeStage === "offer"}"><span class="settings-stage-icon">02</span><span><b>Oferta</b><small>Depois de Contatado</small></span></button></div>`;
+  $("#view-settings").innerHTML = `${pageHead("CONFIGURAÇÕES", "Mensagens do WhatsApp", "Configure cada etapa da prospecção. O envio continua sendo manual, em uma nova aba.", `<span class="date-chip">${templates.length} modelos · ${stage.label}</span>`)}<div class="settings-layout"><section class="panel settings-message-panel">${tabs}<div class="settings-section-header"><div><span class="settings-eyebrow">ETAPA ${activeStage === "offer" ? "02" : "01"}</span><h2>Modelos de ${stage.label}</h2><p>${activeStage === "offer" ? "Use esta biblioteca depois que o lead já estiver marcado como Contatado." : "Use esta biblioteca no primeiro clique do botão WhatsApp."}</p></div><button type="button" class="button ghost" data-action="add-message-template">+ Novo modelo</button></div><form id="message-settings-form" class="form-stack" data-message-stage="${activeStage}"><div class="settings-callout"><b>Campos disponíveis</b><span><code>{{nome}}</code> primeiro nome · <code>{{empresa}}</code> empresa · <code>{{cidade}}</code> cidade · <code>{{remetente}}</code> seu nome</span></div><div class="message-template-list">${templateRows}</div><div class="form-grid settings-controls-grid"><label class="field"><span>Modelo padrão desta etapa</span><select data-message-default>${templates.map((template, index) => `<option value="${index}" ${index === defaultIndex ? "selected" : ""}>${escapeHtml(template.label)}</option>`).join("")}</select></label><label class="field"><span>Limite diário de referência</span><input data-message-daily-limit type="number" min="0" max="1000" step="1" value="${Math.max(0, Number(state.settings.whatsapp_daily_limit) || 0)}" /></label></div><label class="check-field settings-randomize-toggle"><input data-message-randomize type="checkbox" ${state.settings[stage.randomizeKey] ? "checked" : ""} /><span>Escolher aleatoriamente um modelo de ${stage.label.toLowerCase()} ao abrir o WhatsApp</span></label><div class="modal-actions"><span class="spacer"></span><button class="button primary" type="submit">Salvar ${stage.label.toLowerCase()}</button></div></form></section></div>`;
   $("#message-settings-form").addEventListener("submit", saveMessageSettings);
 }
 
@@ -1981,7 +2016,8 @@ function addMessageTemplateRow() {
   const list = $('.message-template-list');
   if (!list) return;
   const index = list.children.length;
-  list.insertAdjacentHTML('beforeend', `<div class="message-template-row" data-template-row><div class="message-template-row-head"><label class="field"><span>Nome do modelo ${index + 1}</span><input data-message-template-label maxlength="80" value="Novo modelo" placeholder="Ex.: Apresentação inicial" /></label><button type="button" class="icon-button message-template-remove" data-action="remove-message-template" data-index="${index}" aria-label="Remover modelo" title="Remover modelo">×</button></div><label class="field"><span>Mensagem</span><textarea data-message-template-body maxlength="800" rows="3" placeholder="Use {{nome}}, {{empresa}}, {{cidade}} e {{remetente}}."></textarea></label></div>`);
+  const stage = $('#message-settings-form')?.dataset.messageStage === "offer" ? "Oferta" : "Saudação";
+  list.insertAdjacentHTML('beforeend', `<div class="message-template-row" data-template-row><div class="message-template-row-head"><label class="field"><span>Nome do modelo ${index + 1}</span><input data-message-template-label maxlength="80" value="Novo modelo" placeholder="Ex.: ${stage} inicial" /></label><button type="button" class="icon-button message-template-remove" data-action="remove-message-template" data-index="${index}" aria-label="Remover modelo" title="Remover modelo">×</button></div><label class="field"><span>Mensagem</span><textarea data-message-template-body maxlength="800" rows="3" placeholder="Use {{nome}}, {{empresa}}, {{cidade}} e {{remetente}}."></textarea></label><div class="template-limit-grid"><label class="field"><span>Limite diário (0 = sem limite)</span><input data-message-template-limit type="number" min="0" max="1000" step="1" value="0" /></label><div class="template-usage-note">Usados hoje: <b>0</b></div></div></div>`);
   updateMessageDefaultOptions();
   list.lastElementChild?.querySelector('[data-message-template-label]')?.focus();
 }
@@ -2003,16 +2039,20 @@ function removeMessageTemplateRow(index) {
 async function saveMessageSettings(event) {
   event.preventDefault();
   const submit = event.currentTarget.querySelector('button[type="submit"]');
+  const activeStage = event.currentTarget.dataset.messageStage === "offer" ? "offer" : "greeting";
+  const stage = whatsappStageConfig(activeStage);
   const templates = collectMessageTemplatesFromForm();
   if (!templates.length) return toast('Cadastre pelo menos um modelo com texto.', 'error');
   submit.disabled = true;
   try {
     const defaultIndex = Math.min(Math.max(0, Number($('[data-message-default]')?.value) || 0), templates.length - 1);
     const limits = Object.fromEntries([...document.querySelectorAll('[data-message-template-limit]')].map((input, index) => [String(index), Math.min(1000, Math.max(0, Number(input.value) || 0))]));
-    const payload = { whatsapp_templates: templates, whatsapp_default_template: defaultIndex, whatsapp_randomize_templates: Boolean($('[data-message-randomize]')?.checked), whatsapp_template_limits: limits, whatsapp_daily_limit: Math.min(1000, Math.max(0, Number($('[data-message-daily-limit]')?.value) || 0)) };
-    state.settings = { ...state.settings, ...(await store.saveSettings(state.month, payload)), ...payload, whatsapp_templates: normalizeWhatsAppTemplates(payload.whatsapp_templates) };
+    const randomize = Boolean($('[data-message-randomize]')?.checked);
+    const payload = { [stage.templatesKey]: templates, [stage.defaultKey]: defaultIndex, [stage.randomizeKey]: randomize, [stage.limitsKey]: limits, whatsapp_daily_limit: Math.min(1000, Math.max(0, Number($('[data-message-daily-limit]')?.value) || 0)) };
+    if (activeStage === "greeting") Object.assign(payload, { whatsapp_templates: templates, whatsapp_default_template: defaultIndex, whatsapp_randomize_templates: randomize, whatsapp_template_limits: limits });
+    state.settings = { ...state.settings, ...(await store.saveSettings(state.month, payload)), ...payload, [stage.templatesKey]: normalizeWhatsAppTemplates(payload[stage.templatesKey]) };
     renderSettings();
-    toast('Biblioteca de mensagens salva.');
+    toast(`${stage.label} salva.`);
   } catch (error) {
     toast(error.message, 'error');
   } finally {
@@ -2050,6 +2090,7 @@ async function handleMainClick(event) {
   if (action.dataset.action === "edit-lead") openLeadDialog(state.leads.find((lead) => lead.id === action.dataset.id));
   if (action.dataset.action === "delete-lead-card") { await deleteLeadFromCard(action.dataset.id); return; }
   if (action.dataset.action === "open-whatsapp") await openLeadWhatsApp(action.dataset.id);
+  if (action.dataset.action === "switch-message-stage") { state.messageSettingsStage = action.dataset.stage === "offer" ? "offer" : "greeting"; renderSettings(); return; }
   if (action.dataset.action === "add-message-template") addMessageTemplateRow();
   if (action.dataset.action === "remove-message-template") removeMessageTemplateRow(action.dataset.index);
   if (action.dataset.action === "open-lead-activity") { openActivityDialog(null, action.dataset.id); return; }
