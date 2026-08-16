@@ -1127,3 +1127,11 @@ body.booting::before { color: #a6b8b8; font-size: 12px; }
 @media (max-width: 560px) {
   .kanban { grid-auto-columns: minmax(320px, 86vw); gap: 12px; }
 }
+
+
+/* Títulos do pipeline: nome completo no desktop e versão curta apenas no celular */
+.lead-card-title-mobile { display: none; }
+@media (max-width: 560px) {
+  .lead-card-title-full { display: none; }
+  .lead-card-title-mobile { display: inline; }
+}
