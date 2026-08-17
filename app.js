@@ -1641,7 +1641,7 @@ async function openSavedSearch(id) {
     const run = await loadSearchRun(state.mapsKeyword, state.mapsLocality).catch(() => null);
     state.mapsSearchCenter = run?.search_center || "";
     state.mapsSearchBatch = Math.max(0, Math.ceil(state.mapsResults.length / 20) - 1);
-    state.mapsHasMore = state.mapsResults.length < 200 && !run?.completed_at;
+    state.mapsHasMore = state.mapsResults.length < 200;
     await loadPlaceReferences(state.mapsResults);
     state.mapsSearched = true;
     await rest("saved_place_searches", { method: "PATCH", query: `id=eq.${saved.id}`, body: { last_opened_at: new Date().toISOString(), updated_at: new Date().toISOString() }, prefer: "return=minimal" });
