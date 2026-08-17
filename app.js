@@ -76,6 +76,7 @@ const state = {
   mapsSearchCenter: "",
   mapsHasMore: false,
   mapsProspectFilter: "all",
+  mapsMinReviews: 0,
   mapsReferences: [],
   mapsPendingLeadPlace: null,
   mapsGuideState: "",
@@ -1750,8 +1751,9 @@ function placeTracking(place) {
 }
 
 function filteredMapsResults() {
-  if (state.mapsProspectFilter === "all") return state.mapsResults;
+  const minReviews = Math.max(0, Number(state.mapsMinReviews) || 0);
   return state.mapsResults.filter((place) => {
+    if (Number(place.ratingCount || 0) < minReviews) return false;
     const reference = placeTracking(place);
     if (state.mapsProspectFilter === "new") return !reference;
     if (state.mapsProspectFilter === "prospected") return Boolean(reference);
@@ -1810,8 +1812,8 @@ function mapsResultsMarkup() {
   if (!state.mapsSearched) return emptyState("⌖", "Busque por leads no Maps", "Digite uma palavra-chave (ex.: dentista) e uma cidade para encontrar clínicas e profissionais.", "");
   if (!state.mapsResults.length) return emptyState("⌖", "Nada encontrado", "Tente outra palavra-chave ou cidade.", "");
   const places = filteredMapsResults();
-  const filter = `<div class="maps-results-toolbar"><div><b>${state.mapsResults.length} empresa(s) encontrada(s)</b>${state.mapsResults.length < 150 && state.mapsHasMore ? " · ainda há mais resultados" : ""}</div><div class="maps-results-toolbar-actions"><select id="maps-prospect-filter" class="compact-select"><option value="all" ${state.mapsProspectFilter === "all" ? "selected" : ""}>Todas</option><option value="new" ${state.mapsProspectFilter === "new" ? "selected" : ""}>Não salvas</option><option value="prospected" ${state.mapsProspectFilter === "prospected" ? "selected" : ""}>Já salvas</option><option value="lead" ${state.mapsProspectFilter === "lead" ? "selected" : ""}>Já adicionadas como lead</option></select><button class="button ghost small" type="button" data-action="save-maps-search">Salvar pesquisa</button><div class="maps-view-toggle"><button class="${state.mapsViewMode === "cards" ? "active" : ""}" type="button" data-action="maps-view-cards">Cards</button><button class="${state.mapsViewMode === "list" ? "active" : ""}" type="button" data-action="maps-view-list">Lista</button></div></div></div>`;
-  const more = state.mapsHasMore && state.mapsResults.length < 150 ? `<button class="button ghost maps-load-more" type="button" data-action="load-more-places">Buscar mais 20 (${state.mapsResults.length}/150)</button>` : "";
+  const filter = `<div class="maps-results-toolbar"><div><b>${state.mapsResults.length} empresa(s) encontrada(s)</b>${state.mapsResults.length < 150 && (state.mapsHasMore || state.mapsResults.length % 20 === 0) ? " · ainda há mais resultados" : ""}</div><div class="maps-results-toolbar-actions"><select id="maps-prospect-filter" class="compact-select"><option value="all" ${state.mapsProspectFilter === "all" ? "selected" : ""}>Todas</option><option value="new" ${state.mapsProspectFilter === "new" ? "selected" : ""}>Não salvas</option><option value="prospected" ${state.mapsProspectFilter === "prospected" ? "selected" : ""}>Já salvas</option><option value="lead" ${state.mapsProspectFilter === "lead" ? "selected" : ""}>Já adicionadas como lead</option></select><select id="maps-review-count-filter" class="compact-select" aria-label="Filtrar por número de avaliações"><option value="0" ${Number(state.mapsMinReviews) === 0 ? "selected" : ""}>Avaliações: todas</option><option value="10" ${Number(state.mapsMinReviews) === 10 ? "selected" : ""}>10+ avaliações</option><option value="25" ${Number(state.mapsMinReviews) === 25 ? "selected" : ""}>25+ avaliações</option><option value="50" ${Number(state.mapsMinReviews) === 50 ? "selected" : ""}>50+ avaliações</option><option value="100" ${Number(state.mapsMinReviews) === 100 ? "selected" : ""}>100+ avaliações</option><option value="500" ${Number(state.mapsMinReviews) === 500 ? "selected" : ""}>500+ avaliações</option></select><button class="button ghost small" type="button" data-action="save-maps-search">Salvar pesquisa</button><div class="maps-view-toggle"><button class="${state.mapsViewMode === "cards" ? "active" : ""}" type="button" data-action="maps-view-cards">Cards</button><button class="${state.mapsViewMode === "list" ? "active" : ""}" type="button" data-action="maps-view-list">Lista</button></div></div></div>`;
+  const more = state.mapsResults.length < 150 && (state.mapsHasMore || state.mapsResults.length % 20 === 0) ? `<button class="button ghost maps-load-more" type="button" data-action="load-more-places">Buscar mais 20 (${state.mapsResults.length}/150)</button>` : "";
   const content = places.length ? (state.mapsViewMode === "list" ? `<div class="maps-results-list">${places.map(mapsResultListRow).join("")}</div>` : `<div class="maps-results">${places.map(mapsResultCard).join("")}</div>`) : emptyState("⌖", "Nenhuma empresa neste filtro", "Altere o filtro para visualizar os demais resultados.", "");
   return `${filter}${mapsSelectionToolbar(places)}${content}${more}`;
 }
@@ -2020,7 +2022,7 @@ async function handleMapsSearch(event) {
 }
 
 async function loadMorePlaces() {
-  if (state.mapsLoading || !state.mapsHasMore || state.mapsResults.length >= 150) return;
+  if (state.mapsLoading || state.mapsResults.length >= 150) return;
   state.mapsLoading = true;
   state.mapsError = "";
   state.mapsStatusMessage = `Buscando mais empresas… (${Math.min(state.mapsResults.length + 20, 150)}/150)`;
@@ -2029,7 +2031,7 @@ async function loadMorePlaces() {
     const nextBatch = state.mapsSearchBatch + 1;
     const payload = await fetchSerperPlacesBatch(state.mapsKeyword, state.mapsLocality, nextBatch, state.mapsSearchCenter);
     state.mapsSearchBatch = nextBatch;
-    state.mapsHasMore = Boolean(payload.hasMore) && state.mapsResults.length < 150;
+    state.mapsHasMore = (Boolean(payload.hasMore) || (Array.isArray(payload.places) && payload.places.length === 20 && nextBatch < 7)) && state.mapsResults.length < 150;
     await applyPlacesResults(payload.places, state.mapsKeyword, state.mapsLocality, true, true);
     await saveSearchRun(state.mapsKeyword, state.mapsLocality, { returnedCount: state.mapsResults.length, center: state.mapsSearchCenter, completed: !state.mapsHasMore }).catch((runError) => console.warn("maps_run_write_failed", runError?.message));
     if (state.mapsActiveSavedSearchId) await persistSavedSearchResults(state.mapsActiveSavedSearchId).catch((savedError) => console.warn("saved_search_results_write_failed", savedError?.message));
@@ -2423,6 +2425,10 @@ async function handleMainChange(event) {
   if (event.target.matches("[data-pipeline-select]")) { await switchPipeline(event.target.value); return; }
   if (event.target.id === "maps-prospect-filter") {
     state.mapsProspectFilter = event.target.value;
+    renderMapsSearch();
+  }
+  if (event.target.id === "maps-review-count-filter") {
+    state.mapsMinReviews = Math.max(0, Number(event.target.value) || 0);
     renderMapsSearch();
   }
   if (event.target.id === "maps-bulk-pipeline") {
