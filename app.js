@@ -77,6 +77,8 @@ const state = {
   mapsHasMore: false,
   mapsProspectFilter: "all",
   mapsMinReviews: 0,
+  mapsMaxReviews: 0,
+  mapsHasPhone: false,
   mapsReferences: [],
   mapsPendingLeadPlace: null,
   mapsGuideState: "",
@@ -1752,8 +1754,11 @@ function placeTracking(place) {
 
 function filteredMapsResults() {
   const minReviews = Math.max(0, Number(state.mapsMinReviews) || 0);
+  const maxReviews = Math.max(0, Number(state.mapsMaxReviews) || 0);
   return state.mapsResults.filter((place) => {
-    if (Number(place.ratingCount || 0) < minReviews) return false;
+    const reviewCount = Number(place.ratingCount || 0);
+    if (reviewCount < minReviews || (maxReviews && reviewCount > maxReviews)) return false;
+    if (state.mapsHasPhone && !String(place.phone || "").trim()) return false;
     const reference = placeTracking(place);
     if (state.mapsProspectFilter === "new") return !reference;
     if (state.mapsProspectFilter === "prospected") return Boolean(reference);
@@ -1812,7 +1817,7 @@ function mapsResultsMarkup() {
   if (!state.mapsSearched) return emptyState("⌖", "Busque por leads no Maps", "Digite uma palavra-chave (ex.: dentista) e uma cidade para encontrar clínicas e profissionais.", "");
   if (!state.mapsResults.length) return emptyState("⌖", "Nada encontrado", "Tente outra palavra-chave ou cidade.", "");
   const places = filteredMapsResults();
-  const filter = `<div class="maps-results-toolbar"><div><b>${state.mapsResults.length} empresa(s) encontrada(s)</b>${state.mapsResults.length < 200 && (state.mapsHasMore || state.mapsResults.length % 20 === 0) ? " · ainda há mais resultados" : ""}</div><div class="maps-results-toolbar-actions"><select id="maps-prospect-filter" class="compact-select"><option value="all" ${state.mapsProspectFilter === "all" ? "selected" : ""}>Todas</option><option value="new" ${state.mapsProspectFilter === "new" ? "selected" : ""}>Não salvas</option><option value="prospected" ${state.mapsProspectFilter === "prospected" ? "selected" : ""}>Já salvas</option><option value="lead" ${state.mapsProspectFilter === "lead" ? "selected" : ""}>Já adicionadas como lead</option></select><select id="maps-review-count-filter" class="compact-select" aria-label="Filtrar por número de avaliações"><option value="0" ${Number(state.mapsMinReviews) === 0 ? "selected" : ""}>Avaliações: todas</option><option value="10" ${Number(state.mapsMinReviews) === 10 ? "selected" : ""}>10+ avaliações</option><option value="25" ${Number(state.mapsMinReviews) === 25 ? "selected" : ""}>25+ avaliações</option><option value="50" ${Number(state.mapsMinReviews) === 50 ? "selected" : ""}>50+ avaliações</option><option value="100" ${Number(state.mapsMinReviews) === 100 ? "selected" : ""}>100+ avaliações</option><option value="500" ${Number(state.mapsMinReviews) === 500 ? "selected" : ""}>500+ avaliações</option></select><button class="button ghost small" type="button" data-action="save-maps-search">Salvar pesquisa</button><div class="maps-view-toggle"><button class="${state.mapsViewMode === "cards" ? "active" : ""}" type="button" data-action="maps-view-cards">Cards</button><button class="${state.mapsViewMode === "list" ? "active" : ""}" type="button" data-action="maps-view-list">Lista</button></div></div></div>`;
+  const filter = `<div class="maps-results-toolbar"><div><b>${state.mapsResults.length} empresa(s) encontrada(s)</b>${state.mapsResults.length < 200 && (state.mapsHasMore || state.mapsResults.length % 20 === 0) ? " · ainda há mais resultados" : ""}</div><div class="maps-results-toolbar-actions"><select id="maps-prospect-filter" class="compact-select"><option value="all" ${state.mapsProspectFilter === "all" ? "selected" : ""}>Todas</option><option value="new" ${state.mapsProspectFilter === "new" ? "selected" : ""}>Não salvas</option><option value="prospected" ${state.mapsProspectFilter === "prospected" ? "selected" : ""}>Já salvas</option><option value="lead" ${state.mapsProspectFilter === "lead" ? "selected" : ""}>Já adicionadas como lead</option></select><select id="maps-review-count-filter" class="compact-select" aria-label="Filtrar por número mínimo de avaliações"><option value="0" ${Number(state.mapsMinReviews) === 0 ? "selected" : ""}>Mínimo: todas</option><option value="10" ${Number(state.mapsMinReviews) === 10 ? "selected" : ""}>Mínimo: 10+</option><option value="25" ${Number(state.mapsMinReviews) === 25 ? "selected" : ""}>Mínimo: 25+</option><option value="50" ${Number(state.mapsMinReviews) === 50 ? "selected" : ""}>Mínimo: 50+</option><option value="100" ${Number(state.mapsMinReviews) === 100 ? "selected" : ""}>Mínimo: 100+</option><option value="500" ${Number(state.mapsMinReviews) === 500 ? "selected" : ""}>Mínimo: 500+</option></select><select id="maps-review-max-filter" class="compact-select" aria-label="Filtrar por número máximo de avaliações"><option value="0" ${Number(state.mapsMaxReviews) === 0 ? "selected" : ""}>Máximo: sem limite</option><option value="10" ${Number(state.mapsMaxReviews) === 10 ? "selected" : ""}>Máximo: até 10</option><option value="25" ${Number(state.mapsMaxReviews) === 25 ? "selected" : ""}>Máximo: até 25</option><option value="50" ${Number(state.mapsMaxReviews) === 50 ? "selected" : ""}>Máximo: até 50</option><option value="100" ${Number(state.mapsMaxReviews) === 100 ? "selected" : ""}>Máximo: até 100</option><option value="500" ${Number(state.mapsMaxReviews) === 500 ? "selected" : ""}>Máximo: até 500</option></select><label class="maps-phone-filter"><input id="maps-phone-filter" type="checkbox" ${state.mapsHasPhone ? "checked" : ""} /><span>Somente com telefone</span></label><button class="button ghost small" type="button" data-action="save-maps-search">Salvar pesquisa</button><div class="maps-view-toggle"><button class="${state.mapsViewMode === "cards" ? "active" : ""}" type="button" data-action="maps-view-cards">Cards</button><button class="${state.mapsViewMode === "list" ? "active" : ""}" type="button" data-action="maps-view-list">Lista</button></div></div></div>`;
   const more = state.mapsResults.length < 200 && (state.mapsHasMore || state.mapsResults.length % 20 === 0) ? `<button class="button ghost maps-load-more" type="button" data-action="load-more-places">Buscar mais 20 (${state.mapsResults.length}/200)</button>` : "";
   const content = places.length ? (state.mapsViewMode === "list" ? `<div class="maps-results-list">${places.map(mapsResultListRow).join("")}</div>` : `<div class="maps-results">${places.map(mapsResultCard).join("")}</div>`) : emptyState("⌖", "Nenhuma empresa neste filtro", "Altere o filtro para visualizar os demais resultados.", "");
   return `${filter}${mapsSelectionToolbar(places)}${content}${more}`;
@@ -2429,6 +2434,14 @@ async function handleMainChange(event) {
   }
   if (event.target.id === "maps-review-count-filter") {
     state.mapsMinReviews = Math.max(0, Number(event.target.value) || 0);
+    renderMapsSearch();
+  }
+  if (event.target.id === "maps-review-max-filter") {
+    state.mapsMaxReviews = Math.max(0, Number(event.target.value) || 0);
+    renderMapsSearch();
+  }
+  if (event.target.id === "maps-phone-filter") {
+    state.mapsHasPhone = event.target.checked;
     renderMapsSearch();
   }
   if (event.target.id === "maps-bulk-pipeline") {

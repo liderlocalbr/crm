@@ -1160,3 +1160,9 @@ body.booting::before { color: #a6b8b8; font-size: 12px; }
   .simulator-row { padding: 10px; }
   .simulator-row b { font-size: 18px; }
 }
+
+.maps-phone-filter { display: inline-flex; align-items: center; gap: 7px; min-height: 38px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); color: var(--text); font-size: 13px; white-space: nowrap; cursor: pointer; }
+.maps-phone-filter input { width: 16px; height: 16px; margin: 0; accent-color: var(--green); }
+@media (max-width: 720px) {
+  .maps-results-toolbar .maps-phone-filter { width: 100%; box-sizing: border-box; }
+}
