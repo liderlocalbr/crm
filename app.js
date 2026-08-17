@@ -1587,14 +1587,14 @@ async function loadSavedSearches({ render = true } = {}) {
 
 async function loadSavedSearchResults(savedSearchId) {
   if (isLocalDemo) return [];
-  const rows = await rest("saved_place_search_results", { query: `saved_search_id=eq.${savedSearchId}&select=place_id,name,address,phone,website,cnpj,rating,rating_count,maps_url,position&order=position.asc&limit=150` }) || [];
+  const rows = await rest("saved_place_search_results", { query: `saved_search_id=eq.${savedSearchId}&select=place_id,name,address,phone,website,cnpj,rating,rating_count,maps_url,position&order=position.asc&limit=200` }) || [];
   return rows.map((row) => ({ id: row.place_id, name: row.name, address: row.address || "", phone: row.phone || "", website: row.website || "", cnpj: row.cnpj || "", rating: row.rating == null ? null : Number(row.rating), ratingCount: Number(row.rating_count || 0), mapsUrl: row.maps_url || "", position: row.position }));
 }
 
 async function persistSavedSearchResults(savedSearchId) {
   if (isLocalDemo || !savedSearchId) return;
   await rest("saved_place_search_results", { method: "DELETE", query: `saved_search_id=eq.${savedSearchId}`, prefer: "return=minimal" });
-  const rows = state.mapsResults.slice(0, 150).map((place, position) => ({ saved_search_id: savedSearchId, place_id: String(place.id), name: place.name, address: place.address || "", phone: place.phone || "", website: place.website || "", cnpj: place.cnpj || "", rating: place.rating ?? null, rating_count: place.ratingCount ?? null, maps_url: place.mapsUrl || "", position }));
+  const rows = state.mapsResults.slice(0, 200).map((place, position) => ({ saved_search_id: savedSearchId, place_id: String(place.id), name: place.name, address: place.address || "", phone: place.phone || "", website: place.website || "", cnpj: place.cnpj || "", rating: place.rating ?? null, rating_count: place.ratingCount ?? null, maps_url: place.mapsUrl || "", position }));
   if (rows.length) await rest("saved_place_search_results", { method: "POST", body: rows, prefer: "return=minimal" });
   await rest("saved_place_searches", { method: "PATCH", query: `id=eq.${savedSearchId}`, body: { result_count: state.mapsResults.length, is_complete: !state.mapsHasMore, updated_at: new Date().toISOString() }, prefer: "return=minimal" });
 }
@@ -1641,7 +1641,7 @@ async function openSavedSearch(id) {
     const run = await loadSearchRun(state.mapsKeyword, state.mapsLocality).catch(() => null);
     state.mapsSearchCenter = run?.search_center || "";
     state.mapsSearchBatch = Math.max(0, Math.ceil(state.mapsResults.length / 20) - 1);
-    state.mapsHasMore = state.mapsResults.length < 150 && !run?.completed_at;
+    state.mapsHasMore = state.mapsResults.length < 200 && !run?.completed_at;
     await loadPlaceReferences(state.mapsResults);
     state.mapsSearched = true;
     await rest("saved_place_searches", { method: "PATCH", query: `id=eq.${saved.id}`, body: { last_opened_at: new Date().toISOString(), updated_at: new Date().toISOString() }, prefer: "return=minimal" });
@@ -1812,8 +1812,8 @@ function mapsResultsMarkup() {
   if (!state.mapsSearched) return emptyState("⌖", "Busque por leads no Maps", "Digite uma palavra-chave (ex.: dentista) e uma cidade para encontrar clínicas e profissionais.", "");
   if (!state.mapsResults.length) return emptyState("⌖", "Nada encontrado", "Tente outra palavra-chave ou cidade.", "");
   const places = filteredMapsResults();
-  const filter = `<div class="maps-results-toolbar"><div><b>${state.mapsResults.length} empresa(s) encontrada(s)</b>${state.mapsResults.length < 150 && (state.mapsHasMore || state.mapsResults.length % 20 === 0) ? " · ainda há mais resultados" : ""}</div><div class="maps-results-toolbar-actions"><select id="maps-prospect-filter" class="compact-select"><option value="all" ${state.mapsProspectFilter === "all" ? "selected" : ""}>Todas</option><option value="new" ${state.mapsProspectFilter === "new" ? "selected" : ""}>Não salvas</option><option value="prospected" ${state.mapsProspectFilter === "prospected" ? "selected" : ""}>Já salvas</option><option value="lead" ${state.mapsProspectFilter === "lead" ? "selected" : ""}>Já adicionadas como lead</option></select><select id="maps-review-count-filter" class="compact-select" aria-label="Filtrar por número de avaliações"><option value="0" ${Number(state.mapsMinReviews) === 0 ? "selected" : ""}>Avaliações: todas</option><option value="10" ${Number(state.mapsMinReviews) === 10 ? "selected" : ""}>10+ avaliações</option><option value="25" ${Number(state.mapsMinReviews) === 25 ? "selected" : ""}>25+ avaliações</option><option value="50" ${Number(state.mapsMinReviews) === 50 ? "selected" : ""}>50+ avaliações</option><option value="100" ${Number(state.mapsMinReviews) === 100 ? "selected" : ""}>100+ avaliações</option><option value="500" ${Number(state.mapsMinReviews) === 500 ? "selected" : ""}>500+ avaliações</option></select><button class="button ghost small" type="button" data-action="save-maps-search">Salvar pesquisa</button><div class="maps-view-toggle"><button class="${state.mapsViewMode === "cards" ? "active" : ""}" type="button" data-action="maps-view-cards">Cards</button><button class="${state.mapsViewMode === "list" ? "active" : ""}" type="button" data-action="maps-view-list">Lista</button></div></div></div>`;
-  const more = state.mapsResults.length < 150 && (state.mapsHasMore || state.mapsResults.length % 20 === 0) ? `<button class="button ghost maps-load-more" type="button" data-action="load-more-places">Buscar mais 20 (${state.mapsResults.length}/150)</button>` : "";
+  const filter = `<div class="maps-results-toolbar"><div><b>${state.mapsResults.length} empresa(s) encontrada(s)</b>${state.mapsResults.length < 200 && (state.mapsHasMore || state.mapsResults.length % 20 === 0) ? " · ainda há mais resultados" : ""}</div><div class="maps-results-toolbar-actions"><select id="maps-prospect-filter" class="compact-select"><option value="all" ${state.mapsProspectFilter === "all" ? "selected" : ""}>Todas</option><option value="new" ${state.mapsProspectFilter === "new" ? "selected" : ""}>Não salvas</option><option value="prospected" ${state.mapsProspectFilter === "prospected" ? "selected" : ""}>Já salvas</option><option value="lead" ${state.mapsProspectFilter === "lead" ? "selected" : ""}>Já adicionadas como lead</option></select><select id="maps-review-count-filter" class="compact-select" aria-label="Filtrar por número de avaliações"><option value="0" ${Number(state.mapsMinReviews) === 0 ? "selected" : ""}>Avaliações: todas</option><option value="10" ${Number(state.mapsMinReviews) === 10 ? "selected" : ""}>10+ avaliações</option><option value="25" ${Number(state.mapsMinReviews) === 25 ? "selected" : ""}>25+ avaliações</option><option value="50" ${Number(state.mapsMinReviews) === 50 ? "selected" : ""}>50+ avaliações</option><option value="100" ${Number(state.mapsMinReviews) === 100 ? "selected" : ""}>100+ avaliações</option><option value="500" ${Number(state.mapsMinReviews) === 500 ? "selected" : ""}>500+ avaliações</option></select><button class="button ghost small" type="button" data-action="save-maps-search">Salvar pesquisa</button><div class="maps-view-toggle"><button class="${state.mapsViewMode === "cards" ? "active" : ""}" type="button" data-action="maps-view-cards">Cards</button><button class="${state.mapsViewMode === "list" ? "active" : ""}" type="button" data-action="maps-view-list">Lista</button></div></div></div>`;
+  const more = state.mapsResults.length < 200 && (state.mapsHasMore || state.mapsResults.length % 20 === 0) ? `<button class="button ghost maps-load-more" type="button" data-action="load-more-places">Buscar mais 20 (${state.mapsResults.length}/200)</button>` : "";
   const content = places.length ? (state.mapsViewMode === "list" ? `<div class="maps-results-list">${places.map(mapsResultListRow).join("")}</div>` : `<div class="maps-results">${places.map(mapsResultCard).join("")}</div>`) : emptyState("⌖", "Nenhuma empresa neste filtro", "Altere o filtro para visualizar os demais resultados.", "");
   return `${filter}${mapsSelectionToolbar(places)}${content}${more}`;
 }
@@ -1884,7 +1884,7 @@ async function saveSearchRun(keyword, locality, { returnedCount, center, complet
       owner_id: state.user.id,
       keyword: mapsCacheValue(keyword),
       locality: mapsCacheValue(locality),
-      requested_count: 150,
+      requested_count: 200,
       returned_count: returnedCount || 0,
       search_center: center || null,
       pagination_version: 2,
@@ -1911,7 +1911,7 @@ async function savePlacesCache(keyword, locality, places) {
   if (isLocalDemo || !places.length) return;
   const normalizedKeyword = mapsCacheValue(keyword);
   const normalizedLocality = mapsCacheValue(locality);
-  const rows = places.slice(0, 150).map((place, position) => ({
+  const rows = places.slice(0, 200).map((place, position) => ({
     owner_id: state.user.id,
     keyword: normalizedKeyword,
     locality: normalizedLocality,
@@ -1947,7 +1947,7 @@ function dedupePlaces(places) {
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
-  }).slice(0, 150).map((place, index) => ({ ...place, position: index + 1 }));
+  }).slice(0, 200).map((place, index) => ({ ...place, position: index + 1 }));
 }
 
 async function fetchSerperPlacesBatch(keyword, locality, batch = 0, center = "") {
@@ -1994,7 +1994,7 @@ async function handleMapsSearch(event) {
         state.mapsResults = dedupePlaces(cachedPlaces);
         state.mapsSearchCenter = cachedRun?.search_center || "";
         state.mapsSearchBatch = Math.max(0, Math.ceil(state.mapsResults.length / 20) - 1);
-        state.mapsHasMore = state.mapsResults.length < 150 && !cachedRun?.completed_at;
+        state.mapsHasMore = state.mapsResults.length < 200 && !cachedRun?.completed_at;
         await loadPlaceReferences(state.mapsResults);
         state.mapsSearched = true;
         state.mapsLoading = false;
@@ -2022,16 +2022,16 @@ async function handleMapsSearch(event) {
 }
 
 async function loadMorePlaces() {
-  if (state.mapsLoading || state.mapsResults.length >= 150) return;
+  if (state.mapsLoading || state.mapsResults.length >= 200) return;
   state.mapsLoading = true;
   state.mapsError = "";
-  state.mapsStatusMessage = `Buscando mais empresas… (${Math.min(state.mapsResults.length + 20, 150)}/150)`;
+  state.mapsStatusMessage = `Buscando mais empresas… (${Math.min(state.mapsResults.length + 20, 200)}/200)`;
   renderMapsSearch();
   try {
     const nextBatch = state.mapsSearchBatch + 1;
     const payload = await fetchSerperPlacesBatch(state.mapsKeyword, state.mapsLocality, nextBatch, state.mapsSearchCenter);
     state.mapsSearchBatch = nextBatch;
-    state.mapsHasMore = (Boolean(payload.hasMore) || (Array.isArray(payload.places) && payload.places.length === 20 && nextBatch < 7)) && state.mapsResults.length < 150;
+    state.mapsHasMore = (Boolean(payload.hasMore) || (Array.isArray(payload.places) && payload.places.length === 20 && nextBatch < 9)) && state.mapsResults.length < 200;
     await applyPlacesResults(payload.places, state.mapsKeyword, state.mapsLocality, true, true);
     await saveSearchRun(state.mapsKeyword, state.mapsLocality, { returnedCount: state.mapsResults.length, center: state.mapsSearchCenter, completed: !state.mapsHasMore }).catch((runError) => console.warn("maps_run_write_failed", runError?.message));
     if (state.mapsActiveSavedSearchId) await persistSavedSearchResults(state.mapsActiveSavedSearchId).catch((savedError) => console.warn("saved_search_results_write_failed", savedError?.message));

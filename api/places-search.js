@@ -1,7 +1,7 @@
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "../config.js";
 
 export const config = { maxDuration: 20 };
-const MAX_BATCHES = 8;
+const MAX_BATCHES = 10;
 const BATCH_SIZE = 20;
 
 function clampBatch(value) {
@@ -16,7 +16,7 @@ function shiftedCenter(center, batch) {
   const latitude = Number(match[1]);
   const longitude = Number(match[2]);
   const zoom = Number(match[3] || 14);
-  const offsets = [[0, 0], [0.075, 0], [-0.075, 0], [0, 0.105], [0, -0.105], [0.075, 0.105], [0.075, -0.105], [-0.075, 0.105]];
+  const offsets = [[0, 0], [0.075, 0], [-0.075, 0], [0, 0.105], [0, -0.105], [0.075, 0.105], [0.075, -0.105], [-0.075, 0.105], [-0.075, -0.105], [0.15, 0]];
   const [latOffset, lngOffset] = offsets[batch] || offsets[offsets.length - 1];
   return `@${(latitude + latOffset).toFixed(6)},${(longitude + lngOffset).toFixed(6)},${Math.min(16, Math.max(12, zoom))}z`;
 }
