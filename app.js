@@ -6,11 +6,33 @@ const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const todayIso = () => new Date().toISOString().slice(0, 10);
 const currentMonth = () => todayIso().slice(0, 7);
 const isLocalDemo = ["localhost", "127.0.0.1"].includes(location.hostname) && new URLSearchParams(location.search).get("demo") === "1";
+function rememberPipelineScroll() {
+  const kanban = $(".kanban");
+  if (!kanban) return;
+  try { sessionStorage.setItem(PIPELINE_SCROLL_KEY, String(kanban.scrollLeft)); } catch {}
+}
+
+function restorePipelineScroll() {
+  if (state.view !== "leads") return;
+  let saved;
+  try { saved = sessionStorage.getItem(PIPELINE_SCROLL_KEY); } catch { return; }
+  if (saved === null) return;
+  const apply = () => {
+    const kanban = $(".kanban");
+    if (!kanban) return false;
+    kanban.scrollLeft = Math.max(0, Number(saved) || 0);
+    return true;
+  };
+  requestAnimationFrame(() => {
+    if (apply()) requestAnimationFrame(() => { apply(); try { sessionStorage.removeItem(PIPELINE_SCROLL_KEY); } catch {} });
+  });
+}
 const SESSION_KEY = "agencia-lider-local.crm.session.v1";
 const GOOGLE_TOKEN_KEY = "agencia-lider-local.crm.google-token.v1";
 const GOOGLE_TOKEN_EXPIRY_KEY = "agencia-lider-local.crm.google-token-expiry.v1";
 const GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
 const SIDEBAR_PIN_KEY = "agencia-lider-local.crm.sidebar-pinned.v1";
+const PIPELINE_SCROLL_KEY = "agencia-lider-local.crm.pipeline-scroll.v1";
 const VIEW_ROUTES = { dashboard: "/dashboard", leads: "/pipeline", metrics: "/registro-diario", agenda: "/agenda", maps: "/buscar-no-maps", goals: "/metas", settings: "/configuracoes" };
 const ROUTE_VIEWS = Object.fromEntries(Object.entries(VIEW_ROUTES).map(([view, route]) => [route, view]));
 function viewFromLocation() { return ROUTE_VIEWS[location.pathname.replace(/\/+$/, "") || "/"] || "dashboard"; }
@@ -598,6 +620,8 @@ function setupStaticEvents() {
   $("#mobile-menu-button").addEventListener("click", () => $(".sidebar").classList.toggle("open"));
   $("#sidebar-pin-button").addEventListener("click", toggleSidebarPin);
   window.addEventListener("popstate", () => navigate(viewFromLocation(), { history: false }));
+  window.addEventListener("pageshow", restorePipelineScroll);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) restorePipelineScroll(); });
   $$(".modal-close").forEach((button) => button.addEventListener("click", () => $("#lead-dialog").close()));
   $$(".activity-close").forEach((button) => button.addEventListener("click", () => $("#activity-dialog").close()));
   $$(".stage-close").forEach((button) => button.addEventListener("click", () => $("#stage-dialog").close()));
@@ -1009,6 +1033,7 @@ function renderLeads() {
       const deleteAction = selectedCount ? `<button type="button" class="kanban-bulk-delete" data-action="delete-selected-leads" data-stage="${escapeHtml(stage.value)}" title="Excluir ${selectedCount} lead(s) selecionado(s)">Excluir ${selectedCount}</button>` : "";
       return `<section class="kanban-column" data-drop-stage="${stage.value}"><div class="kanban-head"><div class="kanban-stage-title"><span><i style="--column-color:${stage.color}"></i>${escapeHtml(stage.label)}</span><b class="kanban-count">${leads.length}</b></div><div class="kanban-head-actions">${selectionAction}${deleteAction}</div></div><div class="kanban-cards">${leads.length ? leads.map(leadCard).join("") : `<div class="empty-column">Solte um lead nesta etapa</div>`}</div></section>`;
     }).join("")}</div>`;
+  restorePipelineScroll();
 }
 
 async function toggleLeadContact(leadId) {
@@ -1192,6 +1217,7 @@ async function openLeadWhatsApp(leadId) {
   const dailyLimit = Math.max(0, Number(state.settings.whatsapp_daily_limit) || 0);
   const contactsToday = state.leads.filter((item) => item.contacted_at?.slice(0, 10) === todayIso()).length;
   if (dailyLimit && contactsToday >= dailyLimit && !window.confirm(`Você já registrou ${contactsToday} contatos hoje, atingindo o limite de referência configurado. Deseja continuar manualmente?`)) return;
+  rememberPipelineScroll();
   window.open(url, "_blank", mobile ? "" : "noopener,noreferrer");
   await recordWhatsAppTemplateUsage(templateIndex, stage);
   if (!lead.contacted_at) {
