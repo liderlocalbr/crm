@@ -782,7 +782,7 @@ async function loadData() {
   const [settings, metrics, leads, activities, notes] = await Promise.all([
     store.getSettings(state.month), store.getMetrics(state.month), store.getLeads(), store.getActivities(), store.getNotes(),
   ]);
-  state.settings = { ...DEFAULT_SETTINGS, ...settings, whatsapp_templates: normalizeWhatsAppTemplates(settings.whatsapp_templates), whatsapp_greeting_templates: normalizeWhatsAppTemplates(settings.whatsapp_greeting_templates || settings.whatsapp_templates), whatsapp_offer_templates: normalizeWhatsAppTemplates(settings.whatsapp_offer_templates) };
+  state.settings = { ...DEFAULT_SETTINGS, ...settings, whatsapp_templates: normalizeWhatsAppTemplates(settings.whatsapp_templates), whatsapp_greeting_templates: normalizeWhatsAppTemplates(settings.whatsapp_greeting_templates || settings.whatsapp_templates), whatsapp_offer_templates: normalizeWhatsAppTemplates(settings.whatsapp_offer_templates), whatsapp_offer_randomize_templates: settings.whatsapp_offer_randomize_templates ?? settings.whatsapp_randomize_templates ?? DEFAULT_SETTINGS.whatsapp_offer_randomize_templates };
   state.metrics = metrics;
   state.leads = leads;
   state.activities = activities;
@@ -792,7 +792,7 @@ async function loadData() {
 
 async function reloadPeriod() {
   const [settings, metrics] = await Promise.all([store.getSettings(state.month), store.getMetrics(state.month)]);
-  state.settings = { ...DEFAULT_SETTINGS, ...settings, whatsapp_templates: normalizeWhatsAppTemplates(settings.whatsapp_templates), whatsapp_greeting_templates: normalizeWhatsAppTemplates(settings.whatsapp_greeting_templates || settings.whatsapp_templates), whatsapp_offer_templates: normalizeWhatsAppTemplates(settings.whatsapp_offer_templates) };
+  state.settings = { ...DEFAULT_SETTINGS, ...settings, whatsapp_templates: normalizeWhatsAppTemplates(settings.whatsapp_templates), whatsapp_greeting_templates: normalizeWhatsAppTemplates(settings.whatsapp_greeting_templates || settings.whatsapp_templates), whatsapp_offer_templates: normalizeWhatsAppTemplates(settings.whatsapp_offer_templates), whatsapp_offer_randomize_templates: settings.whatsapp_offer_randomize_templates ?? settings.whatsapp_randomize_templates ?? DEFAULT_SETTINGS.whatsapp_offer_randomize_templates };
   state.metrics = metrics;
     renderDashboard();
   renderMetrics();
