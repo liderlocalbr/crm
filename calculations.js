@@ -28,7 +28,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   whatsapp_greeting_randomize_templates: false,
   whatsapp_greeting_template_limits: {},
   whatsapp_greeting_template_usage: {},
-  whatsapp_offer_templates: [{ label: "Proposta inicial", body: "{{nome}}, analisando a {{empresa}}, acredito que podemos ajudar a melhorar a presença digital e gerar mais oportunidades. Posso te mostrar como?" }],
+  whatsapp_offer_templates: [{ label: "Proposta inicial", body: "{{nome}}, analisando a {{empresa}}, acredito que podemos ajudar a melhorar a presença digital e gerar mais oportunidades.\n\nPosso te mostrar como?" }],
   whatsapp_offer_default_template: 0,
   whatsapp_offer_randomize_templates: false,
   whatsapp_offer_template_limits: {},
@@ -52,7 +52,20 @@ export function renderWhatsAppMessage(template, lead = {}, sender = "Agência L�
     cidade: String(lead.city || "").trim(),
     remetente: String(sender || "Agência Líder Local").trim(),
   };
-  return String(template || "").replace(/\{\{\s*(nome|empresa|cidade|remetente)\s*\}\}/gi, (_, key) => values[key.toLowerCase()] || "").replace(/\s{2,}/g, " ").trim();
+  return String(template || "")
+    .replace(/\{\{\s*(nome|empresa|cidade|remetente)\s*\}\}/gi, (_, key) => values[key.toLowerCase()] || "")
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/[ \t]{2,}/g, " ").trim())
+    .filter((line, index, lines) => line || (index > 0 && index < lines.length - 1))
+    .join("\n")
+    .trim();
+}
+
+export function formatWhatsAppMessage(message, stage = "greeting") {
+  const text = String(message || "").trim();
+  if (!text || stage !== "offer" || text.includes("\n")) return text;
+  return text.replace(/([.!?])\s+(?=[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ])/g, "$1\n\n");
 }
 
 const safeNumber = (value) => {

@@ -1,5 +1,5 @@
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./config.js";
-import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarEvent, monthBounds, moveLeadToStage, normalizeGoogleEvents, normalizeWhatsAppTemplates, progress, reassignStage, renderWhatsAppMessage, simulateGoalsFromMessages, weekOfMonth, whatsappMobileUrl, whatsappWebUrl } from "./calculations.js";
+import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, formatWhatsAppMessage, googleCalendarEvent, monthBounds, moveLeadToStage, normalizeGoogleEvents, normalizeWhatsAppTemplates, progress, reassignStage, renderWhatsAppMessage, simulateGoalsFromMessages, weekOfMonth, whatsappMobileUrl, whatsappWebUrl } from "./calculations.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -1185,7 +1185,7 @@ async function openLeadWhatsApp(leadId) {
   const templateUsedToday = Number(whatsappTemplateUsageToday(stage)[String(templateIndex)] || 0);
   if (templateLimit && templateUsedToday >= templateLimit) return toast(`O modelo de ${config.label} “${template.label}” atingiu o limite diário de ${templateLimit}. Ajuste os limites em Configurações.`, "error");
   const sender = String(state.user?.user_metadata?.full_name || "Damião").trim().split(/\s+/)[0] || "Damião";
-  const message = renderWhatsAppMessage(template.body, lead, sender);
+  const message = formatWhatsAppMessage(renderWhatsAppMessage(template.body, lead, sender), stage);
   const mobile = prefersWhatsAppApp();
   const url = mobile ? whatsappMobileUrl({ phone: lead.whatsapp, message }) : whatsappWebUrl({ phone: lead.whatsapp, message });
   if (!url) return toast("Cadastre um WhatsApp válido para este lead.", "error");

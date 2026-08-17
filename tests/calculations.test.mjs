@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, googleCalendarEvent, googleCalendarUrl, monthBounds, moveLeadToStage, normalizeGoogleEvents, reassignStage, simulateGoalsFromMessages, weekOfMonth, whatsappMobileUrl } from "../calculations.js";
+import { DEFAULT_SETTINGS, aggregateMetrics, deriveGoals, formatWhatsAppMessage, googleCalendarEvent, googleCalendarUrl, monthBounds, moveLeadToStage, normalizeGoogleEvents, reassignStage, renderWhatsAppMessage, simulateGoalsFromMessages, weekOfMonth, whatsappMobileUrl } from "../calculations.js";
 
 test("reproduz a projeção da planilha Métricas", () => {
   assert.deepEqual(deriveGoals(DEFAULT_SETTINGS), {
@@ -61,6 +61,16 @@ test("realoca todos os leads ao excluir uma etapa", () => {
   assert.equal(result.changed, 2);
   assert.deepEqual(result.leads.map((lead) => lead.stage), ["new", "new", "new"]);
   assert.equal(original[0].stage, "custom");
+});
+
+test("preserva quebras de linha na mensagem do WhatsApp", () => {
+  const message = renderWhatsAppMessage("Olá, {{nome}}!  \n\n  Aqui é {{remetente}}.", { name: "Mariana", company_name: "Clínica A" });
+  assert.equal(message, "Olá, Mariana!\n\nAqui é Agência Líder Local.");
+});
+
+test("separa a Proposta em blocos quando o modelo é uma linha única", () => {
+  const message = formatWhatsAppMessage("Mariana, acredito que podemos ajudar a Clínica A. Posso te mostrar como?", "offer");
+  assert.equal(message, "Mariana, acredito que podemos ajudar a Clínica A.\n\nPosso te mostrar como?");
 });
 
 test("gera link móvel do WhatsApp com telefone e mensagem", () => {
