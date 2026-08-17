@@ -112,7 +112,7 @@ export default async function handler(req, res) {
       .slice(0, BATCH_SIZE);
     const responseCenter = payload?.ll || payload?.searchParameters?.ll || payload?.searchParameters?.location || center || null;
     console.log("serper_maps_done", JSON.stringify({ query, batch, count: places.length, requestedCenter: body.ll || null, responseCenter }));
-    res.status(200).json({ places, provider: "serper", batch, center: responseCenter, hasMore: places.length === BATCH_SIZE && batch < MAX_BATCHES - 1 });
+    res.status(200).json({ places, provider: "serper", batch, center: responseCenter, hasMore: places.length > 0 && batch < MAX_BATCHES - 1 });
   } catch (error) {
     console.log("serper_maps_exception", error.message);
     res.status(502).json({ message: "Não foi possível se conectar à Serper agora." });
